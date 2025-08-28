@@ -1,0 +1,81 @@
+#!/bin/csh
+setenv JOBNET_ID   QSDT01UX
+setenv JOB_ID      QSDJT1UX
+setenv USERKEY     QBDJV1UX
+set    MODULE   =  QBDJV1UX
+set    LOGWRITE =  $EXE_DIR/QUAJ_MSGLOG.BAT
+set    oradir   =  /d051/UFS/data/qs
+set    Shiji_F  =  KaiinShiji.dat
+set    Kekka_F  =  KaiinKekka.dat
+set    Chosa_F  =  TelChosa.dat
+set    Conv_F   =  TelChosa.cnv
+
+$LOGWRITE "$MODULE" I "START : 電話移転調査ファイル作成" "$USERKEY"
+#-----------------------------------------------------#
+#  ファイル確認
+#-----------------------------------------------------#
+if ( ! -e $oradir/$Shiji_F ) then   ## ﾌｧｲﾙがない時は処理ｽｷｯﾌﾟ
+     goto END00
+endif
+rm -f $oradir/$Kekka_F
+rm -f $oradir/$Chosa_F
+
+#-----------------------------------------------------#
+#  電話移転調査ファイル作成
+#-----------------------------------------------------#
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qtap_sdbt010pkg.qtap_sdbt010('$JOBNET_ID','$JOB_ID','$oradir','$Shiji_F','$Kekka_F')"
+
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 電話移転調査ファイル作成 RC=[$rc]" "$USERKEY"
+    echo "*** QTAP_SDBT010 ERROR RC=[$rc] ***"
+    exit(1)
+endif
+
+#-----------------------------------------------------------#
+#  電話移転調査ファイル変換
+#-----------------------------------------------------------#
+setenv DDIN01  $oradir/$Chosa_F
+setenv DDOT01  $oradir/$Conv_F
+
+$EXE_DIR/qtab_sdbt010.exe
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 電話移転調査ファイルフォーマット変換 RC=[$rc]" "$USERKEY"
+    echo "*** QTAB_SDBT010 ERROR RC=[$rc] ***"
+   exit(1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+#-----------------------------------------------------#
+#  会員抽出指示ファイル削除
+#-----------------------------------------------------#
+rm -f $oradir/$Shiji_F
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 会員抽出指示ファイル削除 RC=[$rc]" "$USERKEY"
+    echo "*** KaiinShiji.dat Delete ERROR RC=[$rc] ***"
+   exit(1)
+endif
+
+#-----------------------------------------------------#
+#  電話移転調査ファイル圧縮
+#-----------------------------------------------------#
+rm -f $oradir/$Chosa_F.Z
+mv -f $oradir/$Conv_F $oradir/$Chosa_F
+
+if ( -z $oradir/$Chosa_F ) then   ## ﾌｧｲﾙが0Byteの時は処理ｽｷｯﾌﾟ
+     goto END00
+endif
+compress $oradir/$Chosa_F
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 電話移転調査ファイル圧縮 RC=[$rc]" "$USERKEY"
+    echo "*** TelChosa.dat compress ERROR RC=[$rc] ***"
+   exit(1)
+endif
+
+END00:
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)

@@ -1,0 +1,116 @@
+#!/bin/csh
+#　スクリプト名  ： QTDTL01
+#　 機  能       ： 利用明細行ファイル更新（追加登録）検証用ツール
+#　 作成者       ： IMZ.Yoshida
+#
+#   項番     修正日      修正者         修正内容
+#   00001    2009/04/07  nbc.ishida     モジュールID変更(cobol)
+
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME  = $0                                 # シェル名
+setenv JOB_ID        $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID     'QTDTL01'                          # ジョブネット名
+set    LOGFILE     = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE    = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY       'QTDTL01'                          # ユーザキー
+set    KINOU       = '利用明細行ファイル更新（追加登録）検証用ツール'
+set MODULE = 'TOOL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+# ディレクトリ
+# 本番用
+set    ST_DIR      = '/s040/anx'                        # 検証用格納ディレクトリ
+set    DT_DIR      = $QJ_DATA_DIR/qt/data/host/merge    # データディレクトリ
+
+# テスト用
+#set ST_DIR         = '/d16/host_data/oldexe'                         # 検証用格納ディレクトリ
+#set EXE_DIR        = '/home/batch/qt/cobol/exe'                         # 検証用格納ディレクトリ
+#set DT_DIR         = '/d16/host_data'                    # テスト用データディレクトリ
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE         = 'COBOL'
+set KINOU          = '旧モジュール利用明細行ファイル更新（追加登録）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+#本番データコピー
+cp -p $DT_DIR/qtaf_riyougyou1.hft $ST_DIR/data/qtaf_riyougyou1.hft
+
+# mod nbc.ishida 2009/04/07 00001 start
+#set PROGRAM = $ST_DIR/exe/qtab_s001200.exe
+set PROGRAM = $ST_DIR/exe/qtab_s001200_c.exe
+# mod nbc.ishida 2009/04/07 00001 end
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv INFILE $ST_DIR/data/qtaf_riyougyou1.hft
+    setenv OTFILE $ST_DIR/data/qtaf_riyougyou1_S.dat
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    #
+    rm $OTFILE
+    #
+    $PROGRAM                                     # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+    $LOGWRITE "$MODULE" E "ERROR : 利用明細行ファイル作成旧モジュールＥＲＲ RC=[$rc]" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+#########################################
+# STEP-2                                #
+#########################################
+set KINOU          = '新モジュール利用明細行ファイル更新（追加登録）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+set PROGRAM = $EXE_DIR/qtab_s001200.exe
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv INFILE $ST_DIR/data/qtaf_riyougyou1.hft
+    setenv OTFILE $ST_DIR/data/qtaf_riyougyou1_H.dat
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    #
+    rm $OTFILE
+    #
+    $PROGRAM                                     # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+    $LOGWRITE "$MODULE" E "ERROR : 利用明細行ファイル作成新モジュールＥＲＲ RC=[$rc]" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+
+#########################################
+# STEP-3                                #
+#########################################
+set MODULE = 'TOOL'
+diff $ST_DIR/data/qtaf_riyougyou1_S.dat $ST_DIR/data/qtaf_riyougyou1_H.dat
+set rc = $status                                      # リターンステータス待避
+if ( $rc != 0 ) then                                  # リターンステータス判定
+   $LOGWRITE "$MODULE" W "データ不一致検出:$KINOU" "$USERKEY"     # ワーニングメッセージの出力
+else
+    rm $INFILE
+#不要ファイル削除追加20050616 M.T
+    rm $ST_DIR/data/qtaf_riyougyou1_S.dat
+    rm $ST_DIR/data/qtaf_riyougyou1_H.dat
+endif
+
+set    KINOU       = '利用明細行ファイル更新（追加登録）検証用ツール'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 開始メッセージの出力
+exit 0

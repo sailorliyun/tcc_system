@@ -1,0 +1,77 @@
+#!/bin/csh
+#　スクリプト名  ： QTTJH1UX
+#　 機  能       ： ＨＵＬＦＴ処理（会員基本属性　暴追用ファイル）
+#　 作成者       ： FIP
+#　修　正　履　歴：
+#------------------------------------------------------#
+# 環境設定                                             #
+#------------------------------------------------------#
+setenv JOBNET_ID    QTT4C7UX                           # ジョブネット名
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv USERKEY      $JOB_ID                            # ユーザキー
+set    HULFT_DIR3 = (/d371/UFS/data/qta)               # HULFT受信ＤＩＲ
+#et    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+#------------------------------------------------------#
+#ＨＵＬＦＴ送信（会員基本属性　暴追用ファイル）s008010 #OFQY71
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+set    HULFT_ID   = (O.F.QY71)                         # HULFT_ID
+set    FILE_ID    = (qtab_s008010)                     # 処理対象ファイル
+ls -l  $HULFT_DIR3/${FILE_ID}.?dat[A-B]                #対象ファイル出力
+
+#------------------------------------------------------#
+# STEP-1 ＨＵＬＦＴファイル結合                        #
+#------------------------------------------------------#
+set    MODULE     = cat                               # モジュール名
+set    KINOU      = 'ファイル結合（会員基本属性　暴追用ファイル）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+cat    $HULFT_DIR3/${FILE_ID}.?dat[A-B]   >   $HULFT_DIR3/${FILE_ID}.dat
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL cat RC=[$rc] >>***"
+    exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+
+#------------------------------------------------------#
+# STEP-2 ＨＵＬＦＴ送信                                #
+#------------------------------------------------------#
+set    MODULE     = HULFT                              # モジュール名
+set    KINOU      = 'ＨＵＬＦＴ送信（会員基本属性　暴追用ファイル）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+#------------------------------------------------------#
+mv     $HULFT_DIR3/${FILE_ID}.dat   $HULFT_DIR3/${HULFT_ID}.hft
+set rc = $status
+
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU mv1 RC=[$rc]"  "$USERKEY"
+    echo "***<< mv1 ABNORMAL END RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+utlsend -f OFQY71 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU utlsend RC=[$rc]"  "$USERKEY"
+    echo "***<< utlsend1 ABNORMAL END RC=[$rc] >>***"
+    exit(1)
+endif
+mv     $HULFT_DIR3/${HULFT_ID}.hft        $HULFT_DIR3/${FILE_ID}.dat
+
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU mv2 RC=[$rc]"  "$USERKEY"
+    echo "***<< mv2 ABNORMAL END RC=[$rc] >>***"
+    exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+exit(0)

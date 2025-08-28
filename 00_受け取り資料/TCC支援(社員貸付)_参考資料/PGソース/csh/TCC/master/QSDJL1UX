@@ -1,0 +1,152 @@
+#!/bin/csh 
+# 　スクリプト名 ： QSDJL1UX
+#　 機  能       ： ＨＵＬＦＴ集配信履歴の整理
+#   実行USER     ： tcc
+#　 作成者       ： 高橋
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID    $1                                 # ジョブネット名
+set    MODULE   =  $SHELL_NAME:t                          # モジュール名
+set    LOGFILE  = $USER_LOG_DIR/db_ope.log                # ログファイル名
+set    LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ログ出力用共通シェル
+set    USERKEY    = 'CLEANUP'                          # ユーザキー
+set    KINOU      = 'ＨＵＬＦＴ集配信履歴整理'         # 機能
+
+##################################
+# 当日より１週間前の日付を求める #
+##################################
+@ YYYY = `date +%Y`
+@ MM   = `date +%m`
+@ DD   = `date +%d`
+
+#@ YYYY = $1
+#@ MM   = $2
+#@ DD   = $3
+
+@ PRE = $DD - 7
+if ( $PRE > 0 ) then
+	@ DD = $PRE
+else
+	@ MM -= 1
+	if ( $MM < 1 ) then
+		@ YYYY -= 1
+		@ MM = 12
+	endif
+
+	switch ( $MM )
+		case 2:
+			if ( $YYYY % 4 == 0 ) then
+				if ( $YYYY % 100 == 0 ) then
+					if ( $YYYY % 400 == 0 ) then
+						@ DD = 29 + $PRE
+					else
+						@ DD = 28 + $PRE
+					endif
+				else
+					@ DD = 29 + $PRE
+				endif
+			else
+				@ DD = 28 + $PRE
+			endif
+			breaksw
+		case 1:
+		case 3:
+		case 5:
+		case 7:
+		case 8:
+		case 10:
+		case 12:
+			@ DD = 31 + $PRE
+			breaksw
+		default:
+			@ DD = 30 + $PRE
+			breaksw
+	endsw
+endif
+
+set TO_YMD = `printf "%04d%02d%02d" $YYYY  $MM  $DD`
+
+#########################################
+# １週間前日付より1ヶ月前の日付を求める #
+#########################################
+@ MM -= 1
+if ( $MM < 1 ) then
+	@ MM    = 12
+	@ YYYY -= 1
+endif
+
+switch ( $MM )
+	case 2:
+		if ( $DD > 28 ) then
+			@ DD = 28
+		endif
+		breaksw
+	case 1:
+	case 3:
+	case 5:
+	case 7:
+	case 8:
+	case 10:
+	case 12:
+		if ( $DD > 30 ) then
+			@ DD = 30
+		endif
+		breaksw
+	default:
+		breaksw
+endsw
+
+set FROM_YMD = `printf "%04d%02d%02d" $YYYY  $MM  $DD`
+
+############################################################
+# 1ヵ月＋1週間前 ～ １週間前の配信履歴・集信履歴を削除する #
+############################################################
+#set MODULE = 'utllog'
+$LOGWRITE "utllog 開始:$KINOU"  >>$LOGFILE	 # 開始メッセージの出力
+
+#su  root -c "/usr/local/HULFT/bin/utllog  -a  -from $FROM_YMD   -to $TO_YMD"
+
+set rc = $status
+
+$LOGWRITE  "utllog 復帰値:$KINOU  RC=[$rc]"  >>$LOGFILE
+
+# リターン値判定はおこなわい。Update by 藤川 1999.06.03 
+# 履歴ファイルの状態により正常終了時の復帰値が常にゼロと特定出来ない為.
+# 履歴ファイルが存在しない場合[37]もしくはゼロバイトファイル[56]・その他[??]
+#
+#if ( $rc != 0 ) then
+#	$LOGWRITE  "$MODULE"  W  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#	exit  0
+#endif
+
+$LOGWRITE "utllog 終了:$KINOU" >>$LOGFILE 	# 終了メッセージの出力
+ 
+######################################################
+# 1ヵ月＋1週間前 ～ １週間前の要求受付履歴を削除する #
+######################################################
+#set MODULE = 'utlobsrm'
+$LOGWRITE "utlobsrm 開始:$KINOU" >>$LOGFILE # 開始メッセージの出力
+
+#su  root -c "/usr/local/HULFT/bin/utlobsrm  -a  -from $FROM_YMD   -to $TO_YMD"
+
+set rc = $status
+
+$LOGWRITE  "utlobsrm 復帰値:$KINOU  RC=[$rc]"   >>$LOGFILE
+
+# リターン値判定はおこなわい。Update by 藤川 1999.06.03 
+# 履歴ファイルの状態により正常終了時の復帰値が常にゼロと特定出来ない為.
+# 履歴ファイルが存在しない場合[41]もしくはゼロバイトファイル[56]・その他[??]
+#if ( $rc != 0 ) then
+#	$LOGWRITE  "$MODULE"  W  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#	exit  0
+#endif
+
+$LOGWRITE "utlobsrm 終了:$KINOU"  >>$LOGFILE	 # 終了メッセージの出力
+
+exit 0                                           # 正常終了
+

@@ -1,0 +1,40 @@
+#!/bin/csh
+# 　スクリプト名 ： QLDJW3UX
+#　 機  能       ： 信用情報報告結果反映・FTP監視終了
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 	# シェル名
+setenv JOB_ID       $SHELL_NAME:t                      	# ジョブ名
+setenv JOBNET_ID   'QLDW31UX'                       	# ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        	# ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           	# ログ出力モジュール
+set    USERKEY    = 'QLDJW3UX'                  	# ユーザキー
+set    KINOU      = '信用情報報告結果反映・FTP監視終了' # 機能
+
+set    FTP_WATCH_FILE_DIR	= "/d041/UFS/data/qv/FTP"			# FTP監視制御ファイル格納フォルダー
+set    FTP_WATCH_FILE_NAME	= "ftpWatch"				# FTP監視制御ファイル名
+
+set    FTP_WATCH_FILE	= $FTP_WATCH_FILE_DIR/$FTP_WATCH_FILE_NAME	# FTP監視制御ファイル
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#########################################
+# STEP-1  FTP監視制御ファイル削除       #
+#########################################
+rm $FTP_WATCH_FILE
+set rc = $status
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU　FTP監視制御ファイル削除 RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+
+#########################################
+# STEP-99  終了処理                     #
+#########################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了

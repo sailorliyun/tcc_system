@@ -1,0 +1,93 @@
+#!/bin/csh
+# 　スクリプト名 ： QPTJF4UX
+#　 業  務       ： 社員貸付システム
+#　 機  能       ： 履歴登録処理、残高履歴締め処理（社員貸付二次）
+#　 作成者       ： FIP
+#
+#   項番     修正日      修正者         修正内容
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPTFB2UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QPTJF4UX'                         # ユーザキー 
+set    KINOU      = '社員貸付履歴登録・残高履歴締め処理'
+set    MODULE     = 'SHELL'
+set    PRM_JOBNET =  "'"$JOBNET_ID"'"
+set    PRM_JOB    = "'"$JOB_ID"'"
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+
+#########################################
+# STEP-1 証書貸付・証書入金データ登録   #
+#########################################
+set MODULE = 'qusc_sspexec.exe'
+set KINOU  = '証書貸付・証書入金データ登録'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID "tccuser.QPAP_CEnt1550PkG.QPAP_ZNDK_YSNKTURK($PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "異常:$KINOU QPAP_CEnt1550PkG.QPAP_ZNDK_YSNKTURK RC=[$rc]" "$USERKEY"
+    echo "QPAP_CEnt1550PkG.QPAP_ZNDK_YSNKTURK ABNORMAL ENDED : RC=[$rc]"
+    exit 1
+endif
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+#########################################
+# STEP-2 入金データ登録                 #
+#########################################
+set MODULE = 'qusc_sspexec.exe'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID "tccuser.QPAP_CEnt1510PkG.QPAP_ZNDK_NUKNTURK($PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "異常:$KINOU QPAP_CEnt1510PkG.QPAP_ZNDK_NUKNTURK RC=[$rc]" "$USERKEY"
+    echo "QPAP_CEnt1510PkG.QPAP_ZNDK_NUKNTURK ABNORMAL ENDED : RC=[$rc]"
+    exit 1
+endif
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+#########################################
+# STEP-3 残高履歴更新・締め処理         #
+#########################################
+set MODULE = 'qusc_sspexec.exe'
+set KINOU  = '残高履歴更新・締め処理'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID "tccuser.QPAP_CEnt1560PkG.QPAP_ZNDKKUSNMAIN($PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "異常:$KINOU QPAP_CEnt1560PkG.QPAP_ZNDKKUSNMAIN RC=[$rc]" "$USERKEY"
+    echo "QPAP_CEnt1560PkG.QPAP_ZNDKKUSNMAIN ABNORMAL ENDED : RC=[$rc]"
+    exit 1
+endif
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-3 終了処理                       #
+#########################################
+set    KINOU      = '社員貸付履歴登録・残高履歴締め処理'
+set    MODULE     = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+exit 0                                             # 正常終了

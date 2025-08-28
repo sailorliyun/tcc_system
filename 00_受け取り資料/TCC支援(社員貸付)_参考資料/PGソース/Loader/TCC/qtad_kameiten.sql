@@ -1,0 +1,61 @@
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QTAK_KAMEITENT
+FIELDS TERMINATED BY "q"
+(
+       QTAK_PRMUriTuuBan           CHAR,
+       QTAK_URITorihikiA           CHAR,
+       QTAK_URITorihikiB           CHAR,
+       QTAK_URITorihikiC           CHAR,
+       QTAK_URICardNo              CHAR,
+       QTAK_URIRiyouBi             DATE NULLIF(QTAK_URIRiyouBi="00000000"),
+       QTAK_URIUketsukeBi          DATE NULLIF(QTAK_URIUketsukeBi="00000000"),
+       QTAK_URIKeijyouBi           DATE NULLIF(QTAK_URIKeijyouBi="00000000"),
+       QTAK_URIShiharaiHoho        CHAR,
+       QTAK_URIBunkatsuKaisu       CHAR,
+       QTAK_URIRiyouKng            CHAR,
+       QTAK_URIUriageKng           CHAR,
+       QTAK_URIZeiSouryou          CHAR,
+       QTAK_URIUriageGoukei        CHAR,
+       QTAK_URIWaribikiGaku        CHAR,
+       QTAK_URIGaiTesuryou         CHAR,
+       QTAK_URIShouninNo           CHAR,
+       QTAK_URIKokunaiKaigai       CHAR,
+       QTAK_KAITuukaGaku           CHAR,
+       QTAK_KAIKanSanRate          CHAR,
+       QTAK_KAIKanSanBi            DATE NULLIF(QTAK_KAIKanSanBi="00000000"),
+       QTAK_KAIToshiMei            CHAR,
+       QTAK_KAITuukaKoshou         CHAR,
+       QTAK_KAITuukaCd             CHAR,
+       QTAK_KAIShuuCd              CHAR,
+       QTAK_KAIKuniCd              CHAR,
+       QTAK_TKSShoukaiNo1          CHAR,
+       QTAK_TKSShoukaiNo2          CHAR,
+       QTAK_TKSKameitenNo          CHAR,
+       QTAK_TKSKameitenMei1        CHAR,
+       QTAK_TKSKameitenMei2        CHAR,
+       QTAK_TKSGyoushuCd           CHAR,
+       QTAK_TKSPosEntryCd          CHAR,
+       QTAK_TKSBonusHyouji         CHAR,
+       QTAK_KJKKigyouCd            CHAR,
+       QTAK_KJKSubRangeKey         CHAR,
+       QTAK_KJKNaibuKaiinNo        CHAR,
+       QTAK_KJKKanriTen            CHAR,
+       QTAK_KJKCardKbn             CHAR,
+       QTAK_KJKCardKaiinMei        CHAR,
+       QTAK_HostShoriYmd           CHAR,
+       QTAK_HostShoriTime          CHAR,
+       QTAK_SvrKoushinYmd          DATE NULLIF(QTAK_SvrKoushinYmd="00000000"),
+-- *** 2000/07/26 çÄñ⁄ÇÃí«â¡ ***********
+       QTAK_KMTCHARGEBACK  	       CHAR,
+       QTAK_KMTKJYAGOU 		       CHAR,
+       QTAK_KMTDENPYOUKI	       CHAR,
+       QTAK_KMTSEISANKBN	       CHAR,
+-- *** 2002/11/27 çÄñ⁄ÇÃí«â¡ ***********
+       QTAK_MOTOECINDICATOR	       CHAR,
+       QTAK_CHACTTERMINDICATOR     CHAR,
+       QTAK_AUTHSOURCECODE	       CHAR,
+       QTAK_TCQ				       CHAR
+)

@@ -1,0 +1,2 @@
+EXECUTE QUSP_LOGPKG.QUSP_SubPipe2Close;
+exit

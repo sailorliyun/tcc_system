@@ -1,0 +1,96 @@
+#!/bin/csh
+#　スクリプト名  ： QXDJL7UX
+#　 機  能       ： 事故売上管理：警告売上データ日次受信ファイル作成
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QXD1D2UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+setenv USERKEY      'QXDJL7UX'                      # ユーザキー
+set    KINOU      = '事故売上管理：警告売上データ日次受信ファイル作成'
+set    QX_DATA_DIR   = /d051/UFS/data/qxn/alarmdata   #TMP FILE DIR
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+
+###############################################
+# STEP-1 ローダ用ﾃﾞｰﾀ作成(警告売上）　　　　　#
+###############################################
+STEP_01:
+set MODULE = 'qxnb_s000040'
+set STEPKINOU = '警告売上ローダ用データ作成'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qxnb_s000040.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv INFILE1   $FROMHOST1_DIR/qxn/rcv/qxnf_keidata.hulft
+    setenv OUTFIL1   $QX_DATA_DIR/qxn4_loaddata_dat.dat
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"   # 終了メッセージの出力
+
+###############################################
+# STEP-2 ローダ用ﾃﾞｰﾀ作成(手紙ﾃﾞｰﾀ）　　　　　#
+###############################################
+STEP_02:
+set MODULE = 'qxnb_s000070'
+set STEPKINOU = '手紙ローダ用データ作成'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qxnb_s000070.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv INFILE1   $QX_DATA_DIR/qxn4_loaddata_dat.dat
+    setenv OUTFIL1   $QX_DATA_DIR/qxn7_loaddata_dat.dat
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"   # 終了メッセージの出力
+
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

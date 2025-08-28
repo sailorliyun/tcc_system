@@ -1,0 +1,161 @@
+      ************************************************************
+      * 回答情報ﾌｧｲﾙをOK分のみ行順変換
+      *       照合依頼ﾌｧｲﾙ生年月日ｴﾗｰ対応
+      *                                           2000.01.07
+      ************************************************************
+       IDENTIFICATION                  DIVISION.
+       PROGRAM-ID.                     QBAB-MENTE04.
+       ENVIRONMENT                     DIVISION.
+       CONFIGURATION                   SECTION.
+
+       SPECIAL-NAMES.
+           ENVIRONMENT-NAME  IS  ENV-NAME
+           ENVIRONMENT-VALUE IS  ENV-VALUE.
+
+       INPUT-OUTPUT                    SECTION.
+       FILE-CONTROL.
+           SELECT I001-FILE     ASSIGN  TO  DDIN001.
+           SELECT O001-FILE     ASSIGN  TO  DDOT001.
+           SELECT O011-FILE     ASSIGN  TO  DDOT011
+                  ORGANIZATION    IS LINE SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  I001-FILE.
+       01  I001-REC.
+           COPY                 QBS001
+           DISJOINING  QBS001  JOINING  I001   AS  PREFIX.
+           COPY                 QBS003
+           DISJOINING  QBS003  JOINING  I001   AS  PREFIX.
+
+       FD  O001-FILE.
+       01  O001-REC.
+           COPY                 QBS001
+           DISJOINING  QBS001  JOINING  O001  AS  PREFIX.
+           COPY                 QBS003
+           DISJOINING  QBS002  JOINING  O001  AS  PREFIX.
+       FD  O011-FILE.
+       01  O011-REC.
+           03  O011-UKETSUKENO          PIC  X(008).
+
+       WORKING-STORAGE                 SECTION.
+      ****************************************************************
+      * WORK AREA
+      ****************************************************************
+       01  WRK-AREA.
+           03  FLG-END                 PIC  X(001).
+
+       01  CNT-AREA.
+           03  CNT-I001                PIC  9(008) COMP.
+           03  CNT-O001                PIC  9(008) COMP.
+           03  CNT-NG                  PIC  9(008) COMP.
+
+      ****************************************************************
+      * ORACLE HOST変数
+      ****************************************************************
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+      
+       01  PRM-AREA.
+           03  P-KBN                   PIC  X(001).
+
+           EXEC SQL END DECLARE SECTION END-EXEC.
+      ****************************************************************
+      * ORACLE SQL COMMUNICATIONS AREA
+      ****************************************************************
+           EXEC SQL INCLUDE SQLCA.COB END-EXEC.
+      
+      ****************************************************************
+      * CONSTANT
+      ****************************************************************
+       CONSTANT                        SECTION.
+       01  CNS-AREA.
+           03  CNS-PRM                 PIC  X(008) VALUE 'PARM'.
+
+      ****************************************************************
+      * PROCEDURE
+      ****************************************************************
+       PROCEDURE                       DIVISION.
+       CNTL-SEC.
+
+           PERFORM  INIT-SEC.
+
+           PERFORM  MAIN-SEC
+             UNTIL  FLG-END             =    'E'.
+
+           PERFORM  TERM-SEC.
+
+       CNTL-SEC-EXT.
+           EXIT PROGRAM.
+
+      ****************************************************************
+      * (1.0.0) INIT
+      ****************************************************************
+       INIT-SEC                        SECTION.
+
+           INITIALIZE   WRK-AREA CNT-AREA.
+           OPEN    INPUT    I001-FILE
+                   OUTPUT   O001-FILE O011-FILE.
+
+           DISPLAY CNS-PRM           UPON  ENV-NAME.
+           ACCEPT  PRM-AREA          FROM  ENV-VALUE.
+
+      *--- ファイル入力 ---*
+           PERFORM  I001-READ-SEC.
+
+       INIT-EXT.
+           EXIT.
+
+      ****************************************************************
+      * (1.1.0) I001-READ-SEC
+      ****************************************************************
+       I001-READ-SEC                   SECTION.
+
+               READ  I001-FILE
+                 AT  END    
+                     MOVE  'E'         TO   FLG-END
+                NOT  AT    END
+                     ADD   1           TO   CNT-I001
+               END-READ.
+
+       I001-READ-EXT.
+           EXIT.
+
+      ****************************************************************
+      * (2.0.0) MAIN-SEC
+      ****************************************************************
+       MAIN-SEC                        SECTION.
+
+           IF  I001-CICINQRESULT        =  '2'
+               ADD   1                 TO  CNT-NG
+               PERFORM  I001-READ-SEC
+               GO TO MAIN-EXT
+           END-IF.  
+           
+           INITIALIZE   O001-REC.
+           MOVE  I001-REC              TO  O001-REC.
+           WRITE  O001-REC.
+           ADD   1                     TO  CNT-O001.
+           
+           INITIALIZE   O011-REC.
+           MOVE  I001-UKETSUKENO       TO  O011-UKETSUKENO.
+           WRITE  O011-REC.
+           
+           PERFORM  I001-READ-SEC.
+
+       MAIN-EXT.
+           EXIT.
+
+      ************************************************************
+      * (3.0.0) TERM-SEC
+      ************************************************************
+       TERM-SEC                        SECTION.
+
+           DISPLAY '*   INPUT      COUNT=' CNT-I001.
+           DISPLAY '*   OK         COUNT=' CNT-O001.
+           DISPLAY '*   NG         COUNT=' CNT-NG. 
+
+           CLOSE  I001-FILE O001-FILE O011-FILE.
+ 
+       TERM-EXT.
+           EXIT.
+

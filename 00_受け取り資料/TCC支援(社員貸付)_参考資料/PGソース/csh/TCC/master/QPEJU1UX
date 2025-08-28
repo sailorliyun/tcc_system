@@ -1,0 +1,69 @@
+#!/bin/csh
+#　スクリプト名  ： QPEJU1UX
+#　 機  能       ： ホスト貸付データリカバリ処理
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLER02UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPEJU1UX'                         # ユーザキー
+set    KINOU      = 'ホスト貸付データリカバリ処理'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+
+#########################################
+# STEP-1  ホストからのハルフトをコピー  #
+#########################################
+
+set MODULE = 'shell'
+$LOGWRITE "$MODULE" I "開始:ホスト貸付データリカバリ処理" "$USERKEY"    # 開始メッセージの出力
+#000001 MOD hayashi 2007/07/24 START
+# cp $QP_DATA_DIR/qpb1_hostkasituke.dat $QP_DATA_DIR/qpb1_hostkasituke.bk
+
+#ハルフトファイルの退避
+ cp   $QP_HUL_DIR/qpb1_hostkasituke.dat $QP_HUL_DIR/qpb1_hostkasituke.taihi
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$KINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+#000001 MOD hayashi 2007/07/24 END
+
+#000001 ADD hayashi 2007/07/24 START
+#繰越ファイルとマージ
+ cat   $QP_DATA_DIR/qpb1_hostkasituke.kur  \
+       $QP_HUL_DIR/qpb1_hostkasituke.taihi \
+     > $QP_DATA_DIR/qpb1_hostkasituke.marge
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$KINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+#マージファイルのリネーム
+ mv  $QP_DATA_DIR/qpb1_hostkasituke.marge $QP_DATA_DIR/qpb1_hostkasituke.kur
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$KINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+#000001 ADD hayashi 2007/07/24 END
+
+#000001 MOD hayashi 2007/07/24 START
+#$LOGWRITE "$MODULE" I "終了:ホスト貸付データロードファイル処理１" "$USERKEY"   # 終了メッセージの出力
+$LOGWRITE "$MODULE" I "終了:ホスト貸付データリカバリ処理" "$USERKEY"   # 終了メッセージの出力
+#000001 MOD hayashi 2007/07/24 END
+exit 0                                           # 正常終了
+

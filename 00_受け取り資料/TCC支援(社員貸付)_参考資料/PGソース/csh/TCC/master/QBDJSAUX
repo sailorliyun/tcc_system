@@ -1,0 +1,65 @@
+#!/bin/csh
+#set   SHELL_NAME = $0
+setenv JOBNET_ID    QBDS04UX
+setenv JOB_ID       QBDJSAUX
+setenv USERKEY      QBDJSAUX
+set    MODULE     = QBDJSAUX
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    qbwdir     = ($QB_DATA_DIR/qb/QBWORK)
+
+$LOGWRITE "$MODULE" I "START : 業務委託受付状況データ作成" "$USERKEY"
+echo  "START : 業務委託受付状況データ作成"
+#-----------------------------------------------------------#
+#   PKG       業務委託受付状況データ作成
+#-----------------------------------------------------------#
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "QBAP_SDBT350PKG.QBAP_SDBT35001('$JOBNET_ID','$JOB_ID','$qbwdir','QBAP_SDBT350PKG.txt')"
+set rc = $status
+setenv NLS_LANG  Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE " E "ERROR : 業務委託受付状況データ作成 RC=[$rc]" "$USERKEY"
+    echo  "QBAP_SDBT350PKG ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+#-----------------------------------------------------------#
+#   EXE       業務委託受付状況データ加工
+#-----------------------------------------------------------#
+setenv INFILE    $qbwdir/QBAP_SDBT350PKG.txt
+setenv OTFILE1   $qbwdir/qbab_sdbt350o01.dat
+setenv OTFILE2   $qbwdir/qbab_sdbt350o02.dat
+setenv NLS_LANG  Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qbab_sdbt350.exe
+set rc = $status
+setenv NLS_LANG  Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then 
+    $LOGWRITE "$MODULE " E "ERROR : 業務委託受付状況データ加工 RC=[$rc]" "$USERKEY"
+    echo "QBAB_SDBT350 ABNORMAL ENDED : RC=[$rc]" 
+    exit(1) 
+endif 
+#-----------------------------------------------------------#
+cp -p $qbwdir/qbab_sdbt350o01.dat $qbwdir/QBAV_CEnt350.dat
+set rc = $status
+if ( $rc != 0 ) then 
+    $LOGWRITE "$MODULE " E "ERROR : 業務委託受付状況データ cp RC=[$rc]" "$USERKEY"
+    echo "cp ABNORMAL ENDED : RC=[$rc]" 
+    exit(1) 
+endif 
+
+#-----------------------------------------------------------#
+#   PKG       業務委託受付状況個別データ
+#-----------------------------------------------------------#
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "QBAP_SDBT350PKG.QBAP_SDBT35002('$JOBNET_ID','$JOB_ID','$qbwdir','qbab_sdbt350o02.dat')"
+set rc = $status
+setenv NLS_LANG  Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE " E "ERROR : 業務委託受付状況個別データ RC=[$rc]" "$USERKEY"
+    echo  "QBAP_SDBT350PKG ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)

@@ -1,0 +1,8 @@
+MainModule = 22, 22, 795, 665, 
+MainModule2 = 44, 44, 1028, 236, C
+frmQPAV_CEnt080 = 44, 44, 817, 687, , 22, 22, 795, 665, C
+frmQPAV_CEnt081 = 27, 19, 800, 662, , 44, 44, 817, 687, C
+frmQPAV_CEnt082 = 88, 88, 861, 731, , 66, 66, 839, 709, C
+QSAV_SysErr = 0, 0, 0, 0, C, 176, 176, 832, 614, C
+SprConstants = 0, 0, 0, 0, C
+OraConst = 0, 0, 0, 0, C

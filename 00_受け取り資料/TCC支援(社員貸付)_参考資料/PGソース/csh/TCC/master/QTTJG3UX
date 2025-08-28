@@ -1,0 +1,86 @@
+#!/bin/csh
+#　スクリプト名  ： QTTJG3UX
+#　 機  能       ： キャッシング明細ＤＢレコード管理
+#　 作成者       ： ＦＩＰ．横山
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QTTE02UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QTTJG3UX'                         # ユーザキー
+set    HUL_DIR    = /d361/UFS/data/qta/fromhost
+set    DAT_DIR    = /d361/UFS/data/qta/dat
+set    CDBK_DIR   = /d361/UFS/data/qta/backup
+
+#########################################
+# STEP-1  データコピー                  #
+#########################################
+
+set MODULE = 'SHELL'
+set KINOU  = 'キャッシング明細ＨＵＬＦＴデータバックアップ処理'
+
+set year   = `date +%y`                            #処理年
+set month  = `date +%m`                            #処理月
+set day    = `date +%d`                            #処理日
+set hour   = `date +%H`                            #処理時
+set minute = `date +%M`                            #処理分
+set second = `date +%S`                            #処理秒
+
+set cpdate = {$year}{$month}{$day}{$hour}{$minute}{$second}
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+
+cp -f  $HUL_DIR/O.F.QW96.hft $CDBK_DIR/cdmeisai$cpdate.txt
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+
+
+#########################################
+# STEP-2  データコピー                  #
+#########################################
+
+set MODULE = 'SHELL'
+set KINOU  = 'キャッシング明細ＨＵＬＦＴバックアップデータ期日管理処理'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+
+#--- 当月から７ヶ月前の年月を算出 ---#
+
+@ month = $month - 7
+if ($month == 0) then
+    @ month = 12
+endif
+if ($month < 0) then
+    @ month = 12 + $month
+endif
+if ($month >= 6) then
+   @ year --
+endif
+if ($month < 10) then
+    set rmdate = {$year}0{$month}
+else
+    set rmdate = {$year}{$month}
+endif
+
+#--- ７ヶ月前の年月のファイルがあるか確認後、削除 ---#
+
+ls $CDBK_DIR/cdmeisai{$rmdate}*.txt
+
+set rc = $status
+if ($rc == 0 ) then
+    rm -f $CDBK_DIR/cdmeisai{$rmdate}*.txt
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+exit(0)

@@ -1,0 +1,189 @@
+#!/bin/csh
+# 　スクリプト名 ： QLDJY1UX
+#　 機  能       ： 信用情報報告結果反映・HULHT送信
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 	# シェル名
+setenv JOB_ID       $SHELL_NAME:t                      	# ジョブ名
+setenv JOBNET_ID   'QLDY11UX'				# ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        	# ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           	# ログ出力モジュール
+set    USERKEY    = 'QLDJY1UX'                   	# ユーザキー
+set    KINOU      = '信用情報報告結果反映・HULFT送信' 	# 機能
+
+
+set    FTP_FILE_FOLDER		= /d041/UFS/data/qv/FTP/snd		# FTファイル格納フォルダー
+set    FTP_START_FILE_PTN	= 'ftpstart_*'				# FTP開始ファイルパターン(ワイルドカード)
+set    FTP_END_FILE_NAME	= 'ftpend_'				# FTP完了ファイル名
+
+
+set    SEND_START_FILE_DIR	= "/d041/UFS/data/qv/FTP"		# 配信起動判定ファイル格納フォルダー
+set    SEND_START_FILE_NAME	= "sendStartFile"			# 配信起動判定ファイル名
+
+set    SEND_START_FILE	= $SEND_START_FILE_DIR/$SEND_START_FILE_NAME	# 配信起動判定ファイル
+
+set    FTP_FOLDER	= $FTP_FILE_FOLDER				# FTP用フォルダー
+set    KEEP_FOLDER	= $QV_DATA_DIR'/qv/qvz/snd'			# 保管用フォルダー
+
+set    HULFT_DIR  	= '/s030/UFS/fromhost/qv/snd'        		# HULFTファイル格納フォルダー
+set    HULFT_NAME	= 'OFQA85'					# HULFT名
+set    HULFT_FILE	= "$HULFT_DIR/$HULFT_NAME"			# HULFT配信ファイル
+
+set    MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#################################################
+# STEP-1  HULFT配信ファイルが存在していたら削除 #
+#################################################
+if ( -e $HULFT_FILE ) then
+	rm -f $HULFT_FILE
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE  "$MODULE"  E  "失敗:HULFT配信ファイル削除  RC=[$rc]"  "$USERKEY"
+	    exit  1                                      			# 異常終了
+	endif
+endif
+
+#################################################
+# STEP-2  HULFT配信ファイルを作成               #
+#################################################
+touch $HULFT_FILE
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:HULFT配信ファイル作成  RC=[$rc]"  "$USERKEY"
+    exit  1                                      			# 異常終了
+endif
+
+########################################################
+# STEP-3  FTP開始ファイル名取得                          #
+########################################################
+if ( -d $FTP_FILE_FOLDER ) then
+	set FTP_START_FILE_NAME = `ls -t $FTP_FILE_FOLDER/$FTP_START_FILE_PTN`
+else
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU FTP格納フォルダーが存在しない"  "$USERKEY"
+	exit  1                                     # 異常終了
+endif
+
+if( $#FTP_START_FILE_NAME < 1) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU FTP開始ファイルが存在しない"  "$USERKEY"
+	exit  1                                     # 異常終了
+endif
+set FTP_START_FILE_NAME = $FTP_START_FILE_NAME[1]:t
+
+#################################################
+# STEP-4  対象ファイル一覧を作成日の昇順で取得  #
+#################################################
+set SEND_FILES =  `ls -tr $FTP_FOLDER`
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:対象ファイル抽出 1 RC=[$rc]"  "$USERKEY"
+    exit  1                                      			# 異常終了
+endif
+
+
+#################################################
+# STEP-5  HULFT配信ファイルを作成               #
+#################################################
+set FTP_START_FLAG = 0
+foreach f ( $SEND_FILES )
+	if ( $FTP_START_FLAG == 0 ) then
+		if ( $f != $FTP_START_FILE_NAME ) 	then	#FTP開始ファイル以外
+			if ( -f $FTP_FOLDER/$f )	then	#普通のファイルならゴミファイルとみなし削除
+				rm -f  $FTP_FOLDER/$f
+				set rc = $status
+				if ( $rc != 0 ) then
+			    		$LOGWRITE  "$MODULE"  E  "失敗:対象外ファイル削除失敗  RC=[$rc]"  "$USERKEY"
+			    		exit  1                                      			# 異常終了
+				endif
+			endif
+		else
+			if ( -f $FTP_FOLDER/$f )	then	#FTP開始ファイルを削除
+				rm -f  $FTP_FOLDER/$f
+				set rc = $status
+				if ( $rc != 0 ) then
+			    		$LOGWRITE  "$MODULE"  E  "失敗:FTP開始ファイル削除失敗  RC=[$rc]"  "$USERKEY"
+			    		exit  1                                      			# 異常終了
+				endif
+				set FTP_START_FLAG = 1
+			endif
+		endif
+	else
+		if (( $f !~ $FTP_END_FILE_NAME ) && ( -f $FTP_FOLDER/$f ))	then	#FTP完了ファイル以外なら複写
+			cat $FTP_FOLDER/$f >> $HULFT_FILE
+			set rc = $status
+			if ( $rc != 0 ) then
+		    		$LOGWRITE  "$MODULE"  E  "失敗:HULFT配信ファイル追加作成  RC=[$rc]"  "$USERKEY"
+		    		exit  1                                      			# 異常終了
+			endif
+		endif
+	endif
+end
+
+######################################################
+# STEP-6  報告結果ファイルを保管用フォルダーへ移動   #
+######################################################
+if (! -d $KEEP_FOLDER ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:保管用フォルダーが存在しない"  "$USERKEY"
+	exit  1                                      			# 異常終了
+endif
+
+######################################################
+# STEP-7  対象ファイル一覧を作成日の昇順で再度取得   #
+######################################################
+set SEND_FILES =  `ls -tr $FTP_FOLDER`
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:対象ファイル抽出 2 RC=[$rc]"  "$USERKEY"
+    exit  1                                      			# 異常終了
+endif
+
+foreach f ( $SEND_FILES )
+	if (( $f !~ $FTP_END_FILE_NAME ) && ( -f $FTP_FOLDER/$f ))	then	#FTP完了ファイル以外なら移動
+		mv -f $FTP_FOLDER/$f $KEEP_FOLDER
+		set rc = $status
+		if ( $rc != 0 ) then
+	    	$LOGWRITE  "$MODULE"  E  "失敗:報告結果ファイル移動  RC=[$rc]"  "$USERKEY"
+	    	exit  1                                      			# 異常終了
+		endif
+	endif
+end
+
+######################################################
+# STEP-8  HULFT送信                                  #
+######################################################
+utlsend  -f $HULFT_NAME -sync
+set rc = $status
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:HULFT配信  RC=[$rc]"  "$USERKEY"
+	exit  1                                      			# 異常終了
+endif
+
+######################################################
+# STEP-9  FTP完了ファイルの削除                      #
+######################################################
+rm -f $FTP_FILE_FOLDER/$FTP_END_FILE_NAME
+set rc = $status
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:FTP完了ファイルの削除  RC=[$rc]"  "$USERKEY"
+	exit  1                                      			# 異常終了
+endif
+
+######################################################
+# STEP-10  配信起動判定ファイルの削除                #
+######################################################
+rm -f $SEND_START_FILE
+set rc = $status
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:FTP配信起動判定ファイルの削除  RC=[$rc]"  "$USERKEY"
+	exit  1                                      			# 異常終了
+endif
+
+######################################################
+# STEP-99  終了処理                                  #
+######################################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了

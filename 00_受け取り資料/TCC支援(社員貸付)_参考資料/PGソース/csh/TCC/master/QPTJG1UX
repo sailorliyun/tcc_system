@@ -1,0 +1,357 @@
+#!/bin/csh
+#　スクリプト名  ： QPTJG1UX
+#　 機  能       ： 社員マスタ更新ロード
+#　 作成者       ： FIP
+#
+#-------------------------------------------------------------------------
+#          修  正  履  歴
+# 管理No              修正内容                    担当者      修正日付
+# TR0601-005          エラーログ不具合横展開      NBC野村     06.12.18
+#  000001             ﾛｰﾀﾞｰ後ｲﾝﾃﾞｯｸｽﾁｪｯｸ追加      hayashi     2007/07/13
+#  000002             ネット名の修正              hayashi     2007/08/17
+#  0807073            非互換対応               NBC.SHIBUICHI  2009/03/29
+#  0808052            非互換対応               NBC.SHIBUICHI  2009/03/29
+# TR0910-002       社員マスタ月次登録処理改善  imz.YOSHIDA    2011/10/06
+#-------------------------------------------------------------------------#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+#000002 MOD hayashi 2007/08/17 START
+#setenv JOBNET_ID   'QPDGA1UX'                          # ジョブネット名
+setenv JOBNET_ID   'QPTGA1UX'                          # ジョブネット名
+#000002 MOD hayashi 2007/08/17 END
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPTJG1UX'                         # ユーザキー
+set    KINOU      = '社員マスタ更新ロード用シェル'
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+#set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_DATA_DIR  = $QV_DATA_DIR/qp                  #TMP FILE DIR
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 END
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+# 000001 hayashi add 2007/07/13 start
+set TABLE_NAME = QPAC_SYAINM            # 対象テーブル名
+# 000001 hayashi add 2007/07/13 end
+
+# DEL TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+##      レイアウト変更に伴う修正　2005/6/25 START
+##########################################
+## STEP-0 社員マスタファイルコピー       #
+##########################################
+#
+#set MODULE = 'SHELL'
+#$LOGWRITE "$MODULE" I "開始:社員貸付・社員マスタファイルコピー" "$USERKEY"     # 開始メッセージの出力
+#
+#######  cp $QP_HUL_DIR/zinzihft.dat  $QP_DATA_DIR/zinzihft.dat
+#        cp $QP_HUL_DIR/zinzihft.dat  $QP_DATA_DIR/zinzihftnew.dat
+#$LOGWRITE "$MODULE" I "終了:社員貸付・社員マスタファイルコピー" "$USERKEY"     # 開始メッセージの出力
+##########################################
+## STEP-1 人事マスタデータレイアウト変換 #
+##########################################
+#
+#set MODULE = 'COBOL'
+#$LOGWRITE "$MODULE" I "開始:社員マスタハルフトデータレイアウト変換" "$USERKEY"     # 開始メッセージの出力
+#
+#set PROGRAM = $EXE_DIR/qpab_s000010.exe
+#
+#if ( -x $PROGRAM ) then
+#    #  ファイル識別子の設定
+#    setenv INFILE   $QP_DATA_DIR/zinzihftnew.dat
+#    setenv OTFILE   $QP_DATA_DIR/zinzihft.dat
+#    #
+#    #
+#    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+#    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+#    set rc = $status                             # リターンステータス待避
+#    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+#else
+#    $LOGWRITE "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+#    exit 1                                       # 異常終了
+#endif
+#
+#if ( $rc != 0 ) then                              # リターンステータス判定
+#
+##TR0601-005 ADD START          06.12.15
+#    set MSG = "失敗:社員マスタハルフトデータレイアウト変換 RC=[$rc]"
+#    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+##TR0601-005 ADD END            06.12.15
+#
+#    exit  1                                      # 異常終了
+#endif
+#$LOGWRITE "$MODULE" I "終了:社員マスタハルフトデータレイアウト変換" "$USERKEY"     # 開始メッセージの出力
+#
+##      レイアウト変更に伴う修正　2005/6/25 END
+#
+##########################################
+## STEP-2 人事マスタデータソート         #
+##########################################
+#
+#set MODULE = 'COBOL'
+#$LOGWRITE "$MODULE" I "開始:社員マスタ更新１・ハルフトデータソート" "$USERKEY"     # 開始メッセージの出力
+#
+##請求抽出Ｆソート1抽出ファイルとソート用テンポラリ領域の作成
+#touch $QP_DATA_DIR/zinzim.sort_wk
+#touch $QP_DATA_DIR/zinzim.sort_tmp
+#rm    $QP_DATA_DIR/zinzim.sort_wk
+#
+#set PROGRAM = $EXE_DIR/qpab_s000100.exe
+#
+#if ( -x $PROGRAM ) then
+#    #  ファイル識別子の設定
+#    setenv INFILE   $QP_DATA_DIR/zinzihft.dat
+#    setenv OTFILE   $QP_DATA_DIR/zinzisort.dat
+#    setenv SORTWK   $QP_DATA_DIR/zinzisort.sort_wk
+#    #
+#    #
+#    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+#    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+#    set rc = $status                             # リターンステータス待避
+#    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+#else
+#    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+#    exit 1                                       # 異常終了
+#endif
+#
+#if ( $rc != 0 ) then                              # リターンステータス判定
+#
+##TR0601-005 ADD START          06.12.15
+#    set MSG = "失敗:社員マスタ更新１・ハルフトデータソート RC=[$rc]"
+#    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+##TR0601-005 ADD END            06.12.15
+#
+#    exit  1                                      # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:開始:社員マスタ更新１・ハルフトデータソート" "$USERKEY"     # 終了メッセージの出力
+#
+##########################################
+## STEP-3 社員マスタデータ抽出           #
+##########################################
+#
+#set MODULE = 'COBOL'
+#$LOGWRITE "$MODULE" I "開始:社員マスタ更新２・社員マスタデータ抽出" "$USERKEY"     # 開始メッセージの出力
+#
+##請求抽出Ｆソート1抽出ファイルとソート用テンポラリ領域の作成
+#
+#
+#
+#set PROGRAM = $EXE_DIR/qpab_s000110.exe
+#if ( -x $PROGRAM ) then
+#    #
+#    #  ファイル識別子の設定
+#    setenv OTFILE   $QP_DATA_DIR/prezinzim.dat
+#    #
+#    #
+#    #
+#    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+#    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+#    set rc = $status                             # リターンステータス待避
+#    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+#else
+#    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+#    exit 1                                       # 異常終了
+#endif
+#
+#if ( $rc != 0 ) then                              # リターンステータス判定
+#    $LOGWRITE "$MODULE" E "失敗:社員マスタ更新２・社員マスタデータ抽出" "$USERKEY"
+#    exit  1                                      # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:社員マスタ更新２・社員マスタデータ抽出" "$USERKEY"     # 終了メッセージの出力
+#
+##########################################
+## STEP-4 社員マスタデータファイルソート #
+##########################################
+#
+#set MODULE = 'COBOL'
+#$LOGWRITE "$MODULE" I "開始:社員マスタ更新３・抽出データソート" "$USERKEY"     # 開始メッセージの出力
+#
+#
+#set PROGRAM = $EXE_DIR/qpab_s000120.exe
+#if ( -x $PROGRAM ) then
+#    #
+#    #  ファイル識別子の設定
+#    setenv INFILE   $QP_DATA_DIR/prezinzim.dat
+#    setenv OTFILE   $QP_DATA_DIR/prezinzisort.dat
+#    setenv SORTWK   $QP_DATA_DIR/prezinzisort.sort_wk
+#    #
+#    #
+#    #
+#    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+#    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+#    set rc = $status                             # リターンステータス待避
+#    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+#else
+#    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+#    exit 1                                       # 異常終了
+#endif
+#
+#if ( $rc != 0 ) then                              # リターンステータス判定
+#    $LOGWRITE "$MODULE" E "失敗:社員マスタ更新３・抽出データソート" "$USERKEY"
+#    exit  1                                      # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:社員マスタ更新３・抽出データソート" "$USERKEY"     # 終了メッセージの出力
+#
+#
+#########################################
+## STEP-5 ファイルマージ                #
+#########################################
+#
+#set MODULE = 'COBOL'
+#$LOGWRITE "$MODULE" I "開始:社員マスタ更新４・ファイルマージ" "$USERKEY"     # 開始メッセージの出力
+#
+#
+#set PROGRAM = $EXE_DIR/qpab_s000130.exe
+#if ( -x $PROGRAM ) then
+#    #
+#    #  ファイル識別子の設定
+#    setenv INFIL1   $QP_DATA_DIR/zinzisort.dat
+#    setenv INFIL2   $QP_DATA_DIR/prezinzisort.dat
+#    setenv OTFILE   $QP_DATA_DIR/zinzim.dat
+#    #
+#    #
+#    #
+#    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+#    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+#    set rc = $status                             # リターンステータス待避
+#    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+#else
+#    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+#    exit 1                                       # 異常終了
+#endif
+#
+#if ( $rc != 0 ) then                              # リターンステータス判定
+#    $LOGWRITE "$MODULE" E "失敗:社員マスタ更新４・ファイルマージ" "$USERKEY"
+#    exit  1                                      # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:社員マスタ更新４・ファイルマージ" "$USERKEY"     # 終了メッセージの出力
+# DEL TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 END
+
+########################################
+# STEP-6 社員マスタDELETE              #
+########################################
+
+set MODULE = 'COBOL'
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+#$LOGWRITE "$MODULE" I "開始:社員マスタ更新５・社員マスタDELETE" "$USERKEY"     # 開始メッセージの出力
+$LOGWRITE "$MODULE" I "開始:社員マスタ更新１・社員マスタDELETE" "$USERKEY"     # 開始メッセージの出力
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 END
+
+set PROGRAM = $EXE_DIR/qpab_s000140.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    #
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+#    $LOGWRITE "$MODULE" E "失敗:社員マスタ更新５・社員マスタDELETE" "$USERKEY"
+    $LOGWRITE "$MODULE" E "失敗:社員マスタ更新１・社員マスタDELETE" "$USERKEY"
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+    exit  1                                      # 異常終了
+endif
+
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+#$LOGWRITE "$MODULE" I "終了:社員マスタ更新５・社員マスタDELETE" "$USERKEY"     # 終了メッセージの出力
+$LOGWRITE "$MODULE" I "終了:社員マスタ更新１・社員マスタDELETE" "$USERKEY"     # 終了メッセージの出力
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 END
+
+########################################
+# STEP-7 社員マスタデータロード        #
+########################################
+
+set MODULE = 'SQL*LOADER'
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+#$LOGWRITE "$MODULE" I "開始:社員マスタ更新６・社員マスタデータロード" "$USERKEY"    # 開始メッセージの出力
+$LOGWRITE "$MODULE" I "開始:社員マスタ更新２・社員マスタデータロード" "$USERKEY"    # 開始メッセージの出力
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 END
+
+#外字を含むﾎｽﾄﾃﾞｰﾀを従来型ﾊﾟｽﾛｰﾄﾞでﾛｰﾄﾞ
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+## SQL*LOADERの実行 ###
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                           \
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                \
+#   control = $LDR_CTRL_DIR/qpb2_zinzim.sql               \
+#   data    = $QP_DATA_DIR/zinzim.dat                     \
+#   log     = $LDR_LOG_DIR/qpb2_zinzim.log                \
+#   direct=true                                           \
+#             > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                \
+   control = $LDR_CTRL_DIR/qpb2_zinzim.sql               \
+   data    = $QP_DATA_DIR/zinzim.dat                     \
+   log     = $LDR_LOG_DIR/qpb2_zinzim.log                \
+             > $LOGFILE
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 END
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+
+#外字を含むﾎｽﾄﾃﾞｰﾀを従来型ﾊﾟｽﾛｰﾄﾞでﾛｰﾄﾞ
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    # MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+    #$LOGWRITE  "$MODULE"  E  "失敗:社員マスタ更新６・社員マスタデータロード  RC=[$rc]"  "$USERKEY"
+    $LOGWRITE  "$MODULE"  E  "失敗:社員マスタ更新２・社員マスタデータロード  RC=[$rc]"  "$USERKEY"
+    # MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 END
+    exit  1                                      # 異常終了
+endif
+# 000001 hayashi add 2007/07/13 start
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:データロード(sqlplus) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+    set MSG = "失敗:データロード(grep) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+# 000001 hayashi add 2007/07/13 end
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 START
+#$LOGWRITE "$MODULE" I "終了:社員マスタ更新６・社員マスタデータロード" "$USERKEY"    # 終了メッセージの出力
+$LOGWRITE "$MODULE" I "終了:社員マスタ更新２・社員マスタデータロード" "$USERKEY"    # 終了メッセージの出力
+# MOD TR0910-002 社員マスタ月次登録処理改善 imz.YOSHIDA 2011/10/06 END
+
+exit 0                                           # 正常終了
+

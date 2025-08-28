@@ -1,0 +1,77 @@
+#!/bin/csh
+# 　スクリプト名 ： QSTJ3IUX
+#　 機  能       ： 利用明細行ファイル最古データ抽出 &
+#                   利用明細行ファイル当月以降データ抽出
+#　 作成者       ： FIP
+#　 改造         ： ①2000/08/18 SQL*Loader入力ﾌｧｲﾙﾃﾞｨﾚｸﾄﾘ変更
+#　              ： ②2000/09/04 最古と当月以降抽出の分割(当月以降のみにする)
+#                                出力ﾌｧｲﾙの追加
+#                ： ③2000/12/20 当月以降ﾃﾞｰﾀを5分割から2分割へ変更
+#
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+#   00001    2006/11/28  imz.Yoshida    件数オーバーによる出力ファイル追加
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QST161UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSTJ3IUX'                         # ユーザキー
+set    KINOU      = '利用明細行ファイル吸い上げ（当月以降）'
+
+set    STEP_F     = $DATA4_DIR/${JOB_ID}_step.tmp
+set    BKUP_DIR   = /d320/UFS/shift_work
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+set sime  = 15                # 締日
+set wk_sime = $sime
+@ wk_sime ++    # 締の翌日
+
+if ( $wk_sime < 10 ) then
+	set wk_sime = 0$wk_sime
+endif
+
+###############################################
+# STEP-1 利用明細行ファイル当月以降データ抽出 #
+###############################################
+STEP_TOUGETU_PROC:
+
+setenv OTFILE  $BKUP_DIR/qtaf_riyougyou.dat.shiftbackup.1
+setenv OTFILE2 $BKUP_DIR/qtaf_riyougyou.dat.shiftbackup.2
+# 00001 mod imz.Yoshida 2006/11/28 コメント解除 start
+setenv OTFILE3 $BKUP_DIR/qtaf_riyougyou.dat.shiftbackup.3
+setenv OTFILE4 $BKUP_DIR/qtaf_riyougyou.dat.shiftbackup.4
+# 00001 mod imz.Yoshida 2006/11/28 コメント解除 end
+#setenv OTFILE5 $BKUP_DIR/qtaf_riyougyou.dat.shiftbackup.5
+setenv SIMEYOKU $wk_sime
+set PROGRAM = $EXE_DIR/qtab_s001350.exe        
+if ( -x $PROGRAM ) then        
+	setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+	$PROGRAM | sjtoeuc >>& $LOGFILE            # プログラム起動
+	set rc = $status                           # リターンステータス待避
+	setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+	$LOGWRITE $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'  
+	exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                               # リターンステータス判定
+	set MSG = "失敗:$KINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                    # 異常終了
+endif
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

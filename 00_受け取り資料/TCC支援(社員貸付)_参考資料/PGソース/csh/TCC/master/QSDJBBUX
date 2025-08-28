@@ -1,0 +1,22 @@
+#!/bin/csh
+#
+#  日次フルバックアップ (QSDJBBUX)
+#
+#     機  能：
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+set  SHELL_NAME = $0                                    # シェル名
+set  MODULE   =  $SHELL_NAME:t                          # モジュール名
+set  LOGFILE  =  $USER_LOG_DIR/db_ope.log               # ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ログ出力用共通シェル
+set  DEVICE_FILE = /usr/symmapps/tcc.bcv                # ﾃﾞﾊﾞｲｽファイル名
+
+$LOGWRITE  "日次フルバックアップ　ダミージョブ　開始" >> $LOGFILE
+
+$LOGWRITE  "日次フルバックアップ　ダミージョブ　終了" >> $LOGFILE
+
+exit 0
+

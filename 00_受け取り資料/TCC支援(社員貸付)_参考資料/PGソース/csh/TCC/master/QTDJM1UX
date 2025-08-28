@@ -1,0 +1,108 @@
+#!/bin/csh
+#   スクリプト名： QTDJM1UX
+#   機  能	： ＰＩＮ対応履歴データバックアップ
+#   作成者	： ＦＩＰ．横山
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QTD402UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY     'QTDJM1UX'                          # ユーザキー
+set    KINOU      = 'ＰＩＮ対応履歴データバックアップ' # 機能名
+set    QT_DATA_DIR  = /d321/UFS/data/qt                # ＰＩＮ対応履歴データ保存先
+set    QT_HUL_DIRR  = /d321/UFS/fromhost/qt/rcv        # HULFT 受信ディレクトリ
+set    QT_BACK_DIR  = /d321/UFS/data/qt/bk             # ＰＩＮ対応履歴データバックアップ
+
+set MODULE = 'SHELL'
+# 開始メッセージの出力
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"
+
+
+#########################################
+# STEP-0 環境確認                       #
+#########################################
+
+# サブプログラム確認
+set PROGRAM = $EXE_DIR/qtab_s006000.csh
+if !( -x $PROGRAM ) then
+
+	rm    $QT_DATA_DIR/qtaf_ofqa57.dat
+	touch $QT_DATA_DIR/qtaf_ofqa57.dat
+
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU プログラムが見つかりません[$PROGRAM]" "$USERKEY"
+	exit 1
+
+endif
+
+
+#########################################
+# STEP-1 受信ＰＩＮ対応履歴データ確認   #
+#        存在しない場合0件で作成        #
+#########################################
+
+### アクティブＰＩＮ対応履歴データ（OFQA57.hft）
+if !( -f $QT_HUL_DIRR/OFQA57.hft ) then
+
+	$LOGWRITE "$MODULE" W "警告:$KINOU  受信ＰＩＮ対応履歴データ OFQA57.hftが存在しない為作成" "$USERKEY"
+
+	touch $QT_HUL_DIRR/OFQA57.hft
+	set rc = $status
+
+	if ( $rc != 0 ) then
+
+		rm    $QT_DATA_DIR/qtaf_ofqa57.dat
+		touch $QT_DATA_DIR/qtaf_ofqa57.dat
+
+		# 異常終了メッセージの出力
+		$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信ＰＩＮ対応履歴データ OFQA57.hft作成不可 RC=[$rc]" "$USERKEY"
+		exit 1
+
+	endif
+
+endif
+
+
+#########################################
+# STEP-2 ＰＩＮ対応履歴データ移動       #
+#########################################
+
+### HULFT受信先からＰＩＮ処理用ディレクトリにＰＩＮ対応履歴データを移動
+cp $QT_HUL_DIRR/OFQA57.hft $QT_DATA_DIR/qtaf_ofqa57.dat
+set rc = $status
+
+if ( $rc != 0 ) then
+
+	rm    $QT_DATA_DIR/qtaf_ofqa57.dat
+	touch $QT_DATA_DIR/qtaf_ofqa57.dat
+
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU ＰＩＮ対応履歴データ移動エラー RC=[$rc]" "$USERKEY"
+	exit 1
+
+endif
+
+
+#############################################
+# STEP-3 ＰＩＮ対応履歴データバックアップ   #
+#############################################
+
+$PROGRAM  $JOB_ID  $JOBNET_ID  $QT_DATA_DIR  $QT_BACK_DIR
+set rc = $status
+
+if ( $rc != 0 ) then
+
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU バックアップ移動エラー RC=[$rc]" "$USERKEY"
+	exit 1
+
+endif
+
+
+### 終了メッセージの出力
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"
+exit 0

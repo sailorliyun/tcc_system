@@ -1,0 +1,412 @@
+000100 IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 QPAB-S000200.
+      ****************************************************************
+      *   システムコード       :  Ｑ                                 *
+      *   サブシステムコード   :  ＰＡ                               *
+      *   モジュール           :  控除テーブル更新処理（月次）       *
+      *   作成者               :  ＦＩＰ                             *
+      *   作成日               :  H.13.10.09                         *
+      *   処理概要             :  控除テーブル更新のための           *
+      *                           パッケージを呼び出す。             *
+      *                           融資区分が給与のデータを更新       *
+      *                                                              *
+      *--------------------------------------------------------------*
+      *                  修  正  履  歴                              *
+      *   管理NO   修正理由                      担当者   修正日付   *
+      *                                                              *
+      *                                                              *
+      ****************************************************************
+       ENVIRONMENT                 DIVISION.
+       CONFIGURATION               SECTION.
+       SOURCE-COMPUTER.            FACOM.
+       OBJECT-COMPUTER.            FACOM.
+       SPECIAL-NAMES.
+           CONSOLE                 IS  DSP.
+       INPUT-OUTPUT                SECTION.
+       FILE-CONTROL.
+      *----------------------------------------*
+      *    ファイルなし                        *
+      *----------------------------------------*
+      *
+      /*
+       DATA                        DIVISION.
+       FILE                        SECTION.
+      *----------------------------------------*
+      *    ファイルなし                        *
+      *----------------------------------------*
+      *
+      /
+       WORKING-STORAGE             SECTION.
+      *
+      ***************************************
+      *    ／  プログラムスイッチ領或  ／   *
+      ***************************************
+       01  SW-AREA.
+           03    SW-END            PIC  X(01)  VALUE "0".
+           03    SW-ABEND          PIC  X(01)  VALUE "0".
+           03    SW-DATAERR        PIC  X(01)  VALUE "0".
+           03    SW-OUT1           PIC  X(01)  VALUE "0".
+      *
+      ***************************************
+      *    ／  ファイルスタータス領域  ／   *
+      ***************************************
+       01  STATUS-AREA.
+           03    STATUS-OT-FILE    PIC  X(02).
+      ***************************************
+      *    ／  カウント領或  ／             *
+      ***************************************
+       01  CNT-AREA.
+           03    CNT-IN1-REC       PIC  9(07)  COMP-3  VALUE ZERO.
+           03    CNT-OUT1-OUT1     PIC  9(07)  COMP-3  VALUE ZERO.
+      ***************************************
+      *    ／  メッセージ編集領或  ／       *
+      ***************************************
+       01  DSP-MODULEID            PIC  X(12)  VALUE "QPAB_S000200".
+      *--------------------------*
+      *    ＝  処理開始  ＝      *
+      *--------------------------*
+       01  DSP-MSG1.
+           03  FILLER               PIC  X(08)  VALUE 
+               "START : ".
+           03  MSG1-TIME            PIC  X(08).
+      *--------------------------*
+      *    ＝  処理終了  ＝      *
+      *--------------------------*
+       01  DSP-MSG2.
+           03  FILLER               PIC  X(08)  VALUE 
+               "END   : ".
+           03  MSG2-TIME            PIC  X(08).
+      *--------------------------*
+      *    ＝  処理件数  ＝
+      *--------------------------*
+       01  DSP-MSG3.
+           03  FILLER                  PIC  X(08)  VALUE
+               "OUT   : ".
+           03  MSG3-CNT1               PIC  ZZ,ZZZ,ZZ9.
+      *
+      ***************************************
+      *    ／  編集領或  ／                 *
+      ***************************************
+       01  ED-WORK.
+      *------------------------------*
+      *          日付の編集用        *
+      *------------------------------*
+           03    WK-DATE             PIC  9(08).
+           03    FILLER              REDEFINES   WK-DATE.
+             05  WK-DATE-YYYY        PIC  9(04).
+             05  WK-DATE-MM          PIC  9(02).
+             05  WK-DATE-DD          PIC  9(02).
+           03    WK-ED-DATE.
+             05  WK-ED-DATE-YYYY     PIC  9(04).
+             05  FILLER              PIC  X(01)  VALUE "/".
+             05  WK-ED-DATE-MM       PIC  9(02).
+             05  FILLER              PIC  X(01)  VALUE "/".
+             05  WK-ED-DATE-DD       PIC  9(02).
+      *------------------------------*
+      *          時刻の編集用        *
+      *------------------------------*
+           03    WK-TIME             PIC  9(08).
+           03    FILLER              REDEFINES   WK-TIME.
+             05  WK-TIME-HH          PIC  9(02).
+             05  WK-TIME-MM          PIC  9(02).
+             05  WK-TIME-SS          PIC  9(02).
+           03    WK-ED-TIME.
+             05  WK-ED-TIME-HH       PIC  9(02).
+             05  FILLER              PIC  X(01)  VALUE ":".
+             05  WK-ED-TIME-MM       PIC  9(02).
+             05  FILLER              PIC  X(01)  VALUE ":".
+             05  WK-ED-TIME-SS       PIC  9(02).
+      *
+       01  WK-SQLERRML               PIC S9(04)
+                                     SIGN LEADING SEPARATE.
+       01  WK-SQLERRML-X             PIC  X(05).
+      *
+      ****************************************************************
+      * ORACLE HOST変数
+      ****************************************************************
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+       01  HOST-WORK.
+           03  SQLSTATE                 PIC  X(005).
+      *
+       01  HOST-CONNECT.
+           03  ENV-ORAUID               PIC  X(016).
+           03  ENV-ORAPWD               PIC  X(016).
+           03  ENV-ORASID               PIC  X(016).
+           03  ENV-JOBNETMEI            PIC  X(008).
+           03  ENV-JOBMEI               PIC  X(008).
+           03  ENV-USERKEY              PIC  X(020).
+      *
+      *
+       01  HOST-QSAP-DISPUPONCONS.
+           03  QSAP-MODULE-ID           PIC  X(020).
+           03  QSAP-MSG-KBN             PIC  X(001).
+           03  QSAP-MSG                 PIC  X(1024).
+      *
+       01  HWK-KIJITSUYM-S1             PIC  X(006).
+       01  HWK-KIJITSUYM-S2             PIC  X(006).
+       01  HWK-KIJITSUYM-T1             PIC  X(006).
+       01  HWK-KIJITSUYM-T2             PIC  X(006).
+       01  HWK-TABLEMEI                 PIC  X(020).
+      *
+      *
+      *------------------------------*
+      *   パッケージ引数             *
+      *------------------------------*
+       01  PKG-WORK.
+           03  PKG-SYORIKBN             PIC  X(01).
+           03  PKG-SYORIYM              PIC  X(06).
+           03  PKG-USERID               PIC  X(03).
+           03  PKG-COMPUTERNAME         PIC  X(06).
+           03  PKG-COUNT                PIC  9(08).
+           03  PKG-STATUS               PIC  X(02)  VALUE "00".
+      *
+      *
+           EXEC SQL END DECLARE SECTION END-EXEC.
+      *
+      *
+      ****************************************************************
+      * ORACLE SQL COMMUNICATIONS AREA
+      ****************************************************************
+           EXEC SQL INCLUDE SQLCA.COB END-EXEC.
+      *
+      *********************************************
+      *    ＬＩＮＫ－ＣＯＮＮＥＣＴ－ＡＲＥＡ     *
+      *********************************************
+       01  LINK-CONNECT-AREA.
+           03  LINK-SQLCODE            PIC S9(09) COMPUTATIONAL.
+           03  LINK-USERID             PIC  X(10).
+           03  LINK-USERID-LEN         PIC  9(02).
+           03  LINK-PASSWD             PIC  X(10).
+           03  LINK-PASSWD-LEN         PIC  9(02).
+           03  LINK-ORACLE             PIC  X(10).
+           03  LINK-ORACLE-LEN         PIC  9(02).
+      *
+      **********************************************
+      *    コンソールログ出力サブ・リンクエリア    *
+      **********************************************
+       01  LINK-CONS-AREA.
+           03  LINK-CONS-MODULEID      PIC  X(40).
+           03  LINK-CONS-MSGKBN        PIC  X(01).
+           03  LINK-CONS-MSG           PIC  X(1024).
+           03  LINK-CONS-STATUS        PIC  9(02).
+      *
+      *
+      /
+       PROCEDURE                     DIVISION.
+      ****************************************************************
+      *    (0.0)     プログラム  コントロール                        *
+      ****************************************************************
+       PROC-SECT                     SECTION.
+       PROC-START.
+      *
+      *    初期処理  [1.0]
+      *
+           PERFORM   INIT-PROC.
+      *
+      *    主処理    [2.0]
+      *
+           PERFORM   MAIN-PROC.
+      *
+      *    終了処理  [3.0]
+      *
+           PERFORM   FINAL-PROC.
+      *
+       PROC-EXIT.
+           EXIT       PROGRAM.
+      *
+      /***************************************************************
+      *    [1.0]     初期処理                                        *
+      ****************************************************************
+       INIT-PROC                     SECTION.
+      *
+      *##########################################################
+      *    オラクル使用時の定義                                 *
+      *##########################################################
+      *
+           EXEC   SQL
+               WHENEVER    SQLWARNING  DO  PERFORM  ORA-ERR-PROC
+           END-EXEC.
+      *
+           EXEC   SQL
+               WHENEVER    SQLERROR    DO  PERFORM  ORA-ERR-PROC
+           END-EXEC.
+      *
+           EXEC   SQL
+               WHENEVER NOT FOUND CONTINUE
+           END-EXEC.
+      *
+           MOVE    DSP-MODULEID         TO    LINK-CONS-MODULEID.
+      *
+      *-----<<ORACLE CONNECT>>-----*
+           CALL    "QTAB-CONNECT"      USING  LINK-CONNECT-AREA.
+      *
+           IF      LINK-SQLCODE        NOT =   ZERO
+      *-----<<ORACLE CONNECT ERR   END MESSAGE>>-----*
+               PERFORM TIME-EDIT-PROC
+               MOVE    WK-ED-TIME       TO    MSG2-TIME
+               MOVE    "I"              TO    LINK-CONS-MSGKBN
+               MOVE    DSP-MSG2         TO    LINK-CONS-MSG
+      *
+               PERFORM CONS-PROC
+               MOVE    099              TO    PROGRAM-STATUS
+               EXIT    PROGRAM
+           END-IF.
+      *
+      *
+       INIT-PROC-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    [2.0]     主処理                                          *
+      ****************************************************************
+       MAIN-PROC                     SECTION.
+      *
+      *##########################################################
+      *    パッケージに引渡す変数定義                           *
+      *##########################################################
+      *
+      *    処理区分（給与なので「１」を設定）
+           MOVE    "1"               TO  PKG-SYORIKBN.
+      *
+      *    処理日付（年月を取得）
+           EXEC  SQL
+               SELECT
+                   TO_CHAR(SYSDATE, 'YYYYMM')
+               INTO
+                   :PKG-SYORIYM
+               FROM
+                   DUAL
+           END-EXEC.
+      *
+      *    ユーザーＩＤ
+           MOVE    "FIP"             TO  PKG-USERID.
+      *
+      *    コンピュータ名
+           MOVE    "SYSTEM"          TO  PKG-COMPUTERNAME.
+      *
+      *
+      *
+      *##########################################################
+      *    パッケージ呼び出し                                   *
+      *##########################################################
+      *
+      *-----控除テーブル更新処理を行うパッケージを呼び出す-----*
+      *
+           EXEC SQL EXECUTE
+               BEGIN
+                   QPAP_Cent250PkG
+                       .QPAP_CEnt250GetKoujyo
+                           ( :PKG-SYORIKBN
+                            ,:PKG-SYORIYM
+                            ,:PKG-USERID
+                            ,:PKG-COMPUTERNAME
+                            ,:PKG-COUNT
+                            ,:PKG-STATUS);
+               END;
+           END-EXEC.
+      *
+      *
+      *-----パッケージエラー処理-----*
+           IF  PKG-STATUS  =  "99"
+               PERFORM  PKG-ERROR-PROC
+           END-IF.
+      *
+       MAIN-PROC-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    [3.0]     終了処理                                        *
+      ****************************************************************
+       FINAL-PROC                    SECTION.
+      *
+      *    処理件数メッセージ出力
+           MOVE    PKG-COUNT           TO      MSG3-CNT1.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG3            TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+
+      *    処理終了メッセージ出力
+           ACCEPT  WK-TIME             FROM    TIME.
+           MOVE    WK-TIME-HH          TO      WK-ED-TIME-HH.
+           MOVE    WK-TIME-MM          TO      WK-ED-TIME-MM.
+           MOVE    WK-TIME-SS          TO      WK-ED-TIME-SS.
+           MOVE    WK-ED-TIME          TO      MSG2-TIME.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+       FINAL-PROC-EXIT.
+           EXIT.
+      *
+      *
+      *
+      /***************************************************************
+      *    (C.0)   コンソールログ出力処理
+      ****************************************************************
+       CONS-PROC                       SECTION.
+      *
+      *    ＜＜コンソールログ出力サブ＞＞
+           CALL    "QTAB-CONSLOG"      USING   LINK-CONS-AREA.
+           IF      LINK-CONS-STATUS    =       ZERO
+      *
+      *            データベーストランザクションコミット
+                   EXEC SQL COMMIT WORK END-EXEC
+                   MOVE    000           TO      PROGRAM-STATUS
+           ELSE
+                   MOVE    099         TO      PROGRAM-STATUS
+                   EXIT    PROGRAM
+           END-IF.
+      *
+       CONS-PROC-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (C.1)   時間編集
+      ****************************************************************
+       TIME-EDIT-PROC                   SECTION.
+      *
+           ACCEPT  WK-TIME             FROM    TIME.
+           MOVE    WK-TIME-HH          TO      WK-ED-TIME-HH.
+           MOVE    WK-TIME-MM          TO      WK-ED-TIME-MM.
+           MOVE    WK-TIME-SS          TO      WK-ED-TIME-SS.
+      
+       TIME-EDIT-PROC-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (C.2)   ORACLE ERR 
+      ****************************************************************
+       ORA-ERR-PROC                  SECTION.
+      *
+           MOVE    "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE    SQLERRML            TO      WK-SQLERRML.
+           MOVE    WK-SQLERRML         TO      WK-SQLERRML-X.
+           STRING  WK-SQLERRML-X " " SQLERRMC
+                   DELIMITED  BY  "*"  INTO    LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+           MOVE    ZERO                TO      SQLCODE.
+      *
+           MOVE    099                 TO      PROGRAM-STATUS.
+           EXIT    PROGRAM.
+      *
+       ORA-ERR-PROC-EXIT.
+      /***************************************************************
+      *    (C.4)     パッケージエラー                                *
+      ****************************************************************
+       PKG-ERROR-PROC                 SECTION.
+      *
+           MOVE    "1"                 TO      SW-ABEND SW-END.
+      *
+           MOVE    "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE    "PKG QPAP_Cent250PkG INCOMPLETE"
+                                       TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+           MOVE    099                 TO      PROGRAM-STATUS.
+           EXIT    PROGRAM.
+      *
+       PKG-ERROR-PROC-EXIT.
+           EXIT.
+ 

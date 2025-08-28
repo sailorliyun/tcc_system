@@ -1,0 +1,10 @@
+frmQPAV_CEnt200 = 44, 44, 816, 627, C, 22, 22, 795, 665, C
+frmQPAV_CEnt201 = 66, 66, 838, 649, C, 44, 44, 817, 687, C
+MainModule = 22, 22, 795, 665, C
+QSAV_SysErr = 0, 0, 0, 0, C, 66, 66, 839, 709, C
+QPAV_Common = 44, 44, 1028, 236, C
+QPAV_Common2 = 66, 66, 1050, 258, C
+QPAV_Common1 = 88, 88, 1072, 280, C
+QPAV_Common3 = 110, 110, 882, 693, C
+SprConstants = 0, 0, 0, 0, C
+OraConst = 0, 0, 0, 0, C

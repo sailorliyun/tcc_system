@@ -1,0 +1,8 @@
+MainModule = 351, 0, 1076, 702, 
+frmQPAV_CEnt150 = 2, 0, 775, 702, , 0, 0, 1036, 665, C
+QSAV_SysErr = 0, 0, 0, 0, C, 88, 88, 828, 479, C
+QPAV_Common1 = 0, 0, 0, 0, C
+QPAV_Common = 0, 0, 0, 0, C
+QPAV_Common2 = 0, 0, 0, 0, C
+SprConstants = 0, 0, 0, 0, C
+OraConst = 0, 0, 0, 0, C

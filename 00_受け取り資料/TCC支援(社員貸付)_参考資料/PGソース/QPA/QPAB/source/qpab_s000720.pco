@@ -1,0 +1,548 @@
+000200 IDENTIFICATION                  DIVISION.
+       PROGRAM-ID.                     QPAB-S000720.
+      ****************************************************************
+      *   システムコード       :  Ｑ                                 *
+      *   サブシステムコード   :  ＰＡ                               *
+      *   モジュール           :  社員貸付・テーブル期日管理         *
+      *   作成者               :  ＦＩＰ                             *
+      *   作成日               :  H.13.10.16                         *
+      *   処理概要             :  各テーブルの期日管理を行う         *
+      *                           パッケージを呼び出す               *
+      *                           対象テーブルは保持期間10年のもの   *
+      *                                                              *
+      *--------------------------------------------------------------*
+      *                  修  正  履  歴                              *
+      *   管理NO            修正理由             担当者   修正日付   *
+      *   00001          利率期日管理廃止      nbc ishida 20080226   *
+      *--------------------------------------------------------------*
+      *更新日付  案件/障害番号    修正理由                           *
+      *20100225  0908047          グループ社員証書貸付帳票見直し2次  *
+      *                           分解利息テーブルの期日管理を行う   *
+      *                                                              *
+      ****************************************************************
+       ENVIRONMENT                 DIVISION.
+       CONFIGURATION               SECTION.
+       SOURCE-COMPUTER.            FACOM.
+       OBJECT-COMPUTER.            FACOM.
+       SPECIAL-NAMES.
+           CONSOLE                 IS  DSP.
+       INPUT-OUTPUT                SECTION.
+       FILE-CONTROL.
+      *----------------------------------------*
+      *    ファイルなし                        *
+      *----------------------------------------*
+      *
+      /*
+       DATA                        DIVISION.
+       FILE                        SECTION.
+      *----------------------------------------*
+      *    ファイルなし                        *
+      *----------------------------------------*
+      *
+      /
+       WORKING-STORAGE             SECTION.
+      *
+      ***************************************
+      *    ／  パッケージ名格納領域  ／     *
+      *        パッケージエラーの際に使用   *
+      ***************************************
+       01  WK-MODULENAME           PIC  X(50)  VALUE SPACE.
+      *
+      ***************************************
+      *    ／  プログラムスイッチ領或  ／   *
+      ***************************************
+       01  SW-AREA.
+           03    SW-END            PIC  X(01)  VALUE "0".
+           03    SW-ABEND          PIC  X(01)  VALUE "0".
+           03    SW-DATAERR        PIC  X(01)  VALUE "0".
+           03    SW-OUT1           PIC  X(01)  VALUE "0".
+      *
+      ***************************************
+      *    ／  ファイルスタータス領域  ／   *
+      ***************************************
+       01  STATUS-AREA.
+           03    STATUS-OT-FILE    PIC  X(02).
+      ***************************************
+      *    ／  カウント領或  ／             *
+      ***************************************
+       01  CNT-AREA.
+           03    CNT-IN1-REC       PIC  9(07)  COMP-3  VALUE ZERO.
+           03    CNT-OUT1-OUT1     PIC  9(07)  COMP-3  VALUE ZERO.
+      ***************************************
+      *    ／  メッセージ編集領或  ／       *
+      ***************************************
+       01  DSP-MODULEID            PIC  X(12)  VALUE "QPAB_S000720".
+      *--------------------------*
+      *    ＝  処理開始  ＝      *
+      *--------------------------*
+       01  DSP-MSG1.
+           03  FILLER               PIC  X(08)  VALUE 
+               "START : ".
+           03  MSG1-TIME            PIC  X(08).
+      *--------------------------*
+      *    ＝  処理件数  ＝      *
+      *--------------------------*
+       01  DSP-MSG2.
+           03  MSG2-TBLNAME         PIC  X(25).
+           03  MSG2-COUNT           PIC  X(08).
+      *--------------------------*
+      *    ＝  処理終了  ＝      *
+      *--------------------------*
+       01  DSP-MSG3.
+           03  FILLER               PIC  X(08)  VALUE 
+               "END   : ".
+           03  MSG3-TIME            PIC  X(08).
+      ***************************************
+      *    ／  編集領或  ／                 *
+      ***************************************
+       01  ED-WORK.
+      *------------------------------*
+      *          日付の編集用        *
+      *------------------------------*
+           03    WK-DATE             PIC  9(08).
+           03    FILLER              REDEFINES   WK-DATE.
+             05  WK-DATE-YYYY        PIC  9(04).
+             05  WK-DATE-MM          PIC  9(02).
+             05  WK-DATE-DD          PIC  9(02).
+           03    WK-ED-DATE.
+             05  WK-ED-DATE-YYYY     PIC  9(04).
+             05  FILLER              PIC  X(01)  VALUE "/".
+             05  WK-ED-DATE-MM       PIC  9(02).
+             05  FILLER              PIC  X(01)  VALUE "/".
+             05  WK-ED-DATE-DD       PIC  9(02).
+      *------------------------------*
+      *          時刻の編集用        *
+      *------------------------------*
+           03    WK-TIME             PIC  9(08).
+           03    FILLER              REDEFINES   WK-TIME.
+             05  WK-TIME-HH          PIC  9(02).
+             05  WK-TIME-MM          PIC  9(02).
+             05  WK-TIME-SS          PIC  9(02).
+           03    WK-ED-TIME.
+             05  WK-ED-TIME-HH       PIC  9(02).
+             05  FILLER              PIC  X(01)  VALUE ":".
+             05  WK-ED-TIME-MM       PIC  9(02).
+             05  FILLER              PIC  X(01)  VALUE ":".
+             05  WK-ED-TIME-SS       PIC  9(02).
+      *
+       01  WK-SQLERRML               PIC S9(04)
+                                     SIGN LEADING SEPARATE.
+       01  WK-SQLERRML-X             PIC  X(05).
+      *
+      ****************************************************************
+      * ORACLE HOST変数
+      ****************************************************************
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+       01  HOST-WORK.
+           03  SQLSTATE                 PIC  X(005).
+      *
+       01  HOST-CONNECT.
+           03  ENV-ORAUID               PIC  X(016).
+           03  ENV-ORAPWD               PIC  X(016).
+           03  ENV-ORASID               PIC  X(016).
+           03  ENV-JOBNETMEI            PIC  X(008).
+           03  ENV-JOBMEI               PIC  X(008).
+           03  ENV-USERKEY              PIC  X(020).
+      *
+      *
+       01  HOST-QSAP-DISPUPONCONS.
+           03  QSAP-MODULE-ID           PIC  X(020).
+           03  QSAP-MSG-KBN             PIC  X(001).
+           03  QSAP-MSG                 PIC  X(1024).
+      *
+       01  HWK-KIJITSUYM-S1             PIC  X(006).
+       01  HWK-KIJITSUYM-S2             PIC  X(006).
+       01  HWK-KIJITSUYM-T1             PIC  X(006).
+       01  HWK-KIJITSUYM-T2             PIC  X(006).
+       01  HWK-TABLEMEI                 PIC  X(020).
+      *
+      *
+      *------------------------------*
+      *   パッケージの戻り値         *
+      *   処理件数とステータス       *
+      *   処理テーブルごとに設定する *
+      *------------------------------*
+       01  PKG-MSG.
+           03  PKG-QPA2-COUNT          PIC  X(08).
+           03  PKG-QPA2-STATUS         PIC  9(02)  VALUE ZERO.
+           03  PKG-QPA3-COUNT          PIC  X(08).
+           03  PKG-QPA3-STATUS         PIC  9(02)  VALUE ZERO.
+           03  PKG-QPA4-COUNT          PIC  X(08).
+           03  PKG-QPA4-STATUS         PIC  9(02)  VALUE ZERO.
+           03  PKG-QPA5-COUNT          PIC  X(08).
+           03  PKG-QPA5-STATUS         PIC  9(02)  VALUE ZERO.
+           03  PKG-QPA6-COUNT          PIC  X(08).
+           03  PKG-QPA6-STATUS         PIC  9(02)  VALUE ZERO.
+      *00001 del 20080714 nbc ishida 利率期日管理廃止 start
+      *    03  PKG-QPA7-COUNT          PIC  X(08).
+      *    03  PKG-QPA7-STATUS         PIC  9(02)  VALUE ZERO.
+      *00001 del 20080714 nbc ishida 利率期日管理廃止 end
+           03  PKG-QPA9-COUNT          PIC  X(08).
+           03  PKG-QPA9-STATUS         PIC  9(02)  VALUE ZERO.
+      *ADD 20100225 0908047 NBC SAWAME START
+           03  PKG-QPB5-COUNT          PIC  X(08).
+           03  PKG-QPB5-STATUS         PIC  9(02)  VALUE ZERO.
+      *ADD 20100225 0908047 NBC SAWAME END
+      *
+      *
+           EXEC SQL END DECLARE SECTION END-EXEC.
+      *
+      *
+      ****************************************************************
+      * ORACLE SQL COMMUNICATIONS AREA
+      ****************************************************************
+           EXEC SQL INCLUDE SQLCA.COB END-EXEC.
+      *
+      *********************************************
+      *    ＬＩＮＫ－ＣＯＮＮＥＣＴ－ＡＲＥＡ     *
+      *********************************************
+       01  LINK-CONNECT-AREA.
+           03  LINK-SQLCODE            PIC S9(09) COMPUTATIONAL.
+           03  LINK-USERID             PIC  X(10).
+           03  LINK-USERID-LEN         PIC  9(02).
+           03  LINK-PASSWD             PIC  X(10).
+           03  LINK-PASSWD-LEN         PIC  9(02).
+           03  LINK-ORACLE             PIC  X(10).
+           03  LINK-ORACLE-LEN         PIC  9(02).
+      *
+      **********************************************
+      *    コンソールログ出力サブ・リンクエリア    *
+      **********************************************
+       01  LINK-CONS-AREA.
+           03  LINK-CONS-MODULEID      PIC  X(40).
+           03  LINK-CONS-MSGKBN        PIC  X(01).
+           03  LINK-CONS-MSG           PIC  X(1024).
+           03  LINK-CONS-STATUS        PIC  9(02).
+      *
+      *
+      /
+       PROCEDURE                     DIVISION.
+      ****************************************************************
+      *    (0.0)     プログラム  コントロール                        *
+      ****************************************************************
+       PROC-SECT                     SECTION.
+       PROC-START.
+      *
+      *    初期処理  [1.0]
+      *
+           PERFORM   INIT-PROC.
+      *
+      *    主処理    [2.0]
+      *
+           PERFORM   MAIN-PROC.
+      *
+      *    終了処理  [3.0]
+      *
+           PERFORM   FINAL-PROC.
+      *
+       PROC-EXIT.
+           EXIT       PROGRAM.
+      *
+      /***************************************************************
+      *    [1.0]     初期処理                                        *
+      ****************************************************************
+       INIT-PROC                     SECTION.
+      *
+      *##########################################################
+      *    オラクル使用時の定義                                 *
+      *##########################################################
+      *
+           EXEC   SQL
+               WHENEVER    SQLWARNING  DO  PERFORM  ORA-ERR-PROC
+           END-EXEC.
+      *
+           EXEC   SQL
+               WHENEVER    SQLERROR    DO  PERFORM  ORA-ERR-PROC
+           END-EXEC.
+      *
+           EXEC   SQL
+               WHENEVER NOT FOUND CONTINUE
+           END-EXEC.
+      *
+           MOVE    DSP-MODULEID         TO    LINK-CONS-MODULEID.
+      *
+      *-----<<ORACLE CONNECT>>-----*
+           CALL    "QTAB-CONNECT"      USING  LINK-CONNECT-AREA.
+      *
+           IF      LINK-SQLCODE        NOT =   ZERO
+      *-----<<ORACLE CONNECT ERR   END MESSAGE>>-----*
+               PERFORM TIME-EDIT-PROC
+               MOVE    WK-ED-TIME       TO    MSG3-TIME
+               MOVE    "I"              TO    LINK-CONS-MSGKBN
+               MOVE    DSP-MSG3         TO    LINK-CONS-MSG
+      *
+               PERFORM CONS-PROC
+               MOVE    099              TO    PROGRAM-STATUS
+               EXIT    PROGRAM
+           END-IF.
+      *
+      *
+      *##########################################################
+      *    処理開始メッセージ出力
+      *##########################################################
+      *
+           ACCEPT  WK-TIME             FROM    TIME.
+           MOVE    WK-TIME-HH          TO      WK-ED-TIME-HH.
+           MOVE    WK-TIME-MM          TO      WK-ED-TIME-MM.
+           MOVE    WK-TIME-SS          TO      WK-ED-TIME-SS.
+           MOVE    WK-ED-TIME          TO      MSG1-TIME.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG1            TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+      *
+      *
+       INIT-PROC-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    [2.0]     主処理                                          *
+      ****************************************************************
+       MAIN-PROC                     SECTION.
+      *
+      *
+      *##########################################################
+      *    各テーブル毎にパッケージのプロシージャを呼び、       *
+      *    件数とステータスを取得する。                         *
+      *    エラーが発生したら、処理名をコンソールに書き出し、   *
+      *    処理終了する。                                       *
+      *##########################################################
+      *
+           EXEC SQL EXECUTE
+               BEGIN
+                   QPAP_CEnt300PkG.QPAP_Cent300KgcNyukinT
+                              (:PKG-QPA5-COUNT,:PKG-QPA5-STATUS);
+                   QPAP_CEnt300PkG.QPAP_Cent300SymNyukinT
+                              (:PKG-QPA9-COUNT,:PKG-QPA9-STATUS);
+                   QPAP_CEnt300PkG.QPAP_Cent300KgcZandakaT
+                              (:PKG-QPA3-COUNT,:PKG-QPA3-STATUS);
+                   QPAP_CEnt300PkG.QPAP_Cent300KgcKasitukeT
+                              (:PKG-QPA6-COUNT,:PKG-QPA6-STATUS);
+                   QPAP_CEnt300PkG.QPAP_Cent300KgcKojoT
+                              (:PKG-QPA4-COUNT,:PKG-QPA4-STATUS);
+                   QPAP_CEnt300PkG.QPAP_Cent300KgcHensaiT
+                              (:PKG-QPA2-COUNT,:PKG-QPA2-STATUS);
+      *00001 del 20080714 nbc ishida 利率期日管理廃止 start
+      *            QPAP_CEnt300PkG.QPAP_Cent300KgcRirituT
+      *                       (:PKG-QPA7-COUNT,:PKG-QPA7-STATUS);
+      *00001 del 20080714 nbc ishida 利率期日管理廃止 start
+      *ADD 20100225 0908047 NBC SAWAME START
+                   QPAP_CEnt300PkG.QPAP_Cent300BunkairskT
+                              (:PKG-QPB5-COUNT,:PKG-QPB5-STATUS);
+      *ADD 20100225 0908047 NBC SAWAME END
+               END;
+           END-EXEC.
+      *
+      *-----パッケージエラー処理-----*
+           EVALUATE TRUE
+               WHEN PKG-QPA5-STATUS = 99
+                   MOVE  "QPAP_Cent300KgcDaicyoT INCOMPLETE"
+                                               TO  WK-MODULENAME
+                   PERFORM  PKG-ERROR-PROC
+               WHEN PKG-QPA9-STATUS = 99
+                   MOVE  "QPAP_Cent300SymNyukinT INCOMPLETE"
+                                               TO  WK-MODULENAME
+                   PERFORM  PKG-ERROR-PROC
+               WHEN PKG-QPA3-STATUS = 99
+                   MOVE  "QPAP_Cent300KgcZandakaT INCOMPLETE"
+                                               TO  WK-MODULENAME
+                   PERFORM  PKG-ERROR-PROC
+               WHEN PKG-QPA6-STATUS = 99
+                   MOVE  "QPAP_Cent300KgcKasitukeT INCOMPLETE"
+                                               TO  WK-MODULENAME
+                   PERFORM  PKG-ERROR-PROC
+               WHEN PKG-QPA4-STATUS = 99
+                   MOVE  "QPAP_Cent300KgcKojoT INCOMPLETE"
+                                               TO  WK-MODULENAME
+                   PERFORM  PKG-ERROR-PROC
+               WHEN PKG-QPA2-STATUS = 99
+                   MOVE  "QPAP_Cent300KgcHensaiT INCOMPLETE"
+                                               TO  WK-MODULENAME
+                   PERFORM  PKG-ERROR-PROC
+      *00001 del 20080714 nbc ishida 利率期日管理廃止 start
+      *        WHEN PKG-QPA7-STATUS = 99
+      *            MOVE  "QPAP_Cent300KgcRirituT INCOMPLETE"
+      *                                        TO  WK-MODULENAME
+      *            PERFORM  PKG-ERROR-PROC
+      *00001 del 20080714 nbc ishida 利率期日管理廃止 end
+      *ADD 20100225 0908047 NBC SAWAME START
+               WHEN PKG-QPB5-STATUS = 99
+                   MOVE  "QPAP_Cent300BunkairskT INCOMPLETE"
+                                               TO  WK-MODULENAME
+                   PERFORM  PKG-ERROR-PROC
+      *ADD 20100225 0908047 NBC SAWAME END
+               WHEN OTHER
+                   PERFORM  DATA-EDIT
+           END-EVALUATE.
+      *
+      *
+       MAIN-PROC-EXIT.
+           EXIT.
+      *
+      *
+      /***************************************************************
+      *    [2.1]     コンソールログに件数を出力                      *
+      ****************************************************************
+       DATA-EDIT                      SECTION.
+      *
+      *    小口融資入金テーブル
+           MOVE    "QPA5_KGCNYUKINT  COUNT:"
+                                       TO      MSG2-TBLNAME.
+           MOVE    PKG-QPA5-COUNT      TO      MSG2-COUNT.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+           PERFORM CONS-PROC.
+      *
+      *    社員融資入金テーブル
+           MOVE    "QPA9_SYNNYUKINT  COUNT:"
+                                       TO      MSG2-TBLNAME.
+           MOVE    PKG-QPA9-COUNT      TO      MSG2-COUNT.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+           PERFORM CONS-PROC.
+      *
+      *    小口融資残高テーブル
+           MOVE    "QPA3_KGCZANDAKAT  COUNT:"
+                                       TO      MSG2-TBLNAME.
+           MOVE    PKG-QPA3-COUNT      TO      MSG2-COUNT.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+           PERFORM CONS-PROC.
+      *
+      *    小口融資貸付テーブル
+           MOVE    "QPA6_KGCDAICYOT  COUNT:"
+                                       TO      MSG2-TBLNAME.
+           MOVE    PKG-QPA6-COUNT      TO      MSG2-COUNT.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+           PERFORM CONS-PROC.
+      *
+      *    小口融資賞与控除履歴テーブル
+           MOVE    "QPA4_KGCKOJOT  COUNT:"
+                                       TO      MSG2-TBLNAME.
+           MOVE    PKG-QPA4-COUNT      TO      MSG2-COUNT.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+           PERFORM CONS-PROC.
+      *
+      *    小口融資返済額履歴テーブル
+           MOVE    "QPA2_KGCHENSAIT  COUNT:"
+                                       TO      MSG2-TBLNAME.
+           MOVE    PKG-QPA2-COUNT      TO      MSG2-COUNT.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+           PERFORM CONS-PROC.
+      *
+      *00001 del 20080714 nbc ishida 利率期日管理廃止 start
+      *    小口融資利率テーブル
+      *    MOVE    "QPA7_KGCRIRITUT  COUNT:"
+      *                                TO      MSG2-TBLNAME.
+      *    MOVE    PKG-QPA7-COUNT      TO      MSG2-COUNT.
+      *    MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+      *    MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+      *    PERFORM CONS-PROC.
+      *00001 del 20080714 nbc ishida 利率期日管理廃止 end
+      *
+      *ADD 20100225 0908047 NBC SAWAME START
+      *    分解利息テーブル
+           MOVE    "QPB5_BUNKAIRSK  COUNT:"
+                                       TO      MSG2-TBLNAME.
+           MOVE    PKG-QPB5-COUNT      TO      MSG2-COUNT.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+           PERFORM CONS-PROC.
+      *ADD 20100225 0908047 NBC SAWAME END
+      *
+       DATA-EDIT-EXIT.
+           EXIT.
+      *
+      *
+      /***************************************************************
+      *    [3.0]     終了処理                                        *
+      ****************************************************************
+       FINAL-PROC                    SECTION.
+      *
+      *    処理終了メッセージ出力
+           ACCEPT  WK-TIME             FROM    TIME.
+           MOVE    WK-TIME-HH          TO      WK-ED-TIME-HH.
+           MOVE    WK-TIME-MM          TO      WK-ED-TIME-MM.
+           MOVE    WK-TIME-SS          TO      WK-ED-TIME-SS.
+           MOVE    WK-ED-TIME          TO      MSG3-TIME.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG3            TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+       FINAL-PROC-EXIT.
+           EXIT.
+      *
+      *
+      *
+      /***************************************************************
+      *    (C.0)   コンソールログ出力処理
+      ****************************************************************
+       CONS-PROC                       SECTION.
+      *
+      *    ＜＜コンソールログ出力サブ＞＞
+           CALL    "QTAB-CONSLOG"      USING   LINK-CONS-AREA.
+           IF      LINK-CONS-STATUS    =       ZERO
+      *
+      *            データベーストランザクションコミット
+                   EXEC SQL COMMIT WORK END-EXEC
+                   MOVE    000           TO      PROGRAM-STATUS
+           ELSE
+                   MOVE    099         TO      PROGRAM-STATUS
+                   EXIT    PROGRAM
+           END-IF.
+      *
+       CONS-PROC-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (C.1)   時間編集
+      ****************************************************************
+       TIME-EDIT-PROC                   SECTION.
+      *
+           ACCEPT  WK-TIME             FROM    TIME.
+           MOVE    WK-TIME-HH          TO      WK-ED-TIME-HH.
+           MOVE    WK-TIME-MM          TO      WK-ED-TIME-MM.
+           MOVE    WK-TIME-SS          TO      WK-ED-TIME-SS.
+
+       TIME-EDIT-PROC-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (C.2)   ORACLE ERR
+      ****************************************************************
+       ORA-ERR-PROC                  SECTION.
+      *
+           MOVE    "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE    SQLERRML            TO      WK-SQLERRML.
+           MOVE    WK-SQLERRML         TO      WK-SQLERRML-X.
+           STRING  WK-SQLERRML-X " " SQLERRMC
+                   DELIMITED  BY  "*"  INTO    LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+           MOVE    ZERO                TO      SQLCODE.
+      *
+           MOVE    099                 TO      PROGRAM-STATUS.
+           EXIT    PROGRAM.
+      *
+       ORA-ERR-PROC-EXIT.
+      /***************************************************************
+      *    (C.4)     パッケージエラー                                *
+      ****************************************************************
+       PKG-ERROR-PROC                 SECTION.
+      *
+           MOVE    "1"                 TO      SW-ABEND SW-END.
+      *
+           MOVE    "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE    WK-MODULENAME       TO      LINK-CONS-MSG.
+      *
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+           MOVE    099                 TO      PROGRAM-STATUS.
+           EXIT    PROGRAM.
+      *
+       PKG-ERROR-PROC-EXIT.
+           EXIT.

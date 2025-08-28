@@ -1,0 +1,602 @@
+      ************************************************************
+      * ＣＩＣ情報テーブル（バックアップ分）振分
+      *                                             99.11.19
+      ************************************************************
+       IDENTIFICATION                  DIVISION.
+       PROGRAM-ID.                     QBAB-MENTE01.
+       ENVIRONMENT                     DIVISION.
+       CONFIGURATION                   SECTION.
+
+       SPECIAL-NAMES.
+           ENVIRONMENT-NAME  IS  ENV-NAME
+           ENVIRONMENT-VALUE IS  ENV-VALUE.
+
+       INPUT-OUTPUT                    SECTION.
+       FILE-CONTROL.
+           SELECT IN-FILE       ASSIGN  TO  DDINKEY
+                  ORGANIZATION    IS LINE SEQUENTIAL.
+           SELECT I001-FILE     ASSIGN  TO  DDIN001.
+           SELECT I011-FILE     ASSIGN  TO  DDIN011.
+           SELECT I021-FILE     ASSIGN  TO  DDIN021.
+           SELECT I031-FILE     ASSIGN  TO  DDIN031.
+           SELECT I041-FILE     ASSIGN  TO  DDIN041.
+           SELECT I051-FILE     ASSIGN  TO  DDIN051.
+           SELECT I061-FILE     ASSIGN  TO  DDIN061.
+           SELECT I071-FILE     ASSIGN  TO  DDIN071.
+           SELECT I081-FILE     ASSIGN  TO  DDIN081.
+           SELECT I091-FILE     ASSIGN  TO  DDIN091.
+           SELECT I0A1-FILE     ASSIGN  TO  DDIN0A1.
+           SELECT I0B1-FILE     ASSIGN  TO  DDIN0B1.
+           SELECT O001-FILE     ASSIGN  TO  DDOT001.
+           SELECT O002-FILE     ASSIGN  TO  DDOT002.
+           SELECT O011-FILE     ASSIGN  TO  DDOT011.
+           SELECT O012-FILE     ASSIGN  TO  DDOT012.
+           SELECT O021-FILE     ASSIGN  TO  DDOT021.
+           SELECT O022-FILE     ASSIGN  TO  DDOT022.
+           SELECT O031-FILE     ASSIGN  TO  DDOT031.
+           SELECT O032-FILE     ASSIGN  TO  DDOT032.
+           SELECT O041-FILE     ASSIGN  TO  DDOT041.
+           SELECT O042-FILE     ASSIGN  TO  DDOT042.
+           SELECT O051-FILE     ASSIGN  TO  DDOT051.
+           SELECT O052-FILE     ASSIGN  TO  DDOT052.
+           SELECT O061-FILE     ASSIGN  TO  DDOT061.
+           SELECT O062-FILE     ASSIGN  TO  DDOT062.
+           SELECT O071-FILE     ASSIGN  TO  DDOT071.
+           SELECT O072-FILE     ASSIGN  TO  DDOT072.
+           SELECT O081-FILE     ASSIGN  TO  DDOT081.
+           SELECT O082-FILE     ASSIGN  TO  DDOT082.
+           SELECT O091-FILE     ASSIGN  TO  DDOT091.
+           SELECT O092-FILE     ASSIGN  TO  DDOT092.
+           SELECT O0A1-FILE     ASSIGN  TO  DDOT0A1.
+           SELECT O0A2-FILE     ASSIGN  TO  DDOT0A2.
+           SELECT O0B1-FILE     ASSIGN  TO  DDOT0B1.
+           SELECT O0B2-FILE     ASSIGN  TO  DDOT0B2.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  IN-FILE.
+       01  IN-REC.
+           COPY  MENT01
+           DISJOINING  MENT01  JOINING  IN     AS  PREFIX.
+           
+       FD  I001-FILE.
+       01  I001-REC.
+           COPY  QBS038
+           DISJOINING  QBS038  JOINING  I001   AS  PREFIX.
+       FD  I011-FILE.
+       01  I011-REC.
+           COPY  QBS039
+           DISJOINING  QBS039  JOINING  I011   AS  PREFIX.
+       FD  I021-FILE.
+       01  I021-REC.
+           COPY  QBS040
+           DISJOINING  QBS040  JOINING  I021   AS  PREFIX.
+       FD  I031-FILE.
+       01  I031-REC.
+           COPY  QBS041
+           DISJOINING  QBS041  JOINING  I031   AS  PREFIX.
+       FD  I041-FILE.
+       01  I041-REC.
+           COPY  QBS042
+           DISJOINING  QBS042  JOINING  I041   AS  PREFIX.
+       FD  I051-FILE.
+       01  I051-REC.
+           COPY  QBS043
+           DISJOINING  QBS043  JOINING  I051   AS  PREFIX.
+       FD  I061-FILE.
+       01  I061-REC.
+           COPY  QBS044
+           DISJOINING  QBS044  JOINING  I061   AS  PREFIX.
+       FD  I071-FILE.
+       01  I071-REC.
+           COPY  QBS045
+           DISJOINING  QBS045  JOINING  I071   AS  PREFIX.
+       FD  I081-FILE.
+       01  I081-REC.
+           COPY  QBS046
+           DISJOINING  QBS046  JOINING  I081   AS  PREFIX.
+       FD  I091-FILE.
+       01  I091-REC.
+           COPY  QBS047
+           DISJOINING  QBS047  JOINING  I091   AS  PREFIX.
+       FD  I0A1-FILE.
+       01  I0A1-REC.
+           COPY  QBS048
+           DISJOINING  QBS048  JOINING  I0A1   AS  PREFIX.
+       FD  I0B1-FILE.
+       01  I0B1-REC.
+           COPY  QBS049
+           DISJOINING  QBS049  JOINING  I0B1   AS  PREFIX.
+
+       FD  O001-FILE.
+       01  O001-REC.
+           COPY  QBS038
+           DISJOINING  QBS038  JOINING  O001   AS  PREFIX.
+       FD  O002-FILE.
+       01  O002-REC.
+           COPY  QBS038
+           DISJOINING  QBS038  JOINING  O002   AS  PREFIX.
+
+       FD  O011-FILE.
+       01  O011-REC.
+           COPY  QBS039
+           DISJOINING  QBS039  JOINING  O011   AS  PREFIX.
+       FD  O012-FILE.
+       01  O012-REC.
+           COPY  QBS039
+           DISJOINING  QBS039  JOINING  O012   AS  PREFIX.
+
+       FD  O021-FILE.
+       01  O021-REC.
+           COPY  QBS040
+           DISJOINING  QBS040  JOINING  O021   AS  PREFIX.
+       FD  O022-FILE.
+       01  O022-REC.
+           COPY  QBS040
+           DISJOINING  QBS040  JOINING  O022   AS  PREFIX.
+
+       FD  O031-FILE.
+       01  O031-REC.
+           COPY  QBS041
+           DISJOINING  QBS041  JOINING  O031   AS  PREFIX.
+       FD  O032-FILE.
+       01  O032-REC.
+           COPY  QBS041
+           DISJOINING  QBS041  JOINING  O032   AS  PREFIX.
+
+       FD  O041-FILE.
+       01  O041-REC.
+           COPY  QBS042
+           DISJOINING  QBS042  JOINING  O041   AS  PREFIX.
+       FD  O042-FILE.
+       01  O042-REC.
+           COPY  QBS042
+           DISJOINING  QBS042  JOINING  O042   AS  PREFIX.
+
+       FD  O051-FILE.
+       01  O051-REC.
+           COPY  QBS043
+           DISJOINING  QBS043  JOINING  O051   AS  PREFIX.
+       FD  O052-FILE.
+       01  O052-REC.
+           COPY  QBS043
+           DISJOINING  QBS043  JOINING  O052   AS  PREFIX.
+
+       FD  O061-FILE.
+       01  O061-REC.
+           COPY  QBS044
+           DISJOINING  QBS044  JOINING  O061   AS  PREFIX.
+       FD  O062-FILE.
+       01  O062-REC.
+           COPY  QBS044
+           DISJOINING  QBS044  JOINING  O062   AS  PREFIX.
+
+       FD  O071-FILE.
+       01  O071-REC.
+           COPY  QBS045
+           DISJOINING  QBS045  JOINING  O071   AS  PREFIX.
+       FD  O072-FILE.
+       01  O072-REC.
+           COPY  QBS045
+           DISJOINING  QBS045  JOINING  O072   AS  PREFIX.
+
+       FD  O081-FILE.
+       01  O081-REC.
+           COPY  QBS046
+           DISJOINING  QBS046  JOINING  O081   AS  PREFIX.
+       FD  O082-FILE.
+       01  O082-REC.
+           COPY  QBS046
+           DISJOINING  QBS046  JOINING  O082   AS  PREFIX.
+
+       FD  O091-FILE.
+       01  O091-REC.
+           COPY  QBS047
+           DISJOINING  QBS047  JOINING  O091   AS  PREFIX.
+       FD  O092-FILE.
+       01  O092-REC.
+           COPY  QBS047
+           DISJOINING  QBS047  JOINING  O092   AS  PREFIX.
+
+       FD  O0A1-FILE.
+       01  O0A1-REC.
+           COPY  QBS048
+           DISJOINING  QBS048  JOINING  O0A1   AS  PREFIX.
+       FD  O0A2-FILE.
+       01  O0A2-REC.
+           COPY  QBS048
+           DISJOINING  QBS048  JOINING  O0A2   AS  PREFIX.
+
+       FD  O0B1-FILE.
+       01  O0B1-REC.
+           COPY  QBS049
+           DISJOINING  QBS049  JOINING  O0B1   AS  PREFIX.
+       FD  O0B2-FILE.
+       01  O0B2-REC.
+           COPY  QBS049
+           DISJOINING  QBS049  JOINING  O0B2   AS  PREFIX.
+
+       WORKING-STORAGE                 SECTION.
+      ****************************************************************
+      * WORK AREA
+      ****************************************************************
+       01  WRK-AREA.
+           03  FLG-END                 PIC  X(001).
+           03  W-UKETSUKENO            PIC  X(008).
+           03  W-RESULT                PIC  X(001).
+
+           03  SW                      PIC  X(001).
+
+       01  CNT-AREA.
+           03  CNT-IN                  PIC  9(008) COMP.
+           03  CNT-I001                PIC  9(008) COMP.
+           03  CNT-O001                PIC  9(008) COMP.
+           03  CNT-O002                PIC  9(008) COMP.
+
+      ****************************************************************
+      * ORACLE HOST変数
+      ****************************************************************
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+      
+       01  PRM-AREA.
+           03  P-KBN                   PIC  X(001).
+
+           EXEC SQL END DECLARE SECTION END-EXEC.
+      ****************************************************************
+      * ORACLE SQL COMMUNICATIONS AREA
+      ****************************************************************
+           EXEC SQL INCLUDE SQLCA.COB END-EXEC.
+      
+      ****************************************************************
+      * CONSTANT
+      ****************************************************************
+       CONSTANT                        SECTION.
+       01  CNS-AREA.
+           03  CNS-PRM                 PIC  X(008) VALUE 'PARM'.
+
+      ****************************************************************
+      * PROCEDURE
+      ****************************************************************
+       PROCEDURE                       DIVISION.
+       CNTL-SEC.
+
+           PERFORM  INIT-SEC.
+
+           PERFORM  MAIN-SEC
+             UNTIL  FLG-END             =    'E'.
+
+           PERFORM  TERM-SEC.
+
+       CNTL-SEC-EXT.
+           EXIT PROGRAM.
+
+      ****************************************************************
+      * (1.0.0) INIT
+      ****************************************************************
+       INIT-SEC                        SECTION.
+
+           INITIALIZE   WRK-AREA CNT-AREA.
+
+           DISPLAY CNS-PRM           UPON  ENV-NAME.
+           ACCEPT  PRM-AREA          FROM  ENV-VALUE.
+
+           EVALUATE  P-KBN
+             WHEN    '0'
+               DISPLAY '**** QBC0 START ****'
+               OPEN  INPUT   I001-FILE
+                     OUTPUT  O001-FILE O002-FILE
+             WHEN    '1'
+               DISPLAY '**** QBC1 START ****'
+               OPEN  INPUT   I011-FILE
+                     OUTPUT  O011-FILE O012-FILE
+             WHEN    '2'
+               DISPLAY '**** QBC2 START ****'
+               OPEN  INPUT   I021-FILE
+                     OUTPUT  O021-FILE O022-FILE
+             WHEN    '3'
+               DISPLAY '**** QBC3 START ****'
+               OPEN  INPUT   I031-FILE
+                     OUTPUT  O031-FILE O032-FILE
+             WHEN    '4'
+               DISPLAY '**** QBC4 START ****'
+               OPEN  INPUT   I041-FILE
+                     OUTPUT  O041-FILE O042-FILE
+             WHEN    '5'
+               DISPLAY '**** QBC5 START ****'
+               OPEN  INPUT   I051-FILE
+                     OUTPUT  O051-FILE O052-FILE
+             WHEN    '6'
+               DISPLAY '**** QBC6 START ****'
+               OPEN  INPUT   I061-FILE
+                     OUTPUT  O061-FILE O062-FILE
+             WHEN    '7'
+               DISPLAY '**** QBC7 START ****'
+               OPEN  INPUT   I071-FILE
+                     OUTPUT  O071-FILE O072-FILE
+             WHEN    '8'
+               DISPLAY '**** QBC8 START ****'
+               OPEN  INPUT   I081-FILE
+                     OUTPUT  O081-FILE O082-FILE
+             WHEN    '9'
+               DISPLAY '**** QBC9 START ****'
+               OPEN  INPUT   I091-FILE
+                     OUTPUT  O091-FILE O092-FILE
+             WHEN    'A'
+               DISPLAY '**** QBCA START ****'
+               OPEN  INPUT   I0A1-FILE
+                     OUTPUT  O0A1-FILE O0A2-FILE
+             WHEN    'B'
+               DISPLAY '**** QBCB START ****'
+               OPEN  INPUT   I0B1-FILE
+                     OUTPUT  O0B1-FILE O0B2-FILE
+           END-EVALUATE.
+
+      *--- ファイル入力 ---*
+           PERFORM  READ-SEC.
+
+       INIT-EXT.
+           EXIT.
+
+      ****************************************************************
+      * (1.1.0) READ-SEC
+      ****************************************************************
+       READ-SEC                        SECTION.
+
+           EVALUATE  P-KBN
+             WHEN    '0'
+               READ  I001-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '1'
+               READ  I011-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '2'
+               READ  I021-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '3'
+               READ  I031-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '4'
+               READ  I041-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '5'
+               READ  I051-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '6'
+               READ  I061-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '7'
+               READ  I071-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '8'
+               READ  I081-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    '9'
+               READ  I091-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    'A'
+               READ  I0A1-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+             WHEN    'B'
+               READ  I0B1-FILE
+                 AT  END  MOVE  'E'    TO   FLG-END
+                          GO TO  READ-EXT
+               END-READ
+           END-EVALUATE.
+           
+           MOVE  ZERO                  TO  W-RESULT.
+           EVALUATE  P-KBN
+             WHEN    '0'
+               MOVE  I001-UKETSUKENO   TO  W-UKETSUKENO
+               MOVE  I001-CICINQRESULT TO  W-RESULT
+             WHEN    '1'
+               MOVE  I011-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    '2'
+               MOVE  I021-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    '3'
+               MOVE  I031-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    '4'
+               MOVE  I041-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    '5'
+               MOVE  I051-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    '6'
+               MOVE  I061-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    '7'
+               MOVE  I071-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    '8'
+               MOVE  I081-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    '9'
+               MOVE  I091-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    'A'
+               MOVE  I0A1-UKETSUKENO   TO  W-UKETSUKENO
+             WHEN    'B'
+               MOVE  I0B1-UKETSUKENO   TO  W-UKETSUKENO
+           END-EVALUATE.
+
+           ADD   1                     TO  CNT-I001.
+
+       READ-EXT.
+           EXIT.
+
+      ****************************************************************
+      * (2.0.0) MAIN-SEC
+      ****************************************************************
+       MAIN-SEC                        SECTION.
+
+           IF  W-RESULT                 =  '2'
+               PERFORM  READ-SEC
+               GO TO  MAIN-EXT
+           END-IF.
+
+           MOVE  SPACE                 TO  SW.
+           OPEN  INPUT  IN-FILE.
+           READ  IN-FILE
+             AT  END  MOVE  '9'        TO  SW
+           END-READ.
+
+           PERFORM  UNTIL  SW       NOT =  SPACE
+             IF  W-UKETSUKENO           =  IN-UKETSUKENO
+                 MOVE  '1'             TO  SW
+             ELSE
+                 READ  IN-FILE
+                   AT  END  MOVE  '9'  TO  SW
+                 END-READ
+             END-IF
+           END-PERFORM.
+           CLOSE  IN-FILE.
+           
+           PERFORM  WRITE-SEC.
+           PERFORM  READ-SEC.
+           
+       MAIN-EXT.
+           EXIT.
+
+      ****************************************************************
+      * (2.1.0) WRITE-SEC
+      ****************************************************************
+       WRITE-SEC                       SECTION.
+
+           EVALUATE  P-KBN
+             WHEN    '0'
+               IF  SW  =  '1'
+                   WRITE  O001-REC   FROM  I001-REC
+               ELSE
+                   WRITE  O002-REC   FROM  I001-REC
+               END-IF
+             WHEN    '1'
+               IF  SW  =  '1'
+                   WRITE  O011-REC   FROM  I011-REC
+               ELSE
+                   WRITE  O012-REC   FROM  I011-REC
+               END-IF
+             WHEN    '2'
+               IF  SW  =  '1'
+                   WRITE  O021-REC   FROM  I021-REC
+               ELSE
+                   WRITE  O022-REC   FROM  I021-REC
+               END-IF
+             WHEN    '3'
+               IF  SW  =  '1'
+                   WRITE  O031-REC   FROM  I031-REC
+               ELSE
+                   WRITE  O032-REC   FROM  I031-REC
+               END-IF
+             WHEN    '4'
+               IF  SW  =  '1'
+                   WRITE  O041-REC   FROM  I041-REC
+               ELSE
+                   WRITE  O042-REC   FROM  I041-REC
+               END-IF
+             WHEN    '5'
+               IF  SW  =  '1'
+                   WRITE  O051-REC   FROM  I051-REC
+               ELSE
+                   WRITE  O052-REC   FROM  I051-REC
+               END-IF
+             WHEN    '6'
+               IF  SW  =  '1'
+                   WRITE  O061-REC   FROM  I061-REC
+               ELSE
+                   WRITE  O062-REC   FROM  I061-REC
+               END-IF
+             WHEN    '7'
+               IF  SW  =  '1'
+                   WRITE  O071-REC   FROM  I071-REC
+               ELSE
+                   WRITE  O072-REC   FROM  I071-REC
+               END-IF
+             WHEN    '8'
+               IF  SW  =  '1'
+                   WRITE  O081-REC   FROM  I081-REC
+               ELSE
+                   WRITE  O082-REC   FROM  I081-REC
+               END-IF
+             WHEN    '9'
+               IF  SW  =  '1'
+                   WRITE  O091-REC   FROM  I091-REC
+               ELSE
+                   WRITE  O092-REC   FROM  I091-REC
+               END-IF
+             WHEN    'A'
+               IF  SW  =  '1'
+                   WRITE  O0A1-REC   FROM  I0A1-REC
+               ELSE
+                   WRITE  O0A2-REC   FROM  I0A1-REC
+               END-IF
+             WHEN    'B'
+               IF  SW  =  '1'
+                   WRITE  O0B1-REC   FROM  I0B1-REC
+               ELSE
+                   WRITE  O0B2-REC   FROM  I0B1-REC
+               END-IF
+           END-EVALUATE.
+
+           IF  SW  =  '1'
+               ADD   1    TO  CNT-O001
+           ELSE
+               ADD   1    TO  CNT-O002
+           END-IF.
+
+       WRITE-EXT.
+           EXIT.
+
+      ************************************************************
+      * (3.0.0) TERM-SEC
+      ************************************************************
+       TERM-SEC                        SECTION.
+
+           DISPLAY '*   INPUT      COUNT=' CNT-I001.
+           DISPLAY '*   OUTPUT1    COUNT=' CNT-O001.
+           DISPLAY '*   OUTPUT2    COUNT=' CNT-O002.
+
+           EVALUATE  P-KBN
+             WHEN    '0'
+                     CLOSE   I001-FILE O001-FILE O002-FILE
+             WHEN    '1'
+                     CLOSE   I011-FILE O011-FILE O012-FILE
+             WHEN    '2'
+                     CLOSE   I021-FILE O021-FILE O022-FILE
+             WHEN    '3'
+                     CLOSE   I031-FILE O031-FILE O032-FILE
+             WHEN    '4'
+                     CLOSE   I041-FILE O041-FILE O042-FILE
+             WHEN    '5'
+                     CLOSE   I051-FILE O051-FILE O052-FILE
+             WHEN    '6'
+                     CLOSE   I061-FILE O061-FILE O062-FILE
+             WHEN    '7'
+                     CLOSE   I071-FILE O071-FILE O072-FILE
+             WHEN    '8'
+                     CLOSE   I081-FILE O081-FILE O082-FILE
+             WHEN    '9'
+                     CLOSE   I091-FILE O091-FILE O092-FILE
+             WHEN    'A'
+                     CLOSE   I0A1-FILE O0A1-FILE O0A2-FILE
+             WHEN    'B'
+                     CLOSE   I0B1-FILE O0B1-FILE O0B2-FILE
+           END-EVALUATE.
+
+       TERM-EXT.
+           EXIT.
+

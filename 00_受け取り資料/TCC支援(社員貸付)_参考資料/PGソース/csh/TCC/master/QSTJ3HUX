@@ -1,0 +1,607 @@
+#!/bin/csh
+# 　スクリプト名 ： QSTJ3HUX
+#　 機  能       ： 加盟店原伝ファイルのパーティションシフトを行う
+#　 作成者       ： FIP
+#　 改造         ： ①2000/08/15 SQL*Loader後のindexｴﾗｰ確認処理追加
+#                ： ②2000/12/20 ｲﾝﾃﾞｯｸｽ削除作成追加/表領域ｺｱﾚｽ追加
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000002 0807073     ジョブネット名変更      NBC.ISHIDA     2009/04/27
+# 000002 0808052     ジョブネット名変更      NBC.ISHIDA     2009/04/27
+
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+# 00003 MOD nbc.ishida 2009/04/27 start
+#setenv JOBNET_ID   'QUT164UX'                          # ジョブネット名
+setenv JOBNET_ID   'QST171UX'                          # ジョブネット名
+# 00003 MOD nbc.ishida 2009/04/27 end
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSTJ3HUX'                         # ユーザキー
+set    KINOU      = '加盟店原伝ファイル登録'
+
+set TABLE_NAME = QTAK_KAMEITENT            # 対象テーブル名
+set STEP_F   = $DATA4_DIR/${JOB_ID}_step.tmp
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+set sime  = 15                             # 締日
+#set year  = $1                             # 処理年  入力パラメータ
+#set month = $2                             # 処理月  入力パラメータ
+set year  = `date +%Y`                     # 処理年 (システム日付より)
+set month = `date +%m`                     # 処理月 (システム日付より)
+
+# 処理月Leading Zero Suppress 
+@ month ++
+@ month --
+
+set wk_sime = $sime
+@ wk_sime ++    # 締の翌日
+
+if ( $wk_sime < 10 ) then
+	set wk_sime = 0$wk_sime
+endif
+
+if ( $month < 10 ) then
+	set month = 0$month
+endif
+
+#翌月取得
+set year2  = $year
+set month2 = $month
+@ month2 ++
+if ( $month2 == 13 ) then
+        @ year2 ++
+        set month2 = 1
+endif
+if ( $month2 < 10 ) then
+        set month2 = 0$month2
+endif
+set  newym = $year2$month2
+
+##################################
+# STEP-1 当月パーティション検索  #
+##################################
+set MODULE = 'SQL*PLUS-1'
+$LOGWRITE "$MODULE" I "開始:当月パーティション検索" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+set sqlp ""
+set sqln off
+set pause off
+set hea   off
+set lin 200
+column QTAU_PRMPARTITIONMEI format A50
+column QTAU_TABLESPACEMEI format A50
+select max( QTAU_BOUNDTI )
+       from QTAU_PARTTABLET
+       where QTAU_PRMTABLEMEI = '$TABLE_NAME'
+           and QTAU_BOUNDTI != ( select max( QTAU_BOUNDTI )
+                                   from QTAU_PARTTABLET
+                                   where QTAU_PRMTABLEMEI = '$TABLE_NAME');
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:当月パーティション検索 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+set val = `grep "^[0-9]" $LOGFILE`
+if ( "$val" == "" ) then
+	set MSG = "失敗:当月パーティション検索（該当無し） "
+	$LOGWRITE  "$MODULE"  E  "$MSG" "$USERKEY"
+	exit  1
+endif
+
+set ZEN_BOUND = $val[1]
+
+if ( $ZEN_BOUND != $year$month ) then
+	set MSG = "失敗:処理年月が間違っています[$ZEN_BOUND]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" "$USERKEY"
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:当月パーティション検索" $USERKEY
+
+##################################
+# STEP-2 最新パーティション検索  #
+##################################
+set MODULE = 'SQL*PLUS-2'
+$LOGWRITE "$MODULE" I "開始:最新パーティション検索" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+set sqlp ""
+set sqln off
+set pause off
+set hea   off
+set lin 200
+column QTAU_PRMPARTITIONMEI format A50
+column QTAU_TABLESPACEMEI format A50
+select QTAU_PRMPARTITIONMEI,QTAU_TABLESPACEMEI
+       from QTAU_PARTTABLET
+       where QTAU_PRMTABLEMEI = '$TABLE_NAME'
+           and QTAU_BOUNDTI = ( select max( QTAU_BOUNDTI )
+                                  from QTAU_PARTTABLET
+                                  where QTAU_PRMTABLEMEI = '$TABLE_NAME');
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:最新パーティション検索 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+set val = `grep QTAK $LOGFILE`
+if ( "$val" == "" ) then
+	set MSG = "失敗:最新パーティション検索（該当無し） "
+	$LOGWRITE  "$MODULE"  E  "$MSG" "$USERKEY"
+	exit  1
+endif
+
+set MAX_PART  = $val[1]
+set MAX_SPACE = $val[2]
+
+$LOGWRITE "$MODULE" I "終了:最新パーティション検索" $USERKEY
+
+##################################
+# STEP-3 最古パーティション検索  #
+##################################
+set MODULE = 'SQL*PLUS-3'
+$LOGWRITE "$MODULE" I "開始:最古パーティション検索" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+set sqlp ""
+set sqln off
+set pause off
+set hea   off
+set lin 200
+column QTAU_PRMPARTITIONMEI format A50
+column QTAU_TABLESPACEMEI format A50
+select QTAU_PRMPARTITIONMEI,QTAU_TABLESPACEMEI
+       from QTAU_PARTTABLET
+       where QTAU_PRMTABLEMEI = '$TABLE_NAME'
+           and QTAU_BOUNDTI = ( select min( QTAU_BOUNDTI )
+                                 from QTAU_PARTTABLET
+                                 where QTAU_PRMTABLEMEI = '$TABLE_NAME');
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:最古パーティション検索 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+set val = `grep QTAK $LOGFILE`
+if ( "$val" == "" ) then
+	set MSG = "失敗:最古パーティション検索（該当無し） "
+	$LOGWRITE  "$MODULE"  E  "$MSG" "$USERKEY"
+	exit  1
+endif
+
+set OLD_PART  = $val[1]
+set OLD_SPACE = $val[2]
+
+$LOGWRITE "$MODULE" I "終了:最古パーティション検索" $USERKEY
+
+##################################
+# STEP-4 主キー制約削除          #
+##################################
+STEP_PRM_KEY_DROP_PROC:
+
+set MODULE = 'SQL*PLUS-4'
+$LOGWRITE "$MODULE" I "開始:主キー制約削除" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME drop primary key;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:主キー制約削除 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:主キー制約削除" $USERKEY
+
+##################################
+# STEP-5 インデックス削除        #
+##################################
+STEP_INDEX_DROP_PROC:
+
+set MODULE = 'SQL*PLUS-5'
+$LOGWRITE "$MODULE" I "開始:インデックス削除" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+drop index XIE1QTAK_KAMEITENT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:インデックス削除 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#表領域をまとめる
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S tccadmin/tccadmin << EOF > $LOGFILE
+sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE
+alter tablespace RIYOUIDX coalesce;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:インデックス削除（圧縮） RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+endif
+
+$LOGWRITE "$MODULE" I "終了:インデックス削除" $USERKEY
+
+##################################
+# STEP-6 最古パーティション削除  #
+##################################
+STEP_OLD_PART_DROP_PROC:
+
+set MODULE = 'SQL*PLUS-6'
+$LOGWRITE "$MODULE" I "開始:最古パーティション削除" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME drop partition $OLD_PART;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:最古パーティション削除 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#最古パーティションの表領域をまとめる
+#sqlplus -S tccadmin/tccadmin << EOF > $LOGFILE
+sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE
+alter tablespace $OLD_SPACE coalesce;
+quit SQL.SQLCODE
+EOF
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:最古パーティション削除（最古圧縮） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+endif
+
+$LOGWRITE "$MODULE" I "終了:最古パーティション削除" $USERKEY
+
+##################################
+# STEP-7 最新パーティション削除  #
+##################################
+STEP_MAX_PART_DROP_PROC:
+
+set MODULE = 'SQL*PLUS-7'
+$LOGWRITE "$MODULE" I "開始:最新パーティション削除" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME drop partition $MAX_PART;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:最新パーティション削除 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#最新パーティションの表領域をまとめる
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S tccadmin/tccadmin << EOF > $LOGFILE
+sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE
+alter tablespace $MAX_SPACE coalesce;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:最新パーティション削除（最新圧縮） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+endif
+
+$LOGWRITE "$MODULE" I "終了:最新パーティション削除" $USERKEY
+
+##################################
+# STEP-8 当月パーティション追加  #
+##################################
+STEP_GEN_PART_ADD_PROC:
+
+set MODULE = 'SQL*PLUS-8'
+$LOGWRITE "$MODULE" I "開始:当月パーティション追加" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME add partition $OLD_PART
+            values less than (to_date('$newym$wk_sime','YYYYMMDD'))
+            tablespace $OLD_SPACE;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:当月パーティション追加 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:当月パーティション追加" $USERKEY
+
+##################################
+# STEP-9 最新パーティション追加  #
+##################################
+STEP_MAX_PART_ADD_PROC:
+
+set MODULE = 'SQL*PLUS-9'
+$LOGWRITE "$MODULE" I "開始:最新パーティション追加" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME add partition $MAX_PART
+       values less than (MAXVALUE)
+       tablespace $MAX_SPACE;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:最新パーティション追加 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:最新パーティション追加" $USERKEY
+
+##################################
+# STEP-10 データロード           #
+##################################
+STEP_SQLLDR_PROC:
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:データロード" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                         \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID              \
+   control=$LDR_CTRL_DIR/qtad_kameiten.sql.shiftbackup   \
+   data=$DATA4_DIR/qtaf_kameiten.dat.shiftbackup       \
+   log=$LDR_LOG_DIR/qtad_kameiten.log.shiftbackup        \
+   direct=true \
+             > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:データロード RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:データロード（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:データロード（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:データロード" $USERKEY
+
+##################################
+# STEP-11 インデックス作成       #
+##################################
+STEP_CREATE_INDEX_PROC:
+
+set MODULE = 'SQL*PLUS-11'
+$LOGWRITE "$MODULE" I "開始:インデックス作成" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+CREATE INDEX XIE1QTAK_KameiTenT ON QTAK_KameiTenT
+(
+       QTAK_KJKKigyouCd               ASC,
+       QTAK_KJKSubRangeKey            ASC,
+       QTAK_KJKNaibuKaiinNo           ASC
+)
+       TABLESPACE RIYOUIDX
+       STORAGE (
+              INITIAL 35M
+              NEXT 3000K
+              MINEXTENTS 1
+              MAXEXTENTS 100
+              PCTINCREASE 0
+       )
+        LOCAL;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:インデックス作成 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:インデックス作成" $USERKEY
+
+##################################
+# STEP-12 主キー制約付与         #
+##################################
+STEP_PRM_KEY_ADD_PROC:
+
+set MODULE = 'SQL*PLUS-12'
+$LOGWRITE "$MODULE" I "開始:主キー制約付与" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME add 
+       PRIMARY KEY (QTAK_PRMUriTuuBan)
+       USING INDEX
+              TABLESPACE RIYOUIDX
+              STORAGE ( 
+                     INITIAL 70M
+                     NEXT 7M
+                     MINEXTENTS 1
+                     MAXEXTENTS 100
+                     PCTINCREASE 0
+              )
+;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:主キー制約付与 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:主キー制約付与" $USERKEY
+
+##########################################
+# STEP-13 パーティション管理テーブル更新 #
+##########################################
+STEP_GEN_PART_MOD_PROC:
+
+set MODULE = 'SQL*PLUS-13'
+$LOGWRITE "$MODULE" I "開始:パーティション管理テーブル更新" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+update QTAU_PARTTABLET set QTAU_BOUNDTI = '$newym'
+       where QTAU_PRMTABLEMEI = '$TABLE_NAME'
+         and QTAU_PRMPARTITIONMEI = '$OLD_PART';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:パーティション管理テーブル更新 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:パーティション管理テーブル更新" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+cp $QJ_DATA_DIR/qt/data/host/zen/dmy $DATA4_DIR/qtaf_kameiten.dat.shiftbackup
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

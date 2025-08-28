@@ -1,0 +1,60 @@
+#!/bin/csh
+#　スクリプト名  ： QTTJH2UX
+#　 機  能       ： ファイル圧縮処理（会員基本属性　暴追用ファイル）
+#　 作成者       ： FIP
+#　修　正　履　歴：
+#------------------------------------------------------#
+# 環境設定                                             #
+#------------------------------------------------------#
+setenv JOBNET_ID    QTT4C7UX                           # ジョブネット名
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv USERKEY      $JOB_ID                            # ユーザキー
+set    HULFT_DIR3 = (/d371/UFS/data/qta)               # HULFT受信ＤＩＲ
+#et    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+#------------------------------------------------------#
+#ファイル圧縮（会員基本属性　暴追用ファイル）s008010 #OFQY71
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+set    FILE_ID    = (qtab_s008010)                     # 処理対象ファイル
+
+#------------------------------------------------------#
+# STEP-1 結合前ファイル圧縮                            #
+#------------------------------------------------------#
+set    MODULE     = compress1                          # モジュール名
+set    KINOU      = 'ファイル圧縮（会員基本属性　暴追用ファイル）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+compress  -f     $HULFT_DIR3/${FILE_ID}.?dat[A-B]
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress1 RC=[$rc] >>***"
+    exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+#------------------------------------------------------#
+# STEP-2 ＨＵＬＦＴファイル圧縮                        #
+#------------------------------------------------------#
+set    MODULE     = compress2                          # モジュール名
+set    KINOU      = 'ＨＵＬＦＴファイル圧縮（会員基本属性　暴追用ファイル）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+compress  -f     $HULFT_DIR3/${FILE_ID}.dat
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress2 RC=[$rc] >>***"
+    exit(1)
+endif
+
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+exit(0)

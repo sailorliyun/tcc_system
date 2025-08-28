@@ -1,0 +1,49 @@
+#!/bin/csh
+#　スクリプト名  ： QZTJU0UX
+#　 機  能       ： チケットデータ期日管理
+#　 作成者       ： FIP & OrientalArts
+#　 作成日       ： 2006.04.05
+#　 概要         ：チケットシステム　チケットデータ期日管理
+#　 修正履歴     ： YYYY.MM.DD 　修　　　正　　　内　　　容　　修正者
+#                ： 2006.04.05   新規作成                      斎藤　和弘
+#
+###############################################
+# 環境設定                                    #
+###############################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QZTU00UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QZTU00UX'                         # ユーザキー 
+set    KINOU      = 'チケットデータ期日管理'
+
+set  TICKET_HOME = /d361/UFS/data/qzt/batch              # チケットシステム　バッチホームディレクトリ
+
+###############################################
+# STEP1. 起動                                 #
+###############################################
+set  MODULE   = 'JAVA'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"       # 処理開始メッセージの出力
+
+cd $TICKET_HOME
+
+/usr/j2se/bin/java -classpath .:ticket_delete.jar:classes12.jar:log4j-1.2.8.jar jp.co.takashimaya.ticket.batch.delete.DeleteBatch
+                                                     # プログラム起動
+
+set RC = $status
+cd
+if ( $RC != 0 ) then
+	set MSG = "失敗:$KINOU RC=[$RC]"
+	$LOGWRITE "$MODULE"  E  "$MSG" $USERKEY        # 異常終了メッセージの出力
+	exit 1
+endif
+
+
+###############################################
+# STEP99. 終了                                 #
+###############################################
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 処理終了メッセージの出力
+
+exit 0

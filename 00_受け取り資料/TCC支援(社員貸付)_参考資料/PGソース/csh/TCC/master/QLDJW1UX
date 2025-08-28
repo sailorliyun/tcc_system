@@ -1,0 +1,67 @@
+#!/bin/csh
+# 　スクリプト名 ： QLDJW1UX
+#　 機  能       ： 信用情報報告結果反映・FTP監視起動
+#　 作成者       ： FIP
+#
+
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 	# シェル名
+setenv JOB_ID       $SHELL_NAME:t                      	# ジョブ名
+setenv JOBNET_ID   'QLDW11UX'                  		# ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        	# ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           	# ログ出力モジュール
+set    USERKEY    = 'QLDJW1UX'                   	# ユーザキー
+set    KINOU      = "信用情報報告結果反映・FTP監視起動"   	# 機能
+
+set    FTP_WATCH_FILE_DIR	= "/d041/UFS/data/qv/FTP"	# FTP監視制御ファイル格納フォルダー
+set    FTP_WATCH_FILE_NAME	= "ftpWatch"			# FTP監視制御ファイル名
+set    SHELL_DIR = "/opt/auto/master"					# SHELL格納フォルダー
+set    FTP_WATCH_SHELL  = "QLDJW2UX"				# FTP監視プログラム
+
+set    FTP_WATCH_FILE	= $FTP_WATCH_FILE_DIR/$FTP_WATCH_FILE_NAME	# FTP監視制御ファイル
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   	# 開始メッセージの出力
+
+#########################################
+# STEP-0  FTP監視プログラム 起動チェック#
+#########################################
+set PRMNUM = `ps -ef | grep -v "grep" | grep -c $FTP_WATCH_SHELL`
+if ( $PRMNUM != 0 ) then
+	$LOGWRITE "$MODULE" E "失敗:既に起動しています" "$USERKEY"
+	exit 1
+endif
+
+#########################################
+# STEP-1  FTP監視制御ファイル作成       #
+#########################################
+touch $FTP_WATCH_FILE
+set rc = $status
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU　FTP監視制御ファイル作成  RC=[$rc]"  "$USERKEY"
+        exit  1                                      	# 異常終了
+endif
+
+
+#################################################
+# STEP-2  FTP監視プログラムが実行可能かチェック #
+#################################################
+if (! -x $SHELL_DIR/$FTP_WATCH_SHELL ) then
+    $LOGWRITE  "$MODULE"  E  "FTP監視プログラム[$FTP_WATCH_SHELL]が実行可能でない。" "$USERKEY"
+    exit  1                                      	# 異常終了
+endif
+
+#################################################
+# STEP-3  FTP監視プログラムを別プロセスで実行   #
+#################################################
+#（ステータスは受け取れない）
+$SHELL_DIR/$FTP_WATCH_SHELL &
+
+#########################################
+# STEP-99  終了処理                     #
+#########################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   	# 終了メッセージの出力
+exit 0                                           	# 正常終了

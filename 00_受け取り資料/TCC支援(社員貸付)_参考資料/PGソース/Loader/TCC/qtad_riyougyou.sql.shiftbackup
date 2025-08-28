@@ -1,0 +1,73 @@
+UNRECOVERABLE
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QTAG_RIYOUDTLGT
+FIELDS TERMINATED BY "q"
+(
+       QTAG_PRMKigyouCd            CHAR, --  CHAR(4) NOT NULL,
+       QTAG_PRMSubRangeKey         CHAR, --  CHAR(4) NOT NULL,
+       QTAG_PRMNaibuKaiinNo        CHAR, --  CHAR(8) NOT NULL,
+       QTAG_PRMTorihikiNo          CHAR, --  NUMBER(7) NOT NULL,
+       QTAG_PRMGyouNo              CHAR, --  NUMBER(2) NOT NULL,
+       QTAG_DenpyouNo              CHAR, --  CHAR(12) NOT NULL,
+       QTAG_RecKbn                 CHAR, --  CHAR(1) NOT NULL,
+       QTAG_KaijyoKbn              CHAR, --  CHAR(1) NOT NULL,
+       QTAG_AkaKuroKbn             CHAR, --  CHAR(1) NOT NULL,
+       QTAG_SeikyuHoryuKbn         CHAR, --  CHAR(1) NOT NULL,
+       QTAG_DenpyouShubetsu        CHAR, --  CHAR(4) NOT NULL,
+       QTAG_BatchNo                CHAR, --  NUMBER(4) NULL,
+       QTAG_GNOBatchNo             CHAR, --  NUMBER(4) NULL,
+       QTAG_GNOSequence            CHAR, --  NUMBER(3) NOT NULL,
+       QTAG_CardNo                 CHAR, --  CHAR(16) NOT NULL,
+       QTAG_RiyouBi                DATE NULLIF(QTAG_RiyouBi="00000000"),
+       QTAG_UketsukeBi             DATE NULLIF(QTAG_UketsukeBi="00000000"),
+       QTAG_KeijyouBi              DATE NULLIF(QTAG_KeijyouBi="00000000"),
+       QTAG_HasseiTen              CHAR, --  CHAR(2) NOT NULL,
+       QTAG_KameiTenNo             CHAR, --  CHAR(10) NOT NULL,
+       QTAG_POSRegNo               CHAR, --  CHAR(4) NOT NULL,
+       QTAG_POSTorihikiNo          CHAR, --  CHAR(5) NOT NULL,
+       QTAG_Tanmatsu               CHAR, --  CHAR(9) NOT NULL,
+       QTAG_KAKAKaAtsukai          CHAR, --  CHAR(2) NOT NULL,
+       QTAG_KAKAKaKa               CHAR, --  CHAR(2) NOT NULL,
+       QTAG_KAKKKakariKakari       CHAR, --  CHAR(2) NOT NULL,
+       QTAG_SaiCd                  CHAR, --  CHAR(3) NOT NULL,
+       QTAG_TKUriageTuuBan         CHAR, --  NUMBER(13) NOT NULL,
+       QTAG_GyouSu                 CHAR, --  NUMBER(2) NOT NULL,
+       QTAG_GMSBuMon               CHAR, --  CHAR(2) NOT NULL,
+       QTAG_GMSHinGunCd            CHAR, --  CHAR(3) NOT NULL,
+       QTAG_GMSHGCheckDigit        CHAR, --  CHAR(1) NOT NULL,
+       QTAG_GMSFloor               CHAR, --  CHAR(1) NOT NULL,
+       QTAG_GMSHinMeiCd            CHAR, --  CHAR(3) NOT NULL,
+       QTAG_GMSHMCheckDigit        CHAR, --  CHAR(1) NOT NULL,
+       QTAG_GMSSeikyuKanji         CHAR, --  VARCHAR2(40) NULL,
+       QTAG_GMSHinMeiSaisai        CHAR, --  CHAR(4) NOT NULL,
+       QTAG_GMSSeikyuSakuin        CHAR, --  CHAR(1) NOT NULL,
+       QTAG_GMSSuryou              CHAR, --  NUMBER(9,2) NOT NULL,
+       QTAG_GMSTanka               CHAR, --  NUMBER(7) NOT NULL,
+       QTAG_GMSKng                 CHAR, --  NUMBER(11) NOT NULL,
+       QTAG_GMSJyogaiKbn           CHAR, --  CHAR(1) NOT NULL,
+       QTAG_GMSBubikiGaku          CHAR, --  NUMBER(9) NOT NULL,
+       QTAG_GMSZeiKbn              CHAR, --  CHAR(1) NOT NULL,
+       QTAG_GMSKankinKbn           CHAR, --  CHAR(1) NOT NULL,
+       QTAG_GMSGetsureiCd          CHAR, --  CHAR(1) NOT NULL,
+       QTAG_GMSMaeShouhiZei        CHAR, --  NUMBER(9) NOT NULL,
+       QTAG_GMSPointRitsu          CHAR, --  NUMBER(4,2) NOT NULL,
+       QTAG_GMSGakuPointSu         CHAR, --  NUMBER(11) NOT NULL,
+       QTAG_GMSBoPointRitsu        CHAR, --  NUMBER(4,2) NOT NULL,
+       QTAG_GMSBoGakuPointSu       CHAR, --  NUMBER(11) NOT NULL,
+       QTAG_HostShoriYmd           CHAR, --  CHAR(8) NOT NULL,
+       QTAG_HostShoriTime          CHAR, --  CHAR(6) NOT NULL,
+       QTAG_SvrKoushinYmd          DATE NULLIF(QTAG_SvrKoushinYmd="00000000"),
+       --2005/10/11 èúäOì‡ã‡ëŒâûçÄñ⁄í«â¡ 2 Lines
+       QTAG_Jgianbungaku           CHAR, --  NUMBER(11) NOT NULL,
+      -- MOD 2011/09/01 1006060 IMZ YOSHIDA START
+      -- QTAG_Shjanbunjuni           CHAR --   NUMBER(2) NOT NULL
+       QTAG_Shjanbunjuni           CHAR, --   NUMBER(2) NOT NULL
+      -- MOD 2011/09/01 1006060 IMZ YOSHIDA END
+      -- ADD 2011/09/01 1006060 IMZ YOSHIDA START
+       QTAG_GMSURIBAKUKAKU         CHAR, --  CHAR(5)   NOT NULL
+       QTAG_GMSATOSHOUHIZEI        CHAR  --  NUMBER(9)
+      -- ADD 2011/09/01 1006060 IMZ YOSHIDA END
+)

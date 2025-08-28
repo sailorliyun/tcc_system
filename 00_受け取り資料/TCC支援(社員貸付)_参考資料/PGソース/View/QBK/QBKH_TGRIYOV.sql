@@ -1,0 +1,22 @@
+CREATE VIEW QBKH_TGRIYOV ( 
+QBKH_RIYOTOUZAIKBN
+,QBKH_RIYOGINKOUCD
+,QBKH_RIYOGINKOUMEI
+,QBKH_SOHSOUFUSAKIKBN
+,QBKH_SOHGINKOUCD
+ ) AS 
+SELECT QBK3_PRMTouzaiKbn QBKH_RiyoTouzaiKbn,
+       QBK3_PRMRGinkouCd QBKH_RiyoGinkouCd,
+       MIN(QTA7_KinyuKikanNMKJ) QBKH_RiyoGinkouMei,
+       QBK3_SOHSoufusakiKbn QBKH_SOHSoufusakiKbn,
+       QBK3_SOHGinkouCd QBKH_SOHGinkouCd
+FROM   QBK3_TGRiyoM,
+       QTA7_GinkouM
+WHERE  QBK3_PRMRGinkouCd = QTA7_PRMKikanCd
+AND    QTA7_PRMHukaCd = '1'
+GROUP BY QBK3_PRMTouzaiKbn,
+         QBK3_PRMRGinkouCd,
+         QBK3_SOHSoufusakiKbn,
+         QBK3_SOHGinkouCd
+
+;

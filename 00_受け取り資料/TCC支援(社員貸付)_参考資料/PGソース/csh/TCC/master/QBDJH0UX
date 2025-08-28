@@ -1,0 +1,146 @@
+#!/bin/csh
+#set   SHELL_NAME = $0
+setenv JOBNET_ID    QBDH00UX
+setenv JOB_ID       QBDJH0UX
+setenv USERKEY      QBDJH0UX
+set    MODULE     = QBDJH0UX
+set    datdir     = $QB_DATA_DIR
+set    huldir     = $FROMHOST2_DIR/qb
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+#   00001    2007/10/02  fip.Eriguchi   ＪＣＢ業務廃止によるHULFT送受信停止
+#
+#
+
+$LOGWRITE "$MODULE" I "START : ＨＵＬＦＴ送信要求" "$USERKEY"
+#-----------------------------------------------------#
+#   HULFT送信要求
+#-----------------------------------------------------#
+utlrecv -f OFQW30 -sync
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : ＨＵＬＦＴ送信要求（発券）RC=[$rc]" "$USERKEY"
+    echo "HULFT RECV(OFQW30) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+utlrecv -f OFQW24 -sync
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : ＨＵＬＦＴ送信要求（約定）RC=[$rc]" "$USERKEY"
+    echo "HULFT RECV(OFQW24) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+# 00001 del by fip.Eriguchi 2007/10/02 ==>
+#utlrecv -f OFQ293 -sync
+#set rc = $status
+#if ($rc != 0) then
+#    $LOGWRITE "$MODULE" E "ERROR : ＨＵＬＦＴ送信要求（登録エラー）RC=[$rc]" "$USERKEY"
+#    echo "HULFT RECV(OFQ293) ABNORMAL ENDED : RC=[$rc]"
+#    exit(1)
+#endif
+# 00001 del by fip.Eriguchi 2007/10/02 <==
+
+#-----------------------------------------------------#
+#   発券、約定、登録エラーファイルコピー
+#-----------------------------------------------------#
+cp  $huldir/rcv/O.F.QW30  $datdir/Hakken.rcv
+set rc = $status
+if ($rc != 0) goto Err00
+cp  $huldir/rcv/O.F.QW24  $datdir/Yakujo.rcv
+set rc = $status
+if ($rc != 0) goto Err00
+# 00001 del by fip.Eriguchi 2007/10/02 ==>
+#cp  $huldir/rcv/O.F.Q293  $datdir/TrkErr.rcv
+#set rc = $status
+#if ($rc != 0) goto Err00
+# 00001 del by fip.Eriguchi 2007/10/02 <==
+goto Next00
+
+Err00:
+$LOGWRITE "$MODULE" E "ERROR : 発券／約定／登録エラーファイルコピー RC=[$rc] FILECOPY" "$USERKEY"
+echo "FILECOPY(QBDJH0UX) ABNORMAL ENDED : RC=[$rc]"
+exit(1)
+
+#-----------------------------------------------------#
+#  発券、約定、登録エラーダミーファイル作成
+#-----------------------------------------------------#
+Next00:
+rm -f $huldir/snd/O.F.QW30
+set rc = $status
+if ($rc != 0) goto Err01
+rm -f $huldir/snd/O.F.QW24
+set rc = $status
+if ($rc != 0) goto Err01
+# 00001 del by fip.Eriguchi 2007/10/02 ==>
+#rm -f $huldir/snd/O.F.Q293
+#set rc = $status
+#if ($rc != 0) goto Err01
+# 00001 del by fip.Eriguchi 2007/10/02 <==
+goto Next01
+
+Err00:
+$LOGWRITE "$MODULE" E "ERROR : 発券／約定／登録エラーダミーファイル削除 RC=[$rc]" "$USERKEY"
+echo "FILEMAKE(QBDJH0UX) rm  ABNORMAL ENDED : RC=[$rc]"
+exit(1)
+
+Next01:
+touch $huldir/snd/O.F.QW30
+set rc = $status
+if ($rc != 0) goto Err02
+touch $huldir/snd/O.F.QW24
+set rc = $status
+if ($rc != 0) goto Err02
+# 00001 del by fip.Eriguchi 2007/10/02 ==>
+#touch $huldir/snd/O.F.Q293
+#set rc = $status
+#if ($rc != 0) goto Err02
+# 00001 del by fip.Eriguchi 2007/10/02 <==
+goto Next02
+
+Err02:
+$LOGWRITE "$MODULE" E "ERROR : 発券／約定／登録エラーダミーファイル作成 RC=[$rc]" "$USERKEY"
+echo "FILEMAKE(QBDJH0UX) touch ABNORMAL ENDED : RC=[$rc]"
+exit(1)
+
+#-----------------------------------------------------#
+#  発券情報ダミーＨＵＬＦＴ送信
+#-----------------------------------------------------#
+Next02:
+utlsend -f OFQW30 -sync
+set rc = $status
+if ( $rc != 0 ) then
+   $LOGWRITE "$MODULE" E "ERROR : ＨＵＬＦＴ送信（発券ダミー）RC=[$rc]" "$USERKEY"
+   echo "HULFT(Hakken) ABNORMAL ENDED : RC=[$rc]"
+   exit(1)
+endif
+
+#-----------------------------------------------------#
+#  約定情報ダミーＨＵＬＦＴ送信
+#-----------------------------------------------------#
+utlsend -f OFQW24 -sync
+set rc = $status
+if ( $rc != 0 ) then
+   $LOGWRITE "$MODULE" E "ERROR : ＨＵＬＦＴ送信（約定ダミー）RC=[$rc]" "$USERKEY"
+   echo "HULFT(Yakujo) ABNORMAL ENDED : RC=[$rc]"
+   exit(1)
+endif
+
+# 00001 del by fip.Eriguchi 2007/10/02 ==>
+#-----------------------------------------------------#
+#  登録エラー情報ダミーＨＵＬＦＴ送信
+#-----------------------------------------------------#
+#utlsend -f OFQ293 -sync
+#set rc = $status
+#if ( $rc != 0 ) then
+#   $LOGWRITE "$MODULE" E "ERROR : ＨＵＬＦＴ送信（登録エラーダミー）RC=[$rc]" "$USERKEY"
+#   echo "HULFT(TorokuErr) ABNORMAL ENDED : RC=[$rc]"
+#   exit(1)
+#endif
+# 00001 del by fip.Eriguchi 2007/10/02 <==
+
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)
+

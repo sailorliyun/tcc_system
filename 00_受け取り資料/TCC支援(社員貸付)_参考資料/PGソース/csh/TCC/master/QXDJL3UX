@@ -1,0 +1,162 @@
+#!/bin/csh
+#　スクリプト名  ： QXDJL3UX
+#　 機  能       ： 事故売上管理：海外返品売上データ日次受信ファイル作成
+#　 作成者       ： FIP
+#
+#-------------------------------------------------------------------------
+#          修  正  履  歴
+# 管理No              修正内容                    担当者      修正日付
+# TR0601-014          海外返品売上業務障害対応    NBC野村     06.02.28
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QXD1D2UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+setenv USERKEY      'QXDJL3UX'                      # ユーザキー
+set    KINOU      = '事故売上管理：海外返品売上データ日次受信ファイル作成'
+set    QX_DATA_DIR   = /d051/UFS/data/qxn/alarmdata    #TMP FILE DIR
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#TR0601-014 ADD START          060228
+#touch $QX_DATA_DIR/qxnf_khendata.hulft.bak
+set    TAIHI_FILE        = $QX_DATA_DIR/qxnf_khendata.hulft.bak             # 退避ファイル(前日分)
+set    KURIKOSHI_FILE    = $QX_DATA_DIR/zen/qxnf_khendata.hulft.kurikoshi   # 繰越ファイル
+set    DATA_FILE         = $QX_DATA_DIR/qxnf_khendata.hulft.dat             # データファイル
+set    ABEND_FILE_DIR    = /s020/UFS/data/netabend                          # 日次異常時ディレクトリ
+set    D_ABEND_FILE      = $ABEND_FILE_DIR/dailyabend.dat                   # 日次異常検知ファイル
+
+
+###############################################
+# STEP-1 正常時･障害時チェック                #
+###############################################
+STEP_01:
+
+touch $TAIHI_FILE
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:退避ファイルtouch処理 RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+
+touch $KURIKOSHI_FILE
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:繰越ファイルtouch処理 RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+
+#日次異常検知ファイルの存在チェック
+if ( -f $D_ABEND_FILE ) then
+    # 障害時は繰越ファイルを作成して、退避ファイルとデータファイルを空にする
+    cat $TAIHI_FILE >> $KURIKOSHI_FILE
+    set rc = $status
+    if ( $rc != 0 ) then
+        set MSG = "失敗:異常検知時の繰越ファイル作成処理 RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+    endif
+    
+    cat /dev/null > $TAIHI_FILE
+    set rc = $status
+    if ( $rc != 0 ) then
+        set MSG = "失敗:異常検知時の退避ファイルクリア処理 RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+    endif
+    
+    cat /dev/null > $DATA_FILE
+    set rc = $status
+    if ( $rc != 0 ) then
+        set MSG = "失敗:異常検知時のデータファイルクリア処理 RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+    endif
+    
+else
+    # 正常時は繰越ファイルとデータファイルを連結して、繰越ファイルと退避ファイルをクリアする
+    cat $KURIKOSHI_FILE $TAIHI_FILE > $DATA_FILE
+    set rc = $status
+    if ( $rc != 0 ) then
+        set MSG = "失敗:繰越ファイルとデータファイル連結処理 RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+    endif
+    
+    cat /dev/null > $KURIKOSHI_FILE
+    set rc = $status
+    if ( $rc != 0 ) then
+        set MSG = "失敗:繰越ファイルクリア処理 RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+    endif
+    
+    cat /dev/null > $TAIHI_FILE
+    set rc = $status
+    if ( $rc != 0 ) then
+        set MSG = "失敗:退避ファイルクリア処理 RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+    endif
+
+endif
+
+#TR0601-014 ADD END            060228
+
+
+###############################################
+# STEP-2 ローダ用ﾃﾞｰﾀ作成(海外返品） 　　　　 #
+###############################################
+STEP_02:
+
+set MODULE = 'qxnb_s000020'
+set STEPKINOU = '海外返品ローダ用データ作成'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qxnb_s000020.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    #2000/09/01　入力ファイルは前日のデータとする
+    #setenv INFILE1   $FROMHOST1_DIR/qxn/rcv/qxnf_khendata.hulft
+
+    #TR0601-014 MOD START          060228
+    #setenv INFILE1   $QX_DATA_DIR/qxnf_khendata.hulft.bak
+    #setenv OUTFIL1   $QX_DATA_DIR/qxn2_loaddata_dat.dat
+    setenv INFILE1   $DATA_FILE
+    setenv OUTFIL1   $QX_DATA_DIR/qxn2_loaddata_dat.load
+    #TR0601-014 MOD END            060228
+    
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"   # 終了メッセージの出力
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

@@ -1,0 +1,35 @@
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QCS5_RIYOUDTLBBKT
+FIELDS TERMINATED BY "q"
+(
+       QCS5_PRMKigyouCd            CHAR, --  CHAR(4) NOT NULL,
+       QCS5_PRMSubRangeKey         CHAR, --  CHAR(4) NOT NULL,
+       QCS5_PRMNaibuKaiinNo        CHAR, --  CHAR(8) NOT NULL,
+       QCS5_PRMTorihikiNo          CHAR, --  NUMBER(7) NOT NULL,
+       QCS5_DenpyouNo              CHAR, --  CHAR(12) NOT NULL,
+       QCS5_RecKbn                 CHAR, --  CHAR(1) NOT NULL,
+       QCS5_SakujoKbn              CHAR, --  CHAR(1) NOT NULL,
+       QCS5_DenpyouShubetsu        CHAR, --  CHAR(4) NOT NULL,
+       QCS5_BatchNo                CHAR, --  NUMBER(4) NOT NULL,
+       QCS5_GNOBatchNo             CHAR, --  NUMBER(4) NOT NULL,
+       QCS5_GNODenSequence         CHAR, --  NUMBER(3) NOT NULL,
+       QCS5_CardNo                 CHAR, --  CHAR(16) NOT NULL,
+       QCS5_RiyouBi                DATE NULLIF(QCS5_RiyouBi="00000000"),
+       QCS5_UketsukeBi             DATE NULLIF(QCS5_UketsukeBi="00000000"),
+       QCS5_KeijyouBi              DATE NULLIF(QCS5_KeijyouBi="00000000"),
+       QCS5_HasseiTen              CHAR, --  CHAR(2) NOT NULL,
+       QCS5_SiharaiHoho            CHAR, --  CHAR(2) NOT NULL,
+       QCS5_SeikyuKanji            CHAR, --  VARCHAR2(40) NULL,
+       QCS5_ShuseiGaku             CHAR, --  NUMBER(11) NOT NULL,
+       QCS5_BubikiShouhiZei        CHAR, --  NUMBER(9) NOT NULL,
+       QCS5_ZeiKbn                 CHAR, --  CHAR(1) NOT NULL,
+       QCS5_ChushutuSumiSign       CHAR, --  CHAR(1) NOT NULL,
+       QCS5_HasseiRoute            CHAR, --  CHAR(1) NOT NULL,
+       QCS5_DenNyuryokuTen         CHAR, --  CHAR(2) NOT NULL,
+       QCS5_HostShoriYmd           CHAR, --  CHAR(8) NOT NULL,
+       QCS5_HostShoriTime          CHAR, --  CHAR(6) NOT NULL,
+       QCS5_SvrKoushinYmd          DATE NULLIF(QCS5_SvrKoushinYmd="00000000")
+)

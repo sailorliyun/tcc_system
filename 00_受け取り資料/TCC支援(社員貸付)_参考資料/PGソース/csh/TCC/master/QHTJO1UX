@@ -1,0 +1,1078 @@
+#!/bin/csh
+# 　スクリプト名 ： QHTJO1UX
+#　 機  能       ： 請求会員のＬＯＡＤを行う
+#　 作成者       ： FIP
+#　 改造         ： ①2000/04/21 compress処理を作業メモのジョブ(QHTJOCUX)に移動
+#                ： ②2000/04/21 SKIP処理を削除
+#                ： ③2002/09/21 新請求書用に修正
+#                ： ④2006/02/20 作業ディレクトリ変更 NBC.YOSHIKAWA
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                        修正者         修正日
+# 000001             ｲﾝﾃﾞｯｸｽﾁｪｯｸの追加               NBC.HAYASHI    2006/11/15
+# 000002 0807073     非互換対応                      NBC.SHIBUICHI  2009/03/29
+# 000002 0807073     INITIAL値・NEXT値のサイズ変更   NBC.SHIBUICHI  2009/03/29
+# 000002 0808052     非互換対応                      NBC.SHIBUICHI  2009/03/29
+# 000002 0807073     INITIAL値・NEXT値のサイズ変更   NBC.SHIBUICHI  2009/03/29
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QHT711UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+setenv USERKEY      'QHTJO1UX'                      # ユーザキー
+set    KINOU      = '請求会員テーブル登録'
+
+#set TABLE_NAME    = QHA3_SEIKYUKAIT                 # 対象テーブル名③2002/09/21 新請求書用に修正
+set TABLE_NAME    = QHE3_SEIKYUKAIT                 # 対象テーブル名
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+set    INDEX_NAME   = XIEQHE3_SEIKYUKAIT                 # 対象インデックス名
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+set STEP_F        = $QH_DATA_DIR/${JOB_ID}_STEP_.tmp
+
+#④2006/02/20 作業ディレクトリ変更 mod==>
+set    SEIKYU_DATA_DIR     = '/d380/UFS/data/qh/monthly'
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+
+#if ( ! -e $STEP_F ) then
+#    touch $STEP_F
+#endif
+
+##################################
+# STEP-1 主キー制約削除          #
+##################################
+STEP_1:
+
+#set cnt = `grep -c "STEP_1" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_2
+#endif
+
+set MODULE = 'SQL*PLUS-1'
+$LOGWRITE "$MODULE" I "開始:QHE3 主キー制約削除" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME drop primary key;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 主キー制約削除 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_1" > $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:QHE3 主キー制約削除" $USERKEY
+
+##################################
+# STEP-2 データロード１          #
+##################################
+STEP_2:
+
+#set cnt = `grep -c "STEP_2" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_3
+#endif
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QHE3 データロード１" $USERKEY
+
+#③2002/09/21 新請求書用に修正
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhad_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhaf_seikyukai01.dat \
+#   log=$LDR_LOG_DIR/qtad_seikyukai01.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==>
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhef_seikyukai01.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai01.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$SEIKYU_DATA_DIR/qhef_seikyukai01.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai01.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID         \
+   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+   data=$SEIKYU_DATA_DIR/qhef_seikyukai01.dat \
+   log=$LDR_LOG_DIR/qted_seikyukai01.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード１ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_2" >> $STEP_F
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード１（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード１（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:QHE3 データロード１（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+$LOGWRITE "$MODULE" I "終了:QHE3 データロード１" $USERKEY
+
+##################################
+# STEP-3 データロード２          #
+##################################
+STEP_3:
+
+#set cnt = `grep -c "STEP_3" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_4
+#endif
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QHE3 データロード２" $USERKEY
+
+#③2002/09/21 新請求書用に修正
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhad_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhaf_seikyukai02.dat \
+#   log=$LDR_LOG_DIR/qtad_seikyukai02.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==>
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhef_seikyukai02.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai02.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$SEIKYU_DATA_DIR/qhef_seikyukai02.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai02.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+   data=$SEIKYU_DATA_DIR/qhef_seikyukai02.dat \
+   log=$LDR_LOG_DIR/qted_seikyukai02.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード２ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_3" >> $STEP_F
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード２（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード２（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:QHE3 データロード２（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+$LOGWRITE "$MODULE" I "終了:QHE3 データロード２" $USERKEY
+
+##################################
+# STEP-4 データロード３          #
+##################################
+STEP_4:
+
+#set cnt = `grep -c "STEP_4" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_5
+#endif
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QHE3 データロード３" $USERKEY
+
+#③2002/09/21 新請求書用に修正
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhad_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhaf_seikyukai03.dat \
+#   log=$LDR_LOG_DIR/qtad_seikyukai03.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==>
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhef_seikyukai03.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai03.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$SEIKYU_DATA_DIR/qhef_seikyukai03.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai03.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+   data=$SEIKYU_DATA_DIR/qhef_seikyukai03.dat \
+   log=$LDR_LOG_DIR/qted_seikyukai03.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード３ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_4" >> $STEP_F
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード３（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード３（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:QHE3 データロード３（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+$LOGWRITE "$MODULE" I "終了:QHE3 データロード３" $USERKEY
+
+##################################
+# STEP-5 データロード４          #
+##################################
+STEP_5:
+
+#set cnt = `grep -c "STEP_5" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_6
+#endif
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QHE3 データロード４" $USERKEY
+
+#③2002/09/21 新請求書用に修正
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhad_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhaf_seikyukai04.dat \
+#   log=$LDR_LOG_DIR/qtad_seikyukai04.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==>
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhef_seikyukai04.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai04.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$SEIKYU_DATA_DIR/qhef_seikyukai04.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai04.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+   data=$SEIKYU_DATA_DIR/qhef_seikyukai04.dat \
+   log=$LDR_LOG_DIR/qted_seikyukai04.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード４ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_5" >> $STEP_F
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード４（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード４（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:QHE3 データロード４（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+$LOGWRITE "$MODULE" I "終了:QHE3 データロード４" $USERKEY
+
+##################################
+# STEP-6 データロード５          #
+##################################
+STEP_6:
+
+#set cnt = `grep -c "STEP_6" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_7
+#endif
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QHE3 データロード５" $USERKEY
+
+#③2002/09/21 新請求書用に修正
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhad_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhaf_seikyukai05.dat \
+#   log=$LDR_LOG_DIR/qtad_seikyukai05.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==>
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhef_seikyukai05.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai05.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$SEIKYU_DATA_DIR/qhef_seikyukai05.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai05.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+   data=$SEIKYU_DATA_DIR/qhef_seikyukai05.dat \
+   log=$LDR_LOG_DIR/qted_seikyukai05.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード５ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_6" >> $STEP_F
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード５（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード５（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:QHE3 データロード５（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+$LOGWRITE "$MODULE" I "終了:QHE3 データロード５" $USERKEY
+
+##################################
+# STEP-7 データロード６          #
+##################################
+STEP_7:
+
+#set cnt = `grep -c "STEP_7" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_8
+#endif
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QHE3 データロード６" $USERKEY
+
+#③2002/09/21 新請求書用に修正
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhad_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhaf_seikyukai06.dat \
+#   log=$LDR_LOG_DIR/qtad_seikyukai06.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==>
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhef_seikyukai06.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai06.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$SEIKYU_DATA_DIR/qhef_seikyukai06.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai06.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID         \
+   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+   data=$SEIKYU_DATA_DIR/qhef_seikyukai06.dat \
+   log=$LDR_LOG_DIR/qted_seikyukai06.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード６ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_7" >> $STEP_F
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード６（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード６（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:QHE3 データロード６（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+$LOGWRITE "$MODULE" I "終了:QHE3 データロード６" $USERKEY
+
+##################################
+# STEP-8 データロード７          #
+##################################
+STEP_8:
+
+#set cnt = `grep -c "STEP_8" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_9
+#endif
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QHE3 データロード７" $USERKEY
+
+#③2002/09/21 新請求書用に修正
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhad_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhaf_seikyukai07.dat \
+#   log=$LDR_LOG_DIR/qtad_seikyukai07.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==>
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhef_seikyukai07.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai07.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$SEIKYU_DATA_DIR/qhef_seikyukai07.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai07.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+   data=$SEIKYU_DATA_DIR/qhef_seikyukai07.dat \
+   log=$LDR_LOG_DIR/qted_seikyukai07.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード７ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_8" >> $STEP_F
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード７（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード７（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:QHE3 データロード７（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+$LOGWRITE "$MODULE" I "終了:QHE3 データロード７" $USERKEY
+
+##################################
+# STEP-9 データロード８          #
+##################################
+STEP_9:
+
+#set cnt = `grep -c "STEP_9" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_10
+#endif
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QHE3 データロード８" $USERKEY
+
+#③2002/09/21 新請求書用に修正
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhad_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhaf_seikyukai08.dat \
+#   log=$LDR_LOG_DIR/qtad_seikyukai08.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 ディレクトリ変更
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$QH_DATA_DIR/monthly/qhef_seikyukai08.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai08.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+#④2006/02/20 作業ディレクトリ変更 mod==<
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+#   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+#   data=$SEIKYU_DATA_DIR/qhef_seikyukai08.dat \
+#   log=$LDR_LOG_DIR/qted_seikyukai08.log          \
+#   direct=true                                    \
+#               > $LOGFILE
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai.sql       \
+   data=$SEIKYU_DATA_DIR/qhef_seikyukai08.dat \
+   log=$LDR_LOG_DIR/qted_seikyukai08.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード８ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_9" >> $STEP_F
+
+#000001 ADD NBC.HAYASHI 2006/11/15 START
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード８（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 データロード８（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:QHE3 データロード８（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+
+#000001 ADD NBC.HAYASHI 2006/11/15 END
+
+$LOGWRITE "$MODULE" I "終了:QHE3 データロード８" $USERKEY
+
+##################################
+# STEP-10 主キー制約付与         #
+##################################
+STEP_10:
+
+#set cnt = `grep -c "STEP_10" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_99
+#endif
+
+set MODULE = 'SQL*PLUS-2'
+$LOGWRITE "$MODULE" I "開始:QHE3 主キー制約付与" $USERKEY
+#③2002/09/21 新請求書用に修正
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#alter table $TABLE_NAME add
+#       PRIMARY KEY (QHA3_KeyRecShikibetsu, QHA3_KeySeikyuYm,
+#              QHA3_KeySeqNo, QHA3_KeyBunkatsuNo, QHA3_KeyVersionNo,
+#              QHA3_KeyRecNo)
+#       USING INDEX  NOLOGGING
+#              TABLESPACE SEI1IDX02
+#              STORAGE (
+#                     INITIAL 370M
+#                     NEXT 30M
+#                     MINEXTENTS 1
+#                     MAXEXTENTS 100
+#                     PCTINCREASE 0
+#              );
+#quit SQL.SQLCODE
+#EOF
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#alter table $TABLE_NAME add
+#       PRIMARY KEY (QHE3_KeyRecShikibetsu, QHE3_KeySeikyuYm,
+#                    QHE3_KeySeqNo,         QHE3_KeyBunkatsuNo,
+#                    QHE3_KeyVersionNo,     QHE3_KeyRecNo)
+#       USING INDEX  NOLOGGING
+#              TABLESPACE SEI1IDX02
+#              STORAGE (
+#                     INITIAL 370M
+#                     NEXT 30M
+#                     MINEXTENTS 1
+#                     MAXEXTENTS 100
+#                     PCTINCREASE 0
+#              );
+#quit SQL.SQLCODE
+#EOF
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME add
+       PRIMARY KEY (QHE3_KeyRecShikibetsu, QHE3_KeySeikyuYm,
+                    QHE3_KeySeqNo,         QHE3_KeyBunkatsuNo,
+                    QHE3_KeyVersionNo,     QHE3_KeyRecNo)
+       USING INDEX  NOLOGGING
+              TABLESPACE SEI1IDX02
+              STORAGE (
+                     INITIAL 100M
+                     NEXT 10M
+                     MINEXTENTS 1
+                     MAXEXTENTS 100
+                     PCTINCREASE 0
+              );
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHE3 主キー制約付与 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP_10" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:QHE3 主キー制約付与" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+#/bin/rm $STEP_F
+
+#rm -f $QH_DATA_DIR/monthly/qhaf_seikyukai??.dat
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

@@ -1,0 +1,15 @@
+#!/bin/csh -f
+#---------------------------------------------------------------------#
+#  autolog
+#
+#
+#  make : 2009/02/05     BY  Watanabe
+#
+#---------------------------------------------------------------------#
+source /opt/auto/autoenv.csh
+source /opt/auto/aplenv.csh
+#
+log0 >& autolog_log
+log0 >>& autolog_ug1
+#
+utlsend -f ofut02

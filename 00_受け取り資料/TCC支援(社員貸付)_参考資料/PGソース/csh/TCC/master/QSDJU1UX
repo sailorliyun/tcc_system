@@ -1,0 +1,31 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJU1UX
+#　 機  能       ： 日次データバックアップ
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSDBK2UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QSDJU1UX'                         # ユーザキー 
+set    KINOU      = '日次データバックアップ'
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+### ファイルをコピーする ###
+### 2001.02.07 処理中止  by ogawa ###
+
+#######
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+

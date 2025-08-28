@@ -1,0 +1,31 @@
+#!/bin/csh
+#　スクリプト名  ： QSEJ2CUX
+#　 機  能       ： イメージ管理日次繰越ファイル作成
+#　 作成者       ： NBC 斎藤
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSER01UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QSEJ2CUX'
+set    KINOU      = 'イメージ管理日次繰越ファイル作成'
+set    ABNFIL     = /d360/UFS/imgkanri/image_buffer/abnfile.dat
+
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#########################################
+# STEP-1                                #
+#########################################
+
+# アベンドファイル作成
+cp /dev/null $ABNFIL
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了

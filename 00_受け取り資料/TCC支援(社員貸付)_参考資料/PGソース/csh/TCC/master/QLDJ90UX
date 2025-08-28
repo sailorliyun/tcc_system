@@ -1,0 +1,160 @@
+#!/bin/csh
+#　 スクリプト名 ： QLDJ90UX
+#　 業  務       : クレジット帳票
+#　 機  能       ： 期日管理処理
+#　 作成者       ： FIP
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名 file 名=job名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLD901UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = $JOBNET_ID                         # ユーザキー
+set    PRM_JOBNET =  "'"$JOBNET_ID"'"
+set    PRM_JOB = "'"$JOB_ID"'"
+
+###################################################################
+# STEP-2     ストアド・プロシジャの実行                           #
+###################################################################
+set   MODULE = 'qusc_sspexec.exe'
+
+###################################################################
+# STEP-2.1 ストアド・プロシジャの実行 期日管理処理                #
+###################################################################
+set    KINOU      = 'クレジット帳票：期日管理処理'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#20010605追加
+set    EXE_TIME = `date +'%m%d'`  #システム日付取得
+if ( $EXE_TIME == "0601" ) then
+    rm -f /d041/UFS/data/qv/work/QVLE_CARDZENT0601.dat  #データファイル削除本番用
+#    rm -f /home/ipc/qv/work/QVLE_CARDZENT0601.dat        #データファイル削除テスト用
+endif
+#20010605
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVSP_S002800Pkg.QVSP_S002800( $PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#20010605追加
+###################################################################
+# STEP-3     ストアド・プロシジャの実行                           #
+###################################################################
+set   MODULE = 'qusc_sspexec.exe'
+
+###################################################################
+# STEP-3.1 ストアド・プロシジャの実行 カード前年テーブル削除      #
+###################################################################
+set    KINOU      = 'クレジット帳票：期日管理処理(カード前年Ｔ削除)'
+
+if ( $EXE_TIME == "0601" ) then
+	$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+	setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+	$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVSP_S003300Pkg.QVLE_CARDZENT_DEL( $PRM_JOBNET, $PRM_JOB)"
+
+	set rc = $status
+	setenv NLS_LANG Japanese_Japan.JA16EUC
+
+	if ( $rc != 0 ) then
+	        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	        exit  1                                  # 異常終了
+	endif
+
+	$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+endif
+###################################################################
+# STEP-4       ＳＱＬローダーの実行                               #
+###################################################################
+##set   LDR_CTRL_DIR  = '/home/ipc/qv/ldr'                  #LOADER CONTROL DIR
+##set   DATAV_DIR     = '/home/ipc/qv/work'                 #DATA DIR
+##set   USER_LOG_DIR  = '/home/ipc/qv/ldrlog'               #LOADER LOG DIR
+##set   LDR_LOG_DIR   = '/home/ipc/qv/ldrlog'
+set   DATAV_DIR     = '/d041/UFS/data/qv/work'          #DATA DIR
+set   DATAV_S     = '.dat'                                #DATA 拡張子
+
+###################################################################
+# STEP-4.1     ＳＱＬローダーの実行      カード前年テーブル       #
+###################################################################
+set    KINOU      = 'クレジット帳票：期日管理処理 LOADER(カード前テーブル)'
+set    CTLID      = 'QVLE_CARDZENT'                 #LOADER CONTROL F名
+set    DATAID     = 'QVLE_CARDZENT0601'$DATAV_S     #DATA
+set    MODULE     = $CTLID
+if ( $EXE_TIME == "0601" ) then
+	$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+	setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#	sqlldr $DB_USERID/$DB_PASSWORD           \
+	sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+	       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+	       data=$DATAV_DIR/$DATAID           \
+	       log=$LDR_LOG_DIR/ldr0601.log      \
+	       >& $USER_LOG_DIR/ldr0601E.log
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+	#echo 'normal end'
+	set rc = $status
+	setenv NLS_LANG Japanese_Japan.JA16EUC
+
+	if ( $rc != 0 ) then
+	        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	        exit  1                                  # 異常終了
+	endif
+
+    rm -f $DATAV_DIR/$DATAID  #データファイルの削除
+
+	$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+endif
+
+###################################################################
+# STEP-5     ストアド・プロシジャの実行                           #
+###################################################################
+set   MODULE = 'qusc_sspexec.exe'
+
+###################################################################
+# STEP-5.1 ストアド・プロシジャの実行 カード当年テーブル削除      #
+###################################################################
+set    KINOU      = 'クレジット帳票：期日管理処理(カード当年Ｔ削除)'
+if ( $EXE_TIME == "0601" ) then
+	$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+	setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+	$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVSP_S003300Pkg.QVLD_CARDTOUT_DEL( $PRM_JOBNET, $PRM_JOB)"
+
+	set rc = $status
+	setenv NLS_LANG Japanese_Japan.JA16EUC
+
+	if ( $rc != 0 ) then
+	        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	        exit  1                                  # 異常終了
+	endif
+
+	$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+endif
+#20010605
+###################################################################
+#                           終 了                                 #
+###################################################################
+exit 0                                           # 正常終了
+
+~

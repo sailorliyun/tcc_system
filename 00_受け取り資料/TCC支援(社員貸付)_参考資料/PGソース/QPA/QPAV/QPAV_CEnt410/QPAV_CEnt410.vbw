@@ -1,0 +1,6 @@
+frmQPAV_CEnt410 = 79, 9, 808, 737, C, 4, 66, 834, 723, C
+basQPAV_CEnt410 = 87, 30, 748, 707, C
+QPAV_Common = 66, 66, 745, 733, C
+OraConst = 0, 0, 0, 0, C
+SprConstants = 0, 0, 0, 0, C
+QSAV_SysErr = 0, 0, 0, 0, C, 154, 106, 783, 635, C

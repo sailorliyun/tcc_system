@@ -1,0 +1,39 @@
+#!/bin/csh
+#　スクリプト名  ： QMDJ01UX
+#　 機  能       ： 臨時カードポイント還元テーブル 索引再構築
+#　 作成者       ： FIP
+# 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID    'QMD002UX'                     # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QMDJ01UX'                     # ユーザキー
+set    KINOU      = '臨時カードポイント還元テーブル 索引再構築'
+setenv INDEX_NAME   'SYS_C0034558'
+
+##################################
+# STEP-1 索引再構築              #
+##################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+
+sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE
+alter index tccuser.$INDEX_NAME rebuild;
+quit SQL.SQLCODE
+EOF
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:索引再構築 RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" $USERKEY
+
+exit 0

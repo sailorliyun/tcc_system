@@ -1,0 +1,424 @@
+#!/bin/csh
+#   スクリプト名： QBDJWAUX
+#   機  能	： イメージ画像移動処理
+#   作成者	： NBC 斎藤
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+#   00001    2007/05/01  fip.Eriguchi   子シェルのディレクトリを明示的に指定する
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBD604UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY     'QBDJWAUX'                          # ユーザキー
+set    KINOU      = 'イメージ画像移動処理'             # 機能名
+set    IDXDIR     = /d360/UFS/data/fromhost/qb/rcv
+set    KURDIR     = /d360/UFS/data/fromhost/qb/zen
+set    RUNFIL     = /d360/UFS/imgkanri/image_buffer/runfile.dat
+set    ABNFIL     = /d360/UFS/imgkanri/image_buffer/abnfile.dat
+set    BRNFIL     = /d360/UFS/imgkanri/image_buffer/badfile.dat
+set    YMDFIL     = /d360/UFS/imgkanri/image_buffer/ymdfile.dat
+set    HSTDIR     = /d360/UFS/imgkanri/tmp/image_buffer
+set    SMBDIR     = /d360/UFS/imgkanri/image_buffer
+#00001 add by fip.Eriguchi 2007/05/01 start
+set    SHELLDIR     = /usr/local/auto/master
+#00001 add by fip.Eriguchi 2007/05/01   end
+set    YMD        = `cat $YMDFIL`
+setenv ERSRC        $HSTDIR/ERRSERCH
+setenv BKNG         $HSTDIR/BLKNGNO
+setenv OSCR         $HSTDIR/OTSCRPT
+setenv S4_INDEX_001 $SMBDIR/001/index.txt
+setenv S4_INDEX_XXX $SMBDIR/XXX/index.txt
+setenv INDEX_001_BK 001index.txt_$YMD
+setenv INDEX_XXX_BK XXXindex.txt_$YMD
+setenv NOKFILE      $HSTDIR/fromhost/001_OK_FILE.txt
+setenv NNGFILE      $HSTDIR/fromhost/001_NG_FILE.txt
+setenv XOKFILE      $HSTDIR/fromhost/XXX_OK_FILE.txt
+setenv XNGFILE      $HSTDIR/fromhost/XXX_NG_FILE.txt
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+if ( -f $BRNFIL) then
+	$LOGWRITE "$MODULE" I "終了:$KINOU 前JOBにてエラーが有った為終了" "$USERKEY"
+	rm $BRNFIL
+
+	if ( -f $ABNFIL ) then
+		rm $ABNFIL
+	endif
+
+	rm $RUNFIL
+
+	exit 0
+endif
+
+# $LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+# exit 0
+
+#########################################
+# STEP-1 日次実行確認および、早朝処理   #
+#########################################
+
+# アベンドファイルが存在する場合、日次処理にてアベンド
+if ( -f $ABNFIL ) then
+
+	# イメージ管理日次処理ファイルが存在しない場合
+	# イメージ管理日次処理前にアベンドした為、HULFT受信および繰越ファイル作成
+	if !( -f $RUNFIL ) then
+
+		$LOGWRITE "$MODULE" I "情報:$KINOU イメージ管理日次前アベンドの為、繰越ファイル作成" "$USERKEY"
+
+		# 応諾データバックアップ実行
+		#00001 mod by fip.Eriguchi 2007/05/01 start
+		#set PROGRAM = QBDJW5UX
+		set PROGRAM = $SHELLDIR/QBDJW5UX
+		#00001 mod by fip.Eriguchi 2007/05/01   end
+		if !( -x $PROGRAM ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常:$KINOU プログラムが見つかりません[$PROGRAM]" "$USERKEY"
+			exit 1
+
+		endif
+		$PROGRAM
+
+		# 繰越ファイル作成実行
+		#00001 mod by fip.Eriguchi 2007/05/01 start
+		#set PROGRAM = QBDJWBUX
+		set PROGRAM = $SHELLDIR/QBDJWBUX
+		#00001 mod by fip.Eriguchi 2007/05/01   end
+		if !( -x $PROGRAM ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常:$KINOU プログラムが見つかりません[$PROGRAM]" "$USERKEY"
+			exit 1
+
+		endif
+		$PROGRAM
+
+#	else
+		# イメージ管理日次処理後にアベンドした為、未処理
+
+	endif
+
+	rm $ABNFIL
+
+else
+	# 通常処理（日次処理にてアベンド無し）
+
+	set    YMDHMS     = `cat $RUNFIL`
+
+	# ファイル初期化
+	cp /dev/null $HSTDIR/OTSCRPTOK
+	cp /dev/null $HSTDIR/OTSCRPTNG
+	cp /dev/null $HSTDIR/ERRSERCH
+	cp /dev/null $HSTDIR/BLKNGNO
+
+	#########################################
+	# STEP-1.1 イメージ画像移動処理         #
+	#########################################
+
+	$LOGWRITE "$MODULE" I "開始:$KINOU イメージ画像移動処理" "$USERKEY"
+
+	awk -f $EXE_DIR/QBFAWK $HSTDIR/OTSCRPT >  $EXE_DIR/QBFMOVE.csh
+	chmod 777 $EXE_DIR/QBFMOVE.csh
+
+	#ファイル移動処理実行
+	$EXE_DIR/QBFMOVE.csh
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" W "警告:$KINOU ファイル移動処理" "$USERKEY"
+	endif
+
+	# 実行データバックアップ
+	cp -p $HSTDIR/OTSCRPT $HSTDIR/fromhost/OTSCRPT.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "異常:$KINOU データ退避OTSCRPT" "$USERKEY"
+	    exit  1
+	endif
+
+	$LOGWRITE "$MODULE" I "終了:$KINOU イメージ画像移動処理" "$USERKEY"
+
+	################################################
+	# STEP-1.2 移動エラー時データのindex.txt再構築 #
+	################################################
+	set MODULE = 'SHELL'
+	$LOGWRITE "$MODULE" I "開始:$KINOU index.txt編集処理" "$USERKEY"
+	test -s $ERSRC
+	set rc = $status
+	if ( $rc == 0 ) then
+	   egrep -f $ERSRC $OSCR | awk '{ print $2 }' | awk -F"/" '{ print $7 }' > \
+	         $HSTDIR/fromhost/IDXADDWK.lst
+	endif
+
+	# ブラック分取得(全体 削除対象候補）
+	grep '/NG/' $OSCR | awk '{ print $2 }' | awk -F"/" '{ print $7 }' > \
+	     $HSTDIR/fromhost/IDXDELBK.lst
+	test -s $BKNG
+	set rc = $status
+	if ( $rc == 0 ) then
+	# ＮＧ有り時はＮＧ分は除く
+	     cat $BKNG | awk -F"/" '{ print $6 }' > $HSTDIR/fromhost/IDXADDBK.lst
+	     egrep -v -f $HSTDIR/fromhost/IDXADDBK.lst $HSTDIR/fromhost/IDXDELBK.lst >\
+	                  $HSTDIR/fromhost/IDXDELBK.wk
+	else
+	# ＮＧ無し時は全データ削除対象
+	     cp -p $HSTDIR/fromhost/IDXDELBK.lst $HSTDIR/fromhost/IDXDELBK.wk
+	endif
+
+	# ＯＫファイルから対象データを抽出する
+	test -s $HSTDIR/fromhost/IDXADDWK.lst
+	set rc = $status
+	if ( $rc == 0 ) then
+	   egrep -f $HSTDIR/fromhost/IDXADDWK.lst $HSTDIR/fromhost/001_OK_FILE.txt > \
+	           $HSTDIR/fromhost/001_IDXADD.lst
+	   egrep -f $HSTDIR/fromhost/IDXADDWK.lst $HSTDIR/fromhost/XXX_OK_FILE.txt > \
+	           $HSTDIR/fromhost/XXX_IDXADD.lst
+	endif
+
+	# ブラックの処理済み分をＮＧファイルから除く
+	test -s $HSTDIR/fromhost/IDXDELBK.wk
+	set rc = $status
+	if ( $rc == 0 ) then
+	   egrep -v -f $HSTDIR/fromhost/IDXDELBK.wk $HSTDIR/fromhost/001_NG_FILE.txt > \
+	           $HSTDIR/fromhost/001_NG_FILE.wk
+	else
+	   cp -p $HSTDIR/fromhost/001_NG_FILE.txt $HSTDIR/fromhost/001_NG_FILE.wk
+	endif
+
+	# ＮＧ分へ追加する 
+	#新規
+	cat $HSTDIR/fromhost/001_NG_FILE.wk $HSTDIR/fromhost/001_IDXADD.lst > \
+	           $HSTDIR/fromhost/001_IDXADD.wk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU index.txtデータ編集１" "$USERKEY"
+	    exit  1
+	endif
+
+	#諸届
+	cat $HSTDIR/fromhost/XXX_NG_FILE.txt $HSTDIR/fromhost/XXX_IDXADD.lst > \
+	           $HSTDIR/fromhost/XXX_IDXADD.wk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU index.txtデータ編集２" "$USERKEY"
+	    exit  1
+	endif
+
+	# バーコード番号でソート
+	sort -k 3,3 $HSTDIR/fromhost/001_IDXADD.wk > $HSTDIR/fromhost/001_IDXADD.txt
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU index.txtデータ編集３" "$USERKEY"
+	    exit  1
+	endif
+
+	sort -k 3,3 $HSTDIR/fromhost/XXX_IDXADD.wk > $HSTDIR/fromhost/XXX_IDXADD.txt
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU index.txtデータ編集４" "$USERKEY"
+	    exit  1
+	endif
+
+	# YYYYMMDD インデックスファイル スペース→TAB変換&不要スペース削除
+	cat $HSTDIR/fromhost/001_IDXADD.txt | awk '{ print $1 "\t" $2 "\t" $3 "\t" $4 }' > \
+	           $HSTDIR/fromhost/001_IDXOUT.txt
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU index.txtデータ編集５" "$USERKEY"
+	    exit  1
+	endif
+
+	cat $HSTDIR/fromhost/XXX_IDXADD.txt | awk '{ print $1 "\t" $2 "\t" $3 "\t" $4 }' > \
+	            $HSTDIR/fromhost/XXX_IDXOUT.txt
+
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU 新規index.txtデータ編集６" "$USERKEY"
+	    exit  1
+	endif
+
+	# 退避用ディレクトリ作成
+	mkdir $HSTDIR/fromhost/$YMDHMS
+
+	# YYYYMMDD バックアップは当日分のみ 履歴は支援サーバでバックアップ
+	# 新規index.txt バックアップ後ファイルコピー
+	cp -p $S4_INDEX_001 $HSTDIR/fromhost/$YMDHMS/$INDEX_001_BK
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU 新規index.txtデータ退避" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/fromhost/001_IDXOUT.txt $S4_INDEX_001
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU 新規index.txtデータコピー" "$USERKEY"
+	    exit  1
+	endif
+
+	# YYYYMMDD 諸届index.txt バックアップ後ファイルコピー
+	cp -p $S4_INDEX_XXX $HSTDIR/fromhost/$YMDHMS/$INDEX_XXX_BK
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU 諸届index.txtデータ退避" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/fromhost/XXX_IDXOUT.txt $S4_INDEX_XXX
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU 諸届index.txtデータデータコピー" "$USERKEY"
+	    exit  1
+	endif
+
+	$LOGWRITE "$MODULE" I "終了:$KINOU index.txt編集処理" "$USERKEY"
+
+	################################################
+	# STEP-1.3 データバックアップ                  #
+	################################################
+	$LOGWRITE "$MODULE" I "開始:$KINOU データバックアップ処理" "$USERKEY"
+
+	#データバックアップ
+	cp -p $HSTDIR/fromhost/O.F.QA01.txt $HSTDIR/fromhost/O.F.QA01.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避１" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/fromhost/O.F.QA01.OK  $HSTDIR/fromhost/O.F.QA01.OK.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避２" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/fromhost/O.F.QA02.txt $HSTDIR/fromhost/O.F.QA02.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避３" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/fromhost/O.F.QA03.txt $HSTDIR/fromhost/O.F.QA03.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避４" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/fromhost/O.F.QA04.txt $HSTDIR/fromhost/O.F.QA04.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避５" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/fromhost/O.F.QA05.txt $HSTDIR/fromhost/O.F.QA05.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避６" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/OTSCRPT $HSTDIR/fromhost/OTSCRPT.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避７" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/001/index.txt $HSTDIR/fromhost/001index.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避８" "$USERKEY"
+	    exit  1
+	endif
+
+	cp -p $HSTDIR/XXX/index.txt $HSTDIR/fromhost/XXXindex.bk
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU データ退避９" "$USERKEY"
+	    exit  1
+	endif
+
+	cp $NOKFILE $HSTDIR/fromhost/$YMDHMS/001_OK_FILE.txt
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU バックアップエラー新規ＯＫファイル" "$USERKEY"
+	    exit  1
+	endif
+
+	cp $NNGFILE $HSTDIR/fromhost/$YMDHMS/001_NG_FILE.txt
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU バックアップエラー新規ＮＧファイル" "$USERKEY"
+	    exit  1
+	endif
+
+	cp $XOKFILE $HSTDIR/fromhost/$YMDHMS/XXX_OK_FILE.txt
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU バックアップエラー諸届ＯＫファイル" "$USERKEY"
+	    exit  1
+	endif
+
+	cp $XNGFILE $HSTDIR/fromhost/$YMDHMS/XXX_NG_FILE.txt
+	set rc = $status
+	if ( $rc != 0 ) then
+	    $LOGWRITE "$MODULE" E "失敗:$KINOU バックアップエラー諸届ＯＫファイル" "$USERKEY"
+	    exit  1
+	endif
+
+
+	$LOGWRITE "$MODULE" I "終了:$KINOU データバックアップ処理" "$USERKEY"
+
+
+endif
+
+
+################################################
+# STEP-2 後処理                                #
+################################################
+
+# 日次実行用ファイル削除
+rm $RUNFIL
+
+#０件ファイル作成
+cp /dev/null $HSTDIR/fromhost/O.F.QA01.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA01.OK
+cp /dev/null $HSTDIR/fromhost/O.F.QA02.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA03.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA04.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA05.txt
+cp /dev/null $HSTDIR/OTSCRPT
+cp /dev/null $HSTDIR/001/index.txt
+cp /dev/null $HSTDIR/XXX/index.txt
+cp /dev/null $HSTDIR/fromhost/001_OK_FILE.txt
+cp /dev/null $HSTDIR/fromhost/001_NG_FILE.txt
+cp /dev/null $HSTDIR/fromhost/XXX_OK_FILE.txt
+cp /dev/null $HSTDIR/fromhost/XXX_NG_FILE.txt
+cp /dev/null $HSTDIR/fromhost/001_NG_FILE.wk
+cp /dev/null $HSTDIR/fromhost/IDXDELBK.lst
+cp /dev/null $HSTDIR/fromhost/IDXDELBK.wk
+cp /dev/null $HSTDIR/fromhost/IDXADDWK.lst
+cp /dev/null $HSTDIR/fromhost/001_IDXADD.lst
+cp /dev/null $HSTDIR/fromhost/XXX_IDXADD.lst
+cp /dev/null $HSTDIR/fromhost/001_IDXADD.wk
+cp /dev/null $HSTDIR/fromhost/XXX_IDXADD.wk
+cp /dev/null $HSTDIR/fromhost/001_IDXOUT.txt
+cp /dev/null $HSTDIR/fromhost/XXX_IDXOUT.txt
+cp /dev/null $HSTDIR/fromhost/001_IDXADD.txt
+cp /dev/null $HSTDIR/fromhost/IDXADDBK.lst
+cp /dev/null $HSTDIR/fromhost/XXX_IDXADD.txt
+cp /dev/null $HSTDIR/OTSCRPT
+
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+exit 0

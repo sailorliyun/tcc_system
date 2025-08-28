@@ -1,0 +1,54 @@
+#!/bin/csh
+#　スクリプト名  ： QPDJB4UX
+#　 機  能       ： 社員貸付データ繰越ファイル０バイト
+#　 作成者       ： NBC.hayashi
+#
+#  修正番号 修正者   修正日時   修正内容
+#  000001   sugawara 2008/05/20 ＪＯＢ移動に伴うネット名変更
+#  000002   sugawara 2008/05/20 コピー処理のエラーハンドル追加
+
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+
+# 000001 sugawara del 2008/05/20 start
+#setenv JOBNET_ID   'QSD311UX'                         # ジョブネット名
+# 000001 sugawara del 2008/05/20 end
+
+# 000001 sugawara add 2008/05/20 start
+setenv JOBNET_ID   'QPDBA2UX'                          # ジョブネット名
+# 000001 sugawara add 2008/05/20 end
+
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPDJB4UX'                         # ユーザキー
+set    KINOU      = '社員貸付データ繰越ファイル０バイト'
+set    QP_DATA_DIR  = /d051/UFS/data/qp
+
+#########################################
+# STEP-1  繰越ファイルを0バイトにする   #
+#########################################
+
+set MODULE = 'shell'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+ cp  /dev/null $QP_DATA_DIR/qpb1_hostkasituke.kur
+
+# 000002 sugawara add 2008/05/20 start
+
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "異常終了:$KINOU  RC=[$rc]"  "$USERKEY"
+    exit  1                                          # 異常終了
+endif
+
+# 000002 sugawara add 2008/05/20 end
+
+
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+
+exit 0                                           # 正常終了
+

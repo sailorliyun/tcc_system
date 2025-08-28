@@ -1,0 +1,55 @@
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QTAM_NYUKINSPT
+fields terminated by "q"
+(
+ QTAM_PRMKigyouCd              CHAR, -- CHAR(4) NOT NULL,
+ QTAM_PRMSubRanjiKey           CHAR, -- CHAR(4) NOT NULL,
+ QTAM_PRMNaibuKaiinNo          CHAR, -- CHAR(8) NOT NULL,
+ QTAM_PRMNyukinMeisai          CHAR, -- NUMBER(7) NOT NULL,
+ QTAM_PRMShoriTuuBan           CHAR, -- NUMBER(9) NOT NULL,
+ QTAM_TouzaiKbn                CHAR, -- CHAR(1) NOT NULL,
+ QTAM_JigyouHonbuCd            CHAR, -- CHAR(2) NOT NULL,
+ QTAM_SaikenKanriTen           CHAR, -- CHAR(2) NOT NULL,
+ QTAM_NyukinHasseiTen          CHAR, -- CHAR(2) NOT NULL,
+ QTAM_CardKbn                  CHAR, -- CHAR(6) NOT NULL,
+ QTAM_AtukaiBukakakari         CHAR, -- CHAR(6) NOT NULL,
+ QTAM_GaibuKaiinNo             CHAR, -- CHAR(16) NOT NULL,
+ QTAM_BunkaiBi                 DATE NULLIF (QTAM_BunkaiBi="00000000"), -- DATE NULL,
+ QTAM_KeijyouBi                DATE NULLIF (QTAM_KeijyouBi="00000000"), -- DATE NULL,
+ QTAM_NyukinBi                 DATE NULLIF (QTAM_NyukinBi="00000000"), -- DATE NULL,
+ QTAM_YosinRank                CHAR, -- CHAR(1) NOT NULL,
+ QTAM_MinasiFlg                CHAR, -- CHAR(1) NOT NULL,
+ QTAM_YukouKigen               CHAR, -- NUMBER(4) NOT NULL,
+ QTAM_ShoriBi                  DATE NULLIF (QTAM_ShoriBi="00000000"), -- DATE NULL,
+ QTAM_NyuryokuTen              CHAR, -- CHAR(2) NOT NULL,
+ QTAM_BunkaiKbn                CHAR, -- CHAR(2) NOT NULL,
+ QTAM_BunkaiKbnHonyaku         CHAR, -- VARCHAR2(8) NULL,
+ QTAM_SeikyuNengetsu           CHAR, -- NUMBER(6) NOT NULL,
+ QTAM_ShiharaiHoho             CHAR, -- CHAR(2) NOT NULL,
+ QTAM_ZanMeisaiDenpyou         CHAR, -- NUMBER(7) NOT NULL,
+ QTAM_JTMGenpon                CHAR, -- NUMBER(11) NOT NULL,(12)
+ QTAM_JTMTesuryo               CHAR, -- NUMBER(9) NOT NULL,(10)
+ QTAM_JTMJimTesuryo            CHAR, -- NUMBER(9) NOT NULL,(10)
+ QTAM_JTMMiJyutoRisoku         CHAR, -- NUMBER(9) NOT NULL,(10)
+ QTAM_JTMNyukinBi              CHAR, -- NUMBER(8) NOT NULL,
+ QTAM_JTJGenpon                CHAR, -- NUMBER(11) NOT NULL,(12)
+ QTAM_JTJTesuryou76            CHAR, -- NUMBER(9) NOT NULL,(10)
+ QTAM_JTJTesuryou16            CHAR, -- NUMBER(9) NOT NULL,(10)
+ QTAM_JTJJimTesuryou           CHAR, -- NUMBER(9) NOT NULL,(10)
+ QTAM_JTJSongaikin             CHAR, -- NUMBER(9) NOT NULL,(10)
+ QTAM_JTJModosiRisoku          CHAR, -- NUMBER(7) NOT NULL,(8)
+ QTAM_RisokuzanKijyun          DATE NULLIF (QTAM_RisokuzanKijyun="00000000"), -- DATE NULL,
+ QTAM_LoanKansumiKbn           CHAR, -- CHAR(1) NOT NULL,
+ QTAM_SSJSousaiKamoku          CHAR, -- CHAR(3) NOT NULL,
+ QTAM_SSJKng                   CHAR, -- NUMBER(9) NOT NULL,(10)
+ QTAM_DenpyouSyubetsu          CHAR, -- CHAR(4) NOT NULL,
+ QTAM_HouhouHonyakuChi         CHAR, -- VARCHAR2(12) NULL,
+ QTAM_LoanShubetsu             CHAR, -- CHAR(5) NOT NULL,
+ QTAM_GetsureiCd               CHAR, -- CHAR(1) NOT NULL,
+ QTAM_HostShoriYmd             CHAR, -- CHAR(8) NOT NULL,
+ QTAM_HostShoriTime            CHAR, -- CHAR(6) NOT NULL,
+ QTAM_SvrKoushinYmd            DATE NULLIF (QTAM_SvrKoushinYmd="00000000") -- DATE NULL,
+)

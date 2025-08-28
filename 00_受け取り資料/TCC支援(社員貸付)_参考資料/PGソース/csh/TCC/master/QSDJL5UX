@@ -1,0 +1,83 @@
+#!/bin/csh
+# 　スクリプト名 ： QSDJL5UX
+#　 機  能       ： ＯＲＡＣＬＥ・アラートログファイルの整理
+#   実行USER     ： oracle
+#　 作成者       ： 高橋
+#
+
+############################################
+### SID:tcc のアラートログファイルの整理 ###
+############################################
+set  LOGFILE      = $ORACLE_HOME/rdbms/log/alert_tcc.log
+set  SAVE_LOGFILE = ${LOGFILE:r}_
+set  SUFFIX       = ${LOGFILE:e}
+set  YOUBI = `date +%u`
+switch ( $YOUBI )
+	case  1:
+		set OSIRI = sun
+		breaksw
+	case  2:
+		set OSIRI = mon
+		breaksw
+	case  3:
+		set OSIRI = tue
+		breaksw
+	case  4:
+		set OSIRI = wed
+		breaksw
+	case  5:
+		set OSIRI = thu
+		breaksw
+	case  6:
+		set OSIRI = fri
+		breaksw
+	case  7:
+		set OSIRI = sat
+		breaksw
+	default:
+		set OSIRI = xxx
+		breaksw
+endsw
+
+set SAVE_LOGFILE = ${SAVE_LOGFILE}${OSIRI}.${SUFFIX}
+
+mv  $LOGFILE $SAVE_LOGFILE
+touch $LOGFILE
+
+#############################################
+### SID:secu のアラートログファイルの整理 ###
+#############################################
+set  LOGFILE      = $ORACLE_HOME/rdbms/log/alert_secu.log
+set  SAVE_LOGFILE = ${LOGFILE:r}_
+set  SUFFIX       = ${LOGFILE:e}
+
+set SAVE_LOGFILE = ${SAVE_LOGFILE}${OSIRI}.${SUFFIX}
+
+mv  $LOGFILE $SAVE_LOGFILE
+touch $LOGFILE
+
+##########################
+### listener.logの整理 ###
+##########################
+set  LOGFILE      = $ORACLE_HOME/network/log/listener.log
+set  SAVE_LOGFILE = ${LOGFILE:r}_
+set  SUFFIX       = ${LOGFILE:e}
+
+set SAVE_LOGFILE = ${SAVE_LOGFILE}${OSIRI}.${SUFFIX}
+
+mv  $LOGFILE $SAVE_LOGFILE
+touch $LOGFILE
+
+########################
+### sqlnet.logの整理 ###
+########################
+set  LOGFILE      = $ORACLE_HOME/network/log/sqlnet.log
+set  SAVE_LOGFILE = ${LOGFILE:r}_
+set  SUFFIX       = ${LOGFILE:e}
+
+set SAVE_LOGFILE = ${SAVE_LOGFILE}${OSIRI}.${SUFFIX}
+
+mv  $LOGFILE $SAVE_LOGFILE
+touch $LOGFILE
+
+exit 0

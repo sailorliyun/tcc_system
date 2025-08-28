@@ -1,0 +1,67 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJKDUX
+#　 機  能       ： イメージ管理繰越し空Ｆ作成
+#　 作成者       ： NBC 斎藤
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSDJT1UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSDJKDUX'                         # ユーザキー
+set    KINOU      = 'イメージ管理繰越し空Ｆ作成'
+set    KURDIR     = /d360/UFS/data/fromhost/qb/zen
+set    RUNFIL     = /d360/UFS/imgkanri/image_buffer/runfile.dat
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+
+cp /dev/null $KURDIR/O.F.QA01.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常:$KINOU O.F.QA01.txt作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp /dev/null $KURDIR/O.F.QA02.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常:$KINOU O.F.QA02.txt作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp /dev/null $KURDIR/O.F.QA03.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常:$KINOU O.F.QA03.txt作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp /dev/null $KURDIR/O.F.QA04.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常:$KINOU O.F.QA04.txt作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp /dev/null $KURDIR/O.F.QA05.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常:$KINOU O.F.QA05.txt作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+exit 0                                            # 正常終了

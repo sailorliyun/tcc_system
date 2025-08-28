@@ -1,0 +1,47 @@
+      *****************************************************************
+      * í≤ç∏àÀóäÇs (QBS070)    ÉåÉRÅ[Éhí∑ÅFÇPÇPÇOÇTÇaÇxÇsÇd
+      *****************************************************************
+           03  QBS070-SEG.
+               05  QBS070-UKETSUKENO         PIC  X(008).
+               05  QBS070-MAKEDATE           PIC  X(019).
+               05  QBS070-IRAICD             PIC  X(008).
+               05  QBS070-IRAIKBN            PIC  X(001).
+               05  QBS070-KANKEIKBN          PIC  X(001).
+               05  QBS070-KNNAME             PIC  X(030).
+               05  QBS070-KJNAME             PIC  X(060).
+               05  QBS070-BIRTHDAY           PIC  X(019).
+               05  QBS070-GENGO              PIC  X(001).
+               05  QBS070-WAREKI             PIC  X(006).
+               05  QBS070-YUBINNO            PIC  X(007).
+               05  QBS070-CHIBAN             PIC  X(003).
+               05  QBS070-KJJUSHO1           PIC  X(050).
+               05  QBS070-KJJUSHO2           PIC  X(030).
+               05  QBS070-KJJUSHO3           PIC  X(064).
+               05  QBS070-TEL1               PIC  X(007).
+               05  QBS070-TEL2               PIC  X(004).
+               05  QBS070-TEL3               PIC  X(004).
+               05  QBS070-KINKNNAME          PIC  X(030).
+               05  QBS070-KINKJNAME          PIC  X(060).
+               05  QBS070-MEMO               PIC  X(400).
+               05  QBS070-IRAIDATE           PIC  X(019).
+               05  QBS070-RTNYOTEIDATE       PIC  X(019).
+               05  QBS070-RTNDATE            PIC  X(019).
+               05  QBS070-KOBOSBT            PIC  X(001).
+               05  QBS070-CHOSACD            PIC  X(004).
+               05  QBS070-YUSOKBN            PIC  X(001).
+               05  QBS070-LETTERID           PIC  X(008).
+               05  QBS070-TABANO             PIC  X(009).
+               05  QBS070-PRTOPID            PIC  X(008).
+               05  QBS070-PRTDATE            PIC  X(019).
+               05  QBS070-TCCNOKBN           PIC  X(001).
+               05  QBS070-TCCNO              PIC  X(009).
+               05  QBS070-CICNO              PIC  X(009).
+               05  QBS070-IRAISBT            PIC  X(001).
+               05  QBS070-IRAITEN            PIC  X(001).
+               05  QBS070-IRAIUSERNAME       PIC  X(040).
+               05  QBS070-PRTUSERNAME        PIC  X(040).
+               05  QBS070-STRDATE            PIC  X(019).
+               05  QBS070-UPDDATE            PIC  X(019).
+               05  QBS070-DELDATE            PIC  X(019).
+               05  QBS070-OPID               PIC  X(008).
+               05  QBS070-WSID               PIC  X(020).

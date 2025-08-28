@@ -1,0 +1,47 @@
+#!/bin/csh
+# 　スクリプト名 ： QLDJM7UX
+#　 機  能       ： 日次配信2・クレジット帳票 (事務手数料算出データ)
+#　 作成者       ： FIP
+#　 修正日     案件番号   担当者         修正内容
+#   2006/03/20 TR0603-007 imz.Yoshida    未使用SHELL起動処理をコメント化
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLDHS2UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = '0KEN-HAISIN'                      # ユーザキー
+set    KINOU      = '日次配信2・クレジット帳票 (事務手数料算出データ)' # 機能
+
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+### 0件ファイル生成 当日分###
+rm     $FROMHOST2_DIR/qv/rcv/QVBF_S004100.jsn
+touch  $FROMHOST2_DIR/qv/rcv/QVBF_S004100.jsn
+
+### 0件ファイル生成 繰越分###
+rm     $QV_DATA_DIR/qv/data/host/zen/QVBF_S004100.kur
+touch  $QV_DATA_DIR/qv/data/host/zen/QVBF_S004100.kur
+
+### 送信の実行 ###
+utlsend  -f OFQF39 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+#/usr/local/auto/master/QVTJP5UX                 #TR0603-007 del imz.Yoshida
+
+exit 0                                           # 正常終了

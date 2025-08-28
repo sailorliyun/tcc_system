@@ -1,0 +1,43 @@
+      *****************************************************************
+      * 限度額昇降データ (QXTT14)    レコード長：xxxＢｙｔｅ
+      *****************************************************************
+            03  QXTT14-GENDOKAIINM.
+              05  QXTT14-PRMTABANO          PIC  X(005).
+              05  QXTT14-PRMKIGYOUCD        PIC  X(004).
+              05  QXTT14-PRMSUBRANGEKEY     PIC  X(004).
+              05  QXTT14-PRMNAIBUKAIINNO    PIC  X(008).
+              05  QXTT14-PRMKANKEIKBN       PIC  X(001).
+              05  QXTT14-PRMKAZOKURBN       PIC  X(001).
+              05  QXTT14-HIRAISTATUS        PIC  X(001).
+              05  QXTT14-CARDKBN            PIC  X(006).
+              05  QXTT14-KAIINNO            PIC  X(016).
+              05  QXTT14-SIMEI              PIC  X(030).
+              05  QXTT14-REVSMAITSUKI       PIC  X(001).
+              05  QXTT14-REVSBONUS          PIC  X(002).
+              05  QXTT14-REVCMAITSUKI       PIC  X(001).
+              05  QXTT14-REVCBONUS          PIC  X(002).
+              05  QXTT14-KANRITEN           PIC  X(002).
+              05  QXTT14-NYKAIYMD           PIC  X(008).
+              05  QXTT14-CTLHONKNNAME       PIC  X(030).
+              05  QXTT14-HALFORONEKBN       PIC  X(001).
+              05  QXTT14-BIRTHDAY           PIC  X(008).
+              05  QXTT14-JIFURIKAISU        PIC  X(002).
+              05  QXTT14-JIFURINGKAISU      PIC  X(002).
+              05  QXTT14-TEL1               PIC  X(007).
+              05  QXTT14-TEL2               PIC  X(004).
+              05  QXTT14-TEL3               PIC  X(004).
+              05  QXTT14-KINKINMUKBN        PIC  X(001).
+              05  QXTT14-KINKNNAME          PIC  X(030).
+              05  QXTT14-KINTEL1            PIC  X(007).
+              05  QXTT14-KINTEL2            PIC  X(004).
+              05  QXTT14-KINTEL3            PIC  X(004).
+              05  QXTT14-HPOSSTATUS         PIC  X(002).
+              05  QXTT14-HDAIHYOSTATUS      PIC  X(004).
+              05  QXTT14-HYOSINRANK         PIC  X(001).
+              05  QXTT14-HCASHLIMIT         PIC  X(005).
+              05  QXTT14-CRTDATE-YMD        PIC  X(008).
+              05  QXTT14-CRTDATE-HMS        PIC  X(006).
+              05  QXTT14-STRDATE            PIC  X(019).
+              05  QXTT14-DELDATE            PIC  X(019).
+              05  QXTT14-OPID               PIC  X(008).
+              05  QXTT14-WSID               PIC  X(020).

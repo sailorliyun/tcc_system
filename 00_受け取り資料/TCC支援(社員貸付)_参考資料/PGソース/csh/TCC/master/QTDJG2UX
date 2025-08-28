@@ -1,0 +1,113 @@
+#!/bin/csh
+#　スクリプト名  ： QTDJG2UX
+#　 機  能       ： 加盟店原伝集計Ｔ追加
+#　 作成者       ： FIP
+#
+#-------------------------------------------------------------------------
+#          修  正  履  歴
+# 管理No              修正内容                    担当者      修正日付
+# TR0605-014          保険金入金処理障害対応      NBC野村     06.06.08
+# 000001              繰越ファイル作成修正        nbc.hayashi 2007/0/24
+# 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+# set SHELL_NAME = $0
+setenv JOBNET_ID   QTD4D1UX
+setenv JOB_ID      QTDJG2UX
+setenv USERKEY     QTDJG2UX
+
+#------------------------------------------------------------#
+#   Insert   QTAX_GendenSumT
+#------------------------------------------------------------#
+set    LOGWRITE = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    HUL_DIR = /s020/UFS/fromhost/qt/rcv
+set    DAT_DIR = /d051/UFS/data/qt
+set    LOGFILE = $LDR_LOG_DIR/$JOB_ID.log
+set    INPUT_F = $DAT_DIR/qtax_gendensum.dat
+set    DBBAD_F = $LDR_CTRL_DIR/qtax_gendensum.bad
+set    DATE    = `date +%y%m%d`
+set    MODULE  =  QTDJG2UX
+$LOGWRITE "$MODULE" I " START : 加盟店原伝集計Ｔ追加" "$USERKEY"
+
+rm -f $DBBAD_F
+#TR0605-014 ADD START          06.06.08
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:加盟店原伝集計Ｔ追加 qtax_gendensum.bad削除 RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+#TR0605-014 ADD END            06.06.08
+
+touch $DBBAD_F
+#TR0605-014 ADD START          06.06.08
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:加盟店原伝集計Ｔ追加 qtax_gendensum.bad作成 RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+#TR0605-014 ADD END            06.06.08
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                 \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID      \
+   control=$LDR_CTRL_DIR/qtax_gendensumt.ctl   \
+      data=$INPUT_F                            \
+       log=$LDR_LOG_DIR/qtax_gendensumt.log    \
+             > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#TR0605-014 ADD START          06.06.08
+set rc = $status
+#TR0605-014 ADD END            06.06.08
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+#TR0605-014 DEL START          06.06.08
+#set rc = $status
+#TR0605-014 DEL END            06.06.08
+
+if ( $rc != 0 ) then
+    mv $DBBAD_F $USER_LOG_DIR/$MODULE$DATE.bad   #エラーデータファイル
+    mv $LOGFILE $USER_LOG_DIR/$MODULE$DATE.log   #エラーログ
+    $LOGWRITE "$MODULE" E " ERROR : SQL*Loader_ERROR 加盟店原伝集計Ｔ追加 RC=[$rc]" "$USERKEY"
+    echo "$MODULE" "SQL*Loader ERROR ABNORMAL ENDED : RC=[$rc]"
+    exit  (1)
+endif
+if !(-z $DBBAD_F) then
+    mv $DBBAD_F $USER_LOG_DIR/$MODULE$DATE.bad   #エラーデータファイル
+    mv $LOGFILE $USER_LOG_DIR/$MODULE$DATE.log   #エラーログ
+    $LOGWRITE "$MODULE" E " ERROR : SQL*Loader DATA_ERROR 加盟店原伝集計Ｔ追加 RC=[$rc]" "$USERKEY"
+    echo "$MODULE" "SQL*Loader DATA_ERROR ABNORMAL ENDED :"
+    exit  (1)
+endif
+
+#000001 DEL hayashi 2007/07/24 START
+## HOST原伝ファイルクリア
+#rm -f $HUL_DIR/qtax_gendensum.rcv
+##TR0605-014 ADD START          06.06.08
+#set rc = $status
+#if ( $rc != 0 ) then
+#    set MSG = "失敗:加盟店原伝集計Ｔ追加 qtax_gendensum.rcv削除 RC=[$rc]"
+#    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#    exit  1
+#endif
+##TR0605-014 ADD END            06.06.08
+#
+#touch $HUL_DIR/qtax_gendensum.rcv
+##TR0605-014 ADD START          06.06.08
+#set rc = $status
+#if ( $rc != 0 ) then
+#    set MSG = "失敗:加盟店原伝集計Ｔ追加 qtax_gendensum.rcv作成 RC=[$rc]"
+#    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#    exit  1
+#endif
+##TR0605-014 ADD END            06.06.08
+#000001 DEL hayashi 2007/07/24 END
+
+$LOGWRITE "$MODULE" I " END   : 加盟店原伝集計Ｔ追加" "$USERKEY"
+exit(0)
+

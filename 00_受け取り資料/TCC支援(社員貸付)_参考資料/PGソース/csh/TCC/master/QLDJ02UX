@@ -1,0 +1,1434 @@
+#!/bin/csh
+#　 スクリプト名 ： QLDJ02UX
+#　 業務         : クレジット帳票
+#　 機  能       ： 現行日次処理
+#　 作成者       ： FIP
+#　 修正履歴     ： YYYY.MM.DD 　修　　　正　　　内　　　容　　修正者
+#　              ： 2003.09.26 年会費徴求指示者一覧表追加対応　上　原
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000002 1006060     ｸﾚｼﾞｯﾄ再構築帳票削減    FIP.ERIGUCHI   2011/07/21
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名 file 名=job名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLD021UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = $JOBNET_ID                         # ユーザキー
+set    PRM_JOBNET =  "'"$JOBNET_ID"'"
+set    PRM_JOB    = "'"$JOB_ID"'"
+
+
+###################################################################
+# STEP-1     当日分ＳＱＬローダーの実行                           #
+###################################################################
+
+###################################################################
+##set   LDR_CTRL_DIR  = '/home/ipc/qv/ldr'                #LOADER CONTROL DIR
+##set   DATAV_DIR     = '/home/ipc/qv/host_data'          #DATA DIR
+##set   USER_LOG_DIR  = '/home/ipc/qv/ldrlog'             #LOADER LOG DIR
+##set   LDR_LOG_DIR   = '/home/ipc/qv/ldrlog'
+set   DATAV_DIR     = $QV_DATA_DIR'/qv/data/host/merge'   #DATA DIR
+set   DATAV_S     = '.hft'  			          #DATA 拡張子
+
+###################################################################
+# STEP-1.1     ＳＱＬローダーの実行           事故カード          #
+###################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(事故カード)'
+#set    CTLID      = 'QVAD_SLD0100'               #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S000100'$DATAV_S       #DATA
+#set    MODULE     = $CTLID 
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+#
+#echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.2     ＳＱＬローダーの実行           返品確認リスト      #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(返品確認リスト)'
+set    CTLID      = 'QVAD_SLD0200'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S000200'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.3     ＳＱＬローダーの実行       返品消し込み未処理リスト#
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(返品消し込み未処理リスト)'
+set    CTLID      = 'QVAD_SLD0300'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S000300'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-1.4     ＳＱＬローダーの実行       入金相殺結果リスト      #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(入金相殺結果リスト)'
+set    CTLID      = 'QVAD_SLD0400'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S000400'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-1.5     ＳＱＬローダーの実行       請求留置き指示者        #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(請求留置き指示者)'
+set    CTLID      = 'QVAD_SLD0500'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S000500'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.6     ＳＱＬローダーの実行       自振上乗指示者          #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(自振上乗指示者)'
+set    CTLID      = 'QVAD_SLD0600'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S000600'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.7     ＳＱＬローダーの実行       残一括請求指示者        #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(残一括請求指示者)'
+set    CTLID      = 'QVAD_SLD0700'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S000700'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+#20030926年会費徴求指示者一覧表追加対応
+###################################################################
+# STEP-1.75    ＳＱＬローダーの実行       年会費徴求指示者        #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(年会費徴求指示者)'
+set    CTLID      = 'QVAD_SLD0750'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S000750'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#20030926
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-1.8     ＳＱＬローダーの実行    月分ずらしプルーフリスト   #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(月分ずらしプルーフリスト)'
+#set    CTLID      = 'QVAD_SLD0800'               #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S000800'$DATAV_S       #DATA
+#set    MODULE     = $CTLID 
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+###################################################################
+# STEP-1.9     ＳＱＬローダーの実行   赤黒非表示追加プルーフリスト#
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(赤黒非表示追加プルーフリスト)'
+set    CTLID      = 'QVAD_SLD0900'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S000900'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.10    ＳＱＬローダーの実行   同口座預り金結果リスト      #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(同口座預り金結果リスト)'
+set    CTLID      = 'QVAD_SLD1000'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S001000'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-1.11    ＳＱＬローダーの実行   職員月賦天引き修正ログ      #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(職員月賦天引き修正ログ)'
+#set    CTLID      = 'QVAD_SLD1100'               #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S001100'$DATAV_S       #DATA
+#set    MODULE     = $CTLID 
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+###################################################################
+# STEP-1.12    ＳＱＬローダーの実行   依頼返却ログ                #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(依頼返却ログ)'
+set    CTLID      = 'QVAD_SLD1200'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S001200'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.13    ＳＱＬローダーの実行   自振データ修正ログ          #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(自振データ修正ログ)'
+set    CTLID      = 'QVAD_SLD1300'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S001300'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.14    ＳＱＬローダーの実行   他口座預り金結果リスト      #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(他口座預り金結果リスト)'
+set    CTLID      = 'QVAD_SLD1400'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S001400'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.15    ＳＱＬローダーの実行   返金登録依頼                #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(返金登録依頼)'
+set    CTLID      = 'QVAD_SLD1500'               #LOADER CONTROL F名
+set    DATAID     = 'QVAF_S001500'$DATAV_S       #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-1.16    ＳＱＬローダーの実行   賞与差引額修正ログ          #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(賞与差引額修正ログ)'
+#set    CTLID      = 'QVAD_SLD1600'               #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S001600'$DATAV_S       #DATA
+#set    MODULE     = $CTLID 
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+###################################################################
+# STEP-1.17    ＳＱＬローダーの実行   ローン謝絶状                #
+#        99.07.01     帳票が無くなった為、削除する                #
+###################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(ローン謝絶状)'
+#set    CTLID      = 'QVAD_SLD2300'               #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S002300'$DATAV_S       #DATA
+#set    MODULE     = $CTLID 
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-1.18    ＳＱＬローダーの実行   償還明細件数表日次          #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(償還明細件数表日次)'
+#set    CTLID      = 'QVAD_SLD2400'              #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S002400'$DATAV_S      #DATA
+#set    MODULE     = $CTLID 
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+####################################################################
+## STEP-1.19    ＳＱＬローダーの実行  償還明細書 ｼｮｯﾋﾟﾝｸﾞﾛｰﾝ,Ｍﾛｰﾝ #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(償還明細書 ｼｮｯﾋﾟﾝｸﾞﾛｰﾝ,Ｍﾛｰﾝ)'
+#set    CTLID      = 'QVAD_SLD2500'              #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S002500'$DATAV_S      #DATA
+#set    MODULE     = $CTLID 
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+####################################################################
+## STEP-1.20  ＳＱＬローダーの実行 償還明細書月別 ｼｮｯﾋﾟﾝｸﾞﾛｰﾝ,Ｍﾛｰﾝ#
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(償還明細書月別 ｼｮｯﾋﾟﾝｸﾞﾛｰﾝ,Ｍﾛｰﾝ)'
+#set    CTLID      = 'QVAD_SLD2600'              #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S002600'$DATAV_S      #DATA
+#set    MODULE     = $CTLID 
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+####################################################################
+## STEP-1.21  ＳＱＬローダーの実行       キャッシング取消追加リスト#
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(キャッシング取消追加リスト)'
+#set    CTLID      = 'QVAD_SLD2800'               #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S002800'$DATAV_S       #DATA
+#set    MODULE     = $CTLID
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+####################################################################
+## STEP-1.22  ＳＱＬローダーの実行 ショッピング約定チェックリスト  #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(ショッピング約定チェックリスト)'
+#set    CTLID      = 'QVAD_SLD2900'               #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S002900'$DATAV_S       #DATA
+#set    MODULE     = $CTLID
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+####################################################################
+## STEP-1.23  ＳＱＬローダーの実行   目的ローン約定チェックリスト  #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(目的ローン約定チェックリスト)'
+#set    CTLID      = 'QVAD_SLD3000'               #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S003000'$DATAV_S       #DATA
+#set    MODULE     = $CTLID
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+####################################################################
+## STEP-1.24  ＳＱＬローダーの実行   ローン承認実行チェックリスト  #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理 LOADER(ローン承認実行チェックリスト)'
+#set    CTLID      = 'QVAD_SLD3100'              #LOADER CONTROL F名
+#set    DATAID     = 'QVAF_S003100'$DATAV_S      #DATA
+#set    MODULE     = $CTLID
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlldr $DB_USERID/$DB_PASSWORD           \
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+#       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+#       data=$DATAV_DIR/$DATAID           \
+#       log=$LDR_LOG_DIR/ldr.log          \
+#       >& $USER_LOG_DIR/ldr1.log 
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+##echo 'normal end'
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+###################################################################
+# STEP-2     前日分ＳＱＬローダーの実行                           #
+###################################################################
+
+#  99.07.06  配信用バッチ作成した為、SETP-2を削除する。
+
+###################################################################
+# STEP-3     ストアド・プロシジャの実行                           #
+###################################################################
+set   MODULE = 'qusc_sspexec.exe'
+
+###################################################################
+# STEP-3.1     ストアド・プロシジャの実行     事故カード          #
+###################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(事故カード)'
+
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'1'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-3.2     ストアド・プロシジャの実行     返品確認リスト      #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(返品確認リスト)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'2'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+######################################################################
+# STEP-3.3     ストアド・プロシジャの実行    返品消し込み未処理リスト#
+######################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(返品消し込み未処理リスト)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'3'"                          #付与ﾊﾟﾗﾒｰﾀ
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-3.4     ストアド・プロシジャの実行     入金相殺結果リスト  #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(入金相殺結果リスト)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'4'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-3.5   ストアド・プロシジャの実行     請求留置き指示者      #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(請求留置き指示者)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'5'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-3.6     ストアド・プロシジャの実行     自振上乗指示者      #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(自振上乗指示者)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'6'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-3.7     ストアド・プロシジャの実行     残一括請求指示者    #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(残一括請求指示者)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'7'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#20030926年会費徴求指示者一覧表追加対応
+###################################################################
+# STEP-3.75    ストアド・プロシジャの実行     年会費徴求指示者    #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(年会費徴求指示者)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'75'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#20030926
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-3.8 ストアド・プロシジャの実行     月分ずらしプルーフリスト#
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(月分ずらしプルーフリスト)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'8'"                          #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+#######################################################################
+# STEP-3.9 ストアド・プロシジャの実行     赤黒非表示追加プルーフリスト#
+#######################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(赤黒非表示追加プルーフリスト)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'9'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-3.10  ストアド・プロシジャの実行     同口座預り金結果リスト#
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(同口座預り金結果リスト)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'10'"                         #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-3.11 ストアド・プロシジャの実行     職員月賦天引き修正ログ #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(職員月賦天引き修正ログ)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'11'"                         #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+###################################################################
+# STEP-3.12     ストアド・プロシジャの実行     依頼返却ログ       #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(依頼返却ログ)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'12'"                         #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-3.13   ストアド・プロシジャの実行     自振データ修正ログ   #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(自振データ修正ログ)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'13'"                         #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-3.14  ストアド・プロシジャの実行    他口座預り金結果リスト #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(他口座預り金結果リスト)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'14'"                         #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+###################################################################
+# STEP-3.15   ストアド・プロシジャの実行     返金登録依頼         #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(返金登録依頼)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'15'"                         #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-3.16   ストアド・プロシジャの実行     賞与差引額修正ログ   #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(賞与差引額修正ログ)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'16'"                         #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+###################################################################
+# STEP-3.17     ストアド・プロシジャの実行     ローン謝絶状       #
+#        99.07.01     帳票が無くなった為、削除する                #
+###################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(ローン謝絶状)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'17'"                         #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-3.18     ストアド・プロシジャの実行     償還明細件数表日次 #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(償還明細件数表日次)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'18'"                         #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+####################################################################
+## STEP-3.19 ストアド・プロシジャの実行  キャッシング取消追加リスト#
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(キャッシング取消追加リスト)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'19'"                         #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#######################################################################
+## STEP-3.20 ストアド・プロシジャの実行 ショッピング約定チェックリスト#
+#######################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(ショッピング約定チェックリスト)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'20'"                         #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#####################################################################
+## STEP-3.21 ストアド・プロシジャの実行 目的ローン約定チェックリスト#
+#####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(目的ローン約定チェックリスト)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'21'"                         #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#####################################################################
+## STEP-3.22 ストアド・プロシジャの実行 ローン承認実行チェックリスト#
+#####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(ローン承認実行チェックリスト)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#set    PRM_Data = "'22'"                         #付与ﾊﾟﾗﾒｰﾀ
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+###################################################################
+# STEP-3.23     ストアド・プロシジャの実行      総振台帳（事務部）#
+###################################################################
+set    KINOU      = 'クレジット帳票：現行日次処理(総振台帳（事務部）)'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'23'"                         #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000200Pkg.QVAP_S000200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi Start
+####################################################################
+## STEP-3.24     ストアド・プロシジャの実行      償還明細書作成    #
+####################################################################
+#set    KINOU      = 'クレジット帳票：現行日次処理(償還明細書作成)'
+#
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVAP_S000500Pkg.QVAP_S000500( $PRM_JOBNET, $PRM_JOB)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+#
+#DEL 1006060 ｸﾚｼﾞｯﾄ再構築帳票削減           20110721 FIP.Eriguchi End
+exit 0                                           # 正常終了
+
+~

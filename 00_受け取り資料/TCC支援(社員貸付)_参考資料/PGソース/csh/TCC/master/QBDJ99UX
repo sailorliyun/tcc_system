@@ -1,0 +1,53 @@
+#!/bin/csh
+#set SHELL_NAME   = $0
+setenv JOBNET_ID    QBD999UX
+setenv JOB_ID       QBDJ90UX
+setenv USERKEY      QBDJ90UX
+#set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    oradir     = (/d041/UFS/data/qb/ORAWRK)
+set    logdir     = (/d041/UFS/data/qb/FLOLOG)
+
+#-----------------------------------------------------#
+#      DeadLine
+#-----------------------------------------------------#
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#$LOGWRITE "$MODULE" I "Start DeadLine" "CHK"
+set    apost  = \"
+set    curpm  = $apost$argv[1]$apost
+set    curid  = $apost$argv[2]$apost
+set    actpm  = $apost$argv[3]$apost
+set    actid  = $apost$argv[4]$apost
+set    mappm  = $apost$argv[5]$apost
+set    mapid  = $apost$argv[6]$apost
+
+# $LOGWRITE "$MODULE" I $curpm "CHK"
+# $LOGWRITE "$MODULE" I $curid "CHK"
+# $LOGWRITE "$MODULE" I $actpm "CHK"
+# $LOGWRITE "$MODULE" I $actid "CHK"
+# $LOGWRITE "$MODULE" I $mappm "CHK"
+# $LOGWRITE "$MODULE" I $mapid "CHK"
+
+setenv IF_MIFAM_NAME       mifam
+setenv IFMIFAMNAME         mifam
+setenv HOSTNAME            sueswc
+setenv FW_HostName         sueswc
+setenv FW_UserID           ifam
+setenv DBPASSWORD          ifam
+setenv FW_CourierResult    $oradir/Deadline.txt
+setenv FW_LogPath          $logdir/
+
+cd $EXE_DIR
+qbwc_sfw0002 $curpm $curid $actpm $actid $mappm $mapid
+
+#qbwc_sfw0002 -C \"61\" -A \"QB020010\" -M \"TCCMAP01\"
+#qbwc_sfw0002 -C "61" -A "QB020010" -M "TCCMAP01"
+
+set rc = $status
+if ( $rc != 0 )  then
+    $LOGWRITE "$MODULE" E "ERROR : RC=[$rc] FloWare DeadLine" "$USERKEY"
+    exit(1)
+endif
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)
+

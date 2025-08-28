@@ -1,0 +1,196 @@
+#!/bin/csh
+#　スクリプト名  ： QHTJ71UX
+#　 機  能       ： 請求明細情報最古年月吸い上げ
+#　 作成者       ： FIP
+#　 改造         ： 99/12/08 compressタイミング終了MSG前に移動
+#　 修正履歴     ： 00001 ディレクトリ変更        IMZ.YOSHIDA 2005/11/30
+#　 修正履歴
+# 項番     修正日      修正者         修正内容
+# 00002    2006/06/14  IMZ.YOSHIDA    JOB NET ID変更
+# 00003    2007/08/14  FIP.ERIGUCHI   １Gの壁障害対応（出力Ｆを分割する）
+# 00004    2008/05/09  NBC.ishida     保存ディスクとworkディスク変更
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+# 00002 IMZ.YOSHIDA 2006/06/14 start
+#setenv JOBNET_ID   'QHT621UX'                      # ジョブネット名
+setenv JOBNET_ID   'QHT751UX'                      # ジョブネット名
+# 00002 IMZ.YOSHIDA 2006/06/14 end
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QHTJ71UX'                     # ユーザキー
+set    KINOU      = '請求明細情報最古年月吸い上げ'
+
+setenv RECSHIKIBETSU 2        #外部パラメータレコード識別（明細）
+set    QH_SHIFT_DIR = $QH_DATA_DIR/shift
+# 00004 mod NBC.ishida 2008/05/09 start
+## mod by IMZ.YOSHIDA 2005/11/30 00001 ==>
+##set    QH_SAVE_DIR  = /d271/UFS/data/qh/shift
+#set    QH_SAVE_DIR  = /d370/UFS/data/qh/shift
+## mod by IMZ.YOSHIDA 2005/11/30 00001 <==
+set    QH_SAVE_DIR  = /d380/UFS/data/qh/shift      # 保存ディスク
+set    QH_WORK_DIR  = /d360/UFS/data/qh/shift      # 本番用workディスク
+# 00004 mod NBC.ishida 2008/05/09 end
+
+set    STEP_F       = $QH_DATA_DIR/${JOB_ID}_STEP_.tmp
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+
+
+
+#set year  = $1                             # 処理年  入力パラメータ
+#set month = $2                             # 処理月  入力パラメータ
+set year  = `date +%Y`        # 処理年 (システム日付より)
+set month = `date +%m`        # 処理月 (システム日付より)
+
+# 処理月Leading Zero Suppress
+@ month ++
+@ month --
+
+# 前月算出
+set zen_year  = $year
+set zen_month = $month
+if ( $zen_month == 1 ) then
+	@ zen_year --
+	set zen_month = 12
+else
+	@ zen_month --
+endif
+
+if ( $zen_month < 10 ) then
+	set zen_month = 0$zen_month
+endif
+
+if ( $month < 10 ) then
+	set month = 0$month
+endif
+
+if ( ! -e $STEP_F ) then
+    touch $STEP_F
+endif
+
+##################################
+# STEP-1  最古年月吸上           #
+##################################
+set MODULE = 'qheb_s000500'
+set STEPKINOU = '明細情報 最古年月吸上'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"     # 開始メッセージの出力
+
+#del 99/12/20
+#rm -f $QH_SAVE_DIR/qhef_qhe4meisai01.dat.$zen_year$zen_month.Z
+#rm -f $QH_SAVE_DIR/qhef_qhe4meisai02.dat.$zen_year$zen_month.Z
+#rm -f $QH_SAVE_DIR/qhef_qhe4meisai03.dat.$zen_year$zen_month.Z
+#rm -f $QH_SAVE_DIR/qhef_qhe4meisai04.dat.$zen_year$zen_month.Z
+#rm -f $QH_SAVE_DIR/qhef_qhe4meisai05.dat.$zen_year$zen_month.Z
+#rm -f $QH_SAVE_DIR/qhef_qhe4meisai06.dat.$zen_year$zen_month.Z
+#rm -f $QH_SAVE_DIR/qhef_qhe4meisai07.dat.$zen_year$zen_month.Z
+#rm -f $QH_SAVE_DIR/qhef_qhe4meisai08.dat.$zen_year$zen_month.Z
+#rm -f $QH_SAVE_DIR/qhef_qhe7meisai01.dat.$zen_year$zen_month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai01.dat.$year$month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai02.dat.$year$month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai03.dat.$year$month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai04.dat.$year$month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai05.dat.$year$month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai06.dat.$year$month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai07.dat.$year$month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai08.dat.$year$month.Z
+# 00003 add by FIP.ERIGUCHI 2007/08/14 start
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai09.dat.$year$month.Z
+rm -f $QH_SAVE_DIR/qhef_qhe4meisai10.dat.$year$month.Z
+# 00003 add by FIP.ERIGUCHI 2007/08/14 end
+rm -f $QH_SAVE_DIR/qhef_qhe7meisai01.dat.$year$month.Z
+
+# 00004 mod NBC.ishida 2008/05/09 start
+#setenv OUT1FIL1 $QH_SAVE_DIR/qhef_qhe4meisai01.dat.$year$month
+#setenv OUT1FIL2 $QH_SAVE_DIR/qhef_qhe4meisai02.dat.$year$month
+#setenv OUT1FIL3 $QH_SAVE_DIR/qhef_qhe4meisai03.dat.$year$month
+#setenv OUT1FIL4 $QH_SAVE_DIR/qhef_qhe4meisai04.dat.$year$month
+#setenv OUT1FIL5 $QH_SAVE_DIR/qhef_qhe4meisai05.dat.$year$month
+#setenv OUT1FIL6 $QH_SAVE_DIR/qhef_qhe4meisai06.dat.$year$month
+#setenv OUT1FIL7 $QH_SAVE_DIR/qhef_qhe4meisai07.dat.$year$month
+#setenv OUT1FIL8 $QH_SAVE_DIR/qhef_qhe4meisai08.dat.$year$month
+## 00003 add by FIP.ERIGUCHI 2007/08/14 start
+#setenv OUT1FIL9 $QH_SAVE_DIR/qhef_qhe4meisai09.dat.$year$month
+#setenv OUT1FILA $QH_SAVE_DIR/qhef_qhe4meisai10.dat.$year$month
+## 00003 add by FIP.ERIGUCHI 2007/08/14 end
+#setenv OUT2FILE $QH_SAVE_DIR/qhef_qhe7meisai01.dat.$year$month
+setenv OUT1FIL1 $QH_WORK_DIR/qhef_qhe4meisai01.dat.$year$month
+setenv OUT1FIL2 $QH_WORK_DIR/qhef_qhe4meisai02.dat.$year$month
+setenv OUT1FIL3 $QH_WORK_DIR/qhef_qhe4meisai03.dat.$year$month
+setenv OUT1FIL4 $QH_WORK_DIR/qhef_qhe4meisai04.dat.$year$month
+setenv OUT1FIL5 $QH_WORK_DIR/qhef_qhe4meisai05.dat.$year$month
+setenv OUT1FIL6 $QH_WORK_DIR/qhef_qhe4meisai06.dat.$year$month
+setenv OUT1FIL7 $QH_WORK_DIR/qhef_qhe4meisai07.dat.$year$month
+setenv OUT1FIL8 $QH_WORK_DIR/qhef_qhe4meisai08.dat.$year$month
+setenv OUT1FIL9 $QH_WORK_DIR/qhef_qhe4meisai09.dat.$year$month
+setenv OUT1FILA $QH_WORK_DIR/qhef_qhe4meisai10.dat.$year$month
+setenv OUT2FILE $QH_WORK_DIR/qhef_qhe7meisai01.dat.$year$month
+# 00004 mod NBC.ishida 2008/05/09 end
+
+set PROGRAM = $EXE_DIR/qheb_s000500.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+# 00004 mod NBC.ishida 2008/05/09 start
+#compress -f $QH_SAVE_DIR/qhef_qhe4meisai??.dat.$year$month
+#compress -f $QH_SAVE_DIR/qhef_qhe7meisai??.dat.$year$month
+compress -f $QH_WORK_DIR/qhef_qhe4meisai??.dat.$year$month
+compress -f $QH_WORK_DIR/qhef_qhe7meisai??.dat.$year$month
+# 00004 mod NBC.ishida 2008/05/09 end
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"   # 終了メッセージの出力
+
+# 00004 add NBC.ishida 2008/05/09 start
+##############################
+#STEP-02 ファイル移動        #
+##############################
+set MODULE = 'SHELL'
+mv $QH_WORK_DIR/qhef_qhe4meisai??.dat.$year$month.Z $QH_SAVE_DIR/
+set rc = $status                                   # リターンステータス待避
+if ( $rc != 0 ) then                               # リターンステータス判定
+   set MSG = "失敗:ファイル移動(qhef_qhe4meisai) RC=[$rc]"
+   $LOGWRITE  "$MODULE" E "$MSG" $USERKEY
+   exit 1                                          # 異常終了
+endif
+
+mv $QH_WORK_DIR/qhef_qhe7meisai??.dat.$year$month.Z $QH_SAVE_DIR/
+set rc = $status                                   # リターンステータス待避
+if ( $rc != 0 ) then                               # リターンステータス判定
+   set MSG = "失敗:ファイル移動(qhef_qhe7meisai) RC=[$rc]"
+   $LOGWRITE  "$MODULE" E "$MSG" $USERKEY
+   exit 1                                          # 異常終了
+endif
+
+# 00004 add NBC.ishida 2008/05/09 end
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+/bin/rm $STEP_F
+
+#compress -f $QH_SAVE_DIR/qhef_qhe4meisai??.dat.$year$month
+#compress -f $QH_SAVE_DIR/qhef_qhe7meisai??.dat.$year$month
+
+set MODULE = 'SHELL       '
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

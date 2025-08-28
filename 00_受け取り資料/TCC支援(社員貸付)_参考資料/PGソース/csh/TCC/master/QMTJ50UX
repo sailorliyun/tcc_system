@@ -1,0 +1,51 @@
+#!/bin/csh
+#　スクリプト名  ： QMTJ50UX
+#　 機  能       ： 期日管理
+#　 作成者       ： 芦久保
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+
+########################################
+#           環境設定                   #
+########################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID    'QMT501UX'                         # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QMTJ50UX'                         # ユーザキー
+set    KINOU      = '期日管理'                         # 機能
+
+########################################
+#  削除対象経過月
+########################################
+setenv DELMONTH    12
+
+#########################################
+# 期日管理                              #
+#########################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qmbb_s000500.exe
+if ( -x $PROGRAM ) then
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM $DELMONTH                           # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+exit 0                                           # 正常終了
+
+

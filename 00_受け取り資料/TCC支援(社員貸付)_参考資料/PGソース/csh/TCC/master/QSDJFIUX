@@ -1,0 +1,41 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJFIUX
+#　 機  能       ： 日次用受信ファイル作成１（氏名検索テーブル・更新上書）
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSDJF1UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QSDJFIUX'                         # ユーザキー 
+set    KINOU      = '日次用受信ファイルの作成（氏名検索テーブル・更新上書）'
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#setenv NLS_LANG Japanese_Japan.JA16SJIS  
+
+### ファイルをマージする ###
+cat $FROMHOST1_DIR/qt/rcv/qtaf_simeisakuin2.jsn $QJ_DATA_DIR/qt/data/host/zen/qtaf_simeisakuin2.kur > $QJ_DATA_DIR/qt/data/host/merge/qtaf_simeisakuin2.hft
+
+set rc = $status
+
+#setenv NLS_LANG Japanese_Japan.JA16EUC  
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+
+

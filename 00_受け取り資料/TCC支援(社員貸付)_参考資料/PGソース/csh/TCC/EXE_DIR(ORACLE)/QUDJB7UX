@@ -1,0 +1,83 @@
+#!/bin/csh
+#
+#  日次ＢＣＶバックアップ６ (QUDJB7UX)
+#
+#     機  能：1.データベースのバックアップをＢＣＶに待避する。
+#             2.REDOログファイル、REDOアーカイブログファイルを待避する。
+#             3.制御ファイルを待避する。
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+set  SHELL_NAME = $0                                    # シェル名
+set  MODULE   =  $SHELL_NAME:t                          # モジュール名
+set  LOGFILE  =  $USER_LOG_DIR/db_ope.log               # ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ログ出力用共通シェル
+set  SYMCLI_DIR = /usr/symcli/bin
+##set  DEVICE_FILE = /usr/symmapps/tcc4.bcv               # ﾃﾞﾊﾞｲｽファイル名
+set  DG_FILE = tcc5_dg
+
+$LOGWRITE  "日次ＢＣＶバックアップ６開始" >> $LOGFILE
+
+###############################
+# 1. データベースバックアップ #
+###############################
+$LOGWRITE  "BCVへのﾎﾞﾘｭｰﾑｺﾋﾟｰ開始" >> $LOGFILE
+
+### ESTABLISH ###
+$SYMCLI_DIR/symmir -g $DG_FILE establish -noprompt  # BCV へのﾎﾞﾘｭｰﾑｺﾋﾟｰ
+#bcv est -i -f $DEVICE_FILE  >> $LOGFILE  # BCVへのﾎﾞﾘｭｰﾑｺﾋﾟｰ
+#bcv est -f $DEVICE_FILE  >> $LOGFILE  # BCVへのﾎﾞﾘｭｰﾑｺﾋﾟｰ
+set RC = $status                         # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+
+if ( $RC != 0 ) then
+        $LOGWRITE "ESTABLISH失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+
+### ｺﾋﾟｰ完了監視 ###
+while(1)
+        $SYMCLI_DIR/symmir -g $DG_FILE verify > /dev/null     # ｺﾋﾟｰ完了の確認
+#       bcv verify -f $DEVICE_FILE  > /dev/null   # ｺﾋﾟｰ完了の確認
+        set RC = $status                          # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+        if ( $RC == 0 ) then
+                break
+        else if ( $RC != 4 && $RC != 5 ) then
+                $LOGWRITE "VERIFY失敗 \[RC=$RC\]"   >> $LOGFILE
+                exit 1
+        endif
+        sleep 60                          # １分間待機
+end
+
+### Standard Volume UNMOUNT ###
+$EXE_DIR/QUAJ_VOLOPE5.BAT u
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "STD VOL アンマウント失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+
+### SPLIT ###
+$SYMCLI_DIR/symmir -g $DG_FILE split -noprompt # Standard VolumeをBCVからの切り離す
+#bcv split -f $DEVICE_FILE         # Standard VolumeをBCVからの切り離す
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "SPLIT失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+
+### Standard Volume MOUNT ###
+$EXE_DIR/QUAJ_VOLOPE5.BAT m
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "STD VOL マウント失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+
+$LOGWRITE  "BCVへのﾎﾞﾘｭｰﾑｺﾋﾟｰ正常終了" >> $LOGFILE
+
+
+$LOGWRITE  "日次ＢＣＶバックアップ６終了" >> $LOGFILE
+
+exit 0

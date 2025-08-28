@@ -1,0 +1,289 @@
+#!/bin/csh
+#　 スクリプト名 ： QLTJ05UX
+#　 業務         : クレジット帳票
+#　 機  能       ： 現行月次経理月次22日処理
+#　 作成者       ： FIP
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名 file 名=job名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLT031UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = $JOBNET_ID                         # ユーザキー
+set    PRM_JOBNET =  "'"$JOBNET_ID"'"
+set    PRM_JOB    = "'"$JOB_ID"'"
+
+
+###################################################################
+# STEP-1     ＳＱＬローダーの実行                                 #
+###################################################################
+
+###################################################################
+##set   LDR_CTRL_DIR  = '/home/ipc/qv/ldr'                #LOADER CONTROL DIR
+##set   DATAV_DIR     = '/home/ipc/qv/host_data'          #DATA DIR
+##set   USER_LOG_DIR  = '/home/ipc/qv/ldrlog'             #LOADER LOG DIR
+##set   LDR_LOG_DIR   = '/home/ipc/qv/ldrlog'
+set   DATAV_DIR     = $QV_DATA_DIR'/qv/data/host/merge'   #DATA DIR
+set   DATAV_S     = '.hft'  			          #DATA 拡張子
+
+###################################################################
+# STEP-1.1     ＳＱＬローダーの実行          カード取扱高月報２２ #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理 LOADER(カード取扱高月報２２)'
+set    CTLID      = 'QVBD_SLD4800'              #LOADER CONTROL F名
+set    DATAID     = 'QVCF_S004800'$DATAV_S      #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.2     ＳＱＬローダーの実行          売掛金残高表２２     #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理 LOADER(売掛金残高表２２)'
+set    CTLID      = 'QVBD_SLD5200'              #LOADER CONTROL F名
+set    DATAID     = 'QVCF_S005200'$DATAV_S      #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-1.3     ＳＱＬローダーの実行          会員異動リスト       #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理 LOADER(会員異動リスト)'
+set    CTLID      = 'QVBD_SLD5100'              #LOADER CONTROL F名
+set    DATAID     = 'QVCF_S005100'$DATAV_S      #DATA
+set    MODULE     = $CTLID 
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID\
+       control=$LDR_CTRL_DIR/$CTLID.ctl  \
+       data=$DATAV_DIR/$DATAID           \
+       log=$LDR_LOG_DIR/ldr.log          \
+       >& $USER_LOG_DIR/ldr1.log 
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+#echo 'normal end'
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-2     ストアド・プロシジャの実行                           #
+###################################################################
+set   MODULE = 'qusc_sspexec.exe'
+
+###################################################################
+# STEP-2.1     ストアド・プロシジャの実行    カード取扱高月計累計 #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理(カード取扱高月計累計)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'2'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S001500Pkg.QVBP_S001500( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+##############################################################################
+# STEP-2.2   ストアド・プロシジャの実行     カード取扱高月計期間管理Ｔ作成   #
+##############################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理(カード取扱高月計期間管理Ｔ作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'2'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S002700Pkg.QVBP_S002700( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+######################################################################
+# STEP-2.3   ストアド・プロシジャの実行     カード取扱高月計印刷作成 #
+######################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理(カード取扱高月計印刷作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S001600Pkg.QVBP_S001600( $PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+# STEP-2.4   ストアド・プロシジャの実行     管理店異動リスト作成  #
+###################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理(管理店異動リスト作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S001900Pkg.QVBP_S001900( $PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+######################################################################
+# STEP-2.5   ストアド・プロシジャの実行     カード区分異動リスト作成 #
+######################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理(カード区分異動リスト作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S002000Pkg.QVBP_S002000( $PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+##########################################################################
+# STEP-2.6   ストアド・プロシジャの実行     売掛金残高(管理店別)印刷作成 #
+##########################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理(売掛金残高(管理店別)印刷作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'2'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S002100Pkg.QVBP_S002100( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+######################################################################
+# STEP-2.7   ストアド・プロシジャの実行     売掛金残高(全社)印刷作成 #
+######################################################################
+set    KINOU      = 'クレジット帳票：現行月次経理月次22日処理(売掛金残高(全社)印刷作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+set    PRM_Data = "'2'"                          #付与ﾊﾟﾗﾒｰﾀ
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S002200Pkg.QVBP_S002200( $PRM_JOBNET, $PRM_JOB,$PRM_Data)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+#                           終 了                                 #
+###################################################################
+exit 0                                           # 正常終了
+
+~

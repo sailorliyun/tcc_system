@@ -1,0 +1,10 @@
+frmQPAV_CEnt060 = 66, 66, 1050, 258, C, 22, 22, 795, 665, C
+MainModule = 22, 22, 795, 665, C
+QPAV_Nayose = 66, 66, 640, 511, C, 44, 44, 817, 687, C
+QSAV_SysErr = 0, 0, 0, 0, C, 66, 66, 839, 709, C
+QPAV_Common = 88, 88, 1072, 280, C
+QPAV_Common1 = 0, 0, 984, 192, C
+QPAV_Common2 = 22, 22, 1006, 214, C
+QPAV_NayoseM = 44, 44, 817, 687, C
+SprConstants = 0, 0, 0, 0, C
+OraConst = 0, 0, 0, 0, C

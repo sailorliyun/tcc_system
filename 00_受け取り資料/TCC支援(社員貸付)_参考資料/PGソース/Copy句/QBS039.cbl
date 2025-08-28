@@ -1,0 +1,43 @@
+      *****************************************************************
+      * ÇbÇqäÓñ{Çs (QBS039)    ÉåÉRÅ[Éhí∑ÅFÇPÇXÇOÇaÇôÇîÇÖ
+      *****************************************************************
+            03  QBS039-CRBASET.
+              05  QBS039-TABANO                   PIC  X(006).
+              05  QBS039-UKETSUKENO               PIC  X(008).
+              05  QBS039-INQKBN                   PIC  X(001).
+              05  QBS039-KAZOKURENBAN             PIC  X(001).
+              05  QBS039-SAIIRAIKBN               PIC  X(001).
+              05  QBS039-SAIIRAICNT               PIC  X(003).
+              05  QBS039-CICINQREQ                PIC  X(001).
+              05  QBS039-CICINQRESULT             PIC  X(001).
+              05  QBS039-JISHAINQREQ              PIC  X(001).
+              05  QBS039-JISHAINQRESULT           PIC  X(001).
+              05  QBS039-BLACKINQREQ              PIC  X(001).
+              05  QBS039-BLACKINQRESULT           PIC  X(001).
+              05  QBS039-NGRIYU                   PIC  X(004).
+              05  QBS039-RECORDKBN                PIC  X(001).
+              05  QBS039-RECORDSKB1               PIC  X(001).
+              05  QBS039-RENBAN1                  PIC  X(002).
+              05  QBS039-RECORDSKB2               PIC  X(001).
+              05  QBS039-RENBAN2                  PIC  X(002).
+              05  QBS039-IDXNO                    PIC  X(006).
+              05  QBS039-INQNO                    PIC  X(006).
+              05  QBS039-SEQNO                    PIC  X(018).
+              05  QBS039-DTSBT                    PIC  X(002).
+              05  QBS039-CREDT                    PIC  X(003).
+              05  QBS039-KOBET1                   PIC  X(003).
+              05  QBS039-KOBET2                   PIC  X(003).
+              05  QBS039-KOBET3                   PIC  X(003).
+              05  QBS039-KOBET4                   PIC  X(003).
+              05  QBS039-KOBET5                   PIC  X(003).
+              05  QBS039-KOBET6                   PIC  X(003).
+              05  QBS039-KOBET7                   PIC  X(003).
+              05  QBS039-KOBET8                   PIC  X(003).
+              05  QBS039-KOBET9                   PIC  X(003).
+              05  QBS039-KOBET10                  PIC  X(003).
+              05  QBS039-RUIJI                    PIC  X(003).
+              05  QBS039-STRDATE                  PIC  X(019).
+              05  QBS039-UPDDATE                  PIC  X(019).
+              05  QBS039-DELDATE                  PIC  X(019).
+              05  QBS039-OPID                     PIC  X(008).
+              05  QBS039-WSID                     PIC  X(020).

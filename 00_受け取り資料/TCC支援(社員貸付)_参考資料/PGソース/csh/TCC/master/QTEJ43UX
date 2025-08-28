@@ -1,0 +1,76 @@
+#!/bin/csh
+# 　スクリプト名 ： QTEJ43UX 
+#　 機  能       ： 会員・家族マスタ入替データ作成 ３
+#　 作成者       ： 小川 
+#
+#　 修正履歴     ： 00001 ディレクトリ変更        IMZ.YOSHIDA 2006/01/16
+#
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QTEI03UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = '0KEN-HAISIN'                      # ユーザキー 
+set    KINOU      = '会員・家族マスタ入替データ作成 3'   # 機能
+
+# add by IMZ.YOSHIDA 2006/01/16 00001 ==>
+set    FROMHOST_DIR = /d380/UFS/fromhost/qt/rcv        # ＨＵＬＦＴ受信用ディレクトリ
+set    QT_DATA_DIR  = /d380/UFS/data/qt/host           # 作業用ディレクトリ
+# add by IMZ.YOSHIDA 2006/01/16 00001 <==
+
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+### ファイルコピー ###
+# mod by IMZ.YOSHIDA 2006/01/16 00001 ==>
+#cp $FROMHOST1_DIR/qt/rcv/qtaf_kaiin9_3.jsn $QJ_DATA_DIR/qt/data/host/merge/qtaf_kaiin9_3.hft
+cp $FROMHOST_DIR/qtaf_kaiin9_3.jsn $QT_DATA_DIR/qtaf_kaiin9_3.hft
+# mod by IMZ.YOSHIDA 2006/01/16 00001 <==
+set rc = $status
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+
+# mod by IMZ.YOSHIDA 2006/01/16 00001 ==>
+#cat $FROMHOST1_DIR/qt/rcv/qtaf_kazoku9_3.jsn >> $QJ_DATA_DIR/qt/data/host/merge/qtaf_kazoku9.hft
+cat $FROMHOST_DIR/qtaf_kazoku9_3.jsn >> $QT_DATA_DIR/qtaf_kazoku9.hft
+# mod by IMZ.YOSHIDA 2006/01/16 00001 <==
+
+set rc = $status
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+
+### 0件ファイル生成 ###
+# mod by IMZ.YOSHIDA 2006/01/16 00001 ==>
+#rm     $FROMHOST1_DIR/qt/rcv/qtaf_kaiin9_3.jsn
+#rm     $FROMHOST1_DIR/qt/rcv/qtaf_kazoku9_3.jsn
+#touch  $FROMHOST1_DIR/qt/rcv/qtaf_kaiin9_3.jsn
+#touch  $FROMHOST1_DIR/qt/rcv/qtaf_kazoku9_3.jsn
+rm     $FROMHOST_DIR/qtaf_kaiin9_3.jsn
+rm     $FROMHOST_DIR/qtaf_kazoku9_3.jsn
+touch  $FROMHOST_DIR/qtaf_kaiin9_3.jsn
+touch  $FROMHOST_DIR/qtaf_kazoku9_3.jsn
+# mod by IMZ.YOSHIDA 2006/01/16 00001 <==
+
+### 送信の実行 ###
+utlsend  -f OFQ314 -sync
+set rc = $status
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+
+

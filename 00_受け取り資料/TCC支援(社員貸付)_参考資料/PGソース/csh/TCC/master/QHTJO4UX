@@ -1,0 +1,158 @@
+#!/bin/csh
+# 　スクリプト名 ： QHTJO4UX
+#　 機  能       ： 新ユニット番号変更のＬＯＡＤを行う
+#　 作成者       ： FIP
+#
+#　 修正履歴
+# 項番   管理番号  修正内容                        修正者         修正日
+# 000001 0807073   非互換対応                      NBC.SHIBUICHI  2009/03/29
+# 000001 0807073   INITIAL値・NEXT値のサイズ変更   NBC.SHIBUICHI  2009/03/29
+# 000001 0808052   非互換対応                      NBC.SHIBUICHI  2009/03/29
+# 000001 0808052   INITIAL値・NEXT値のサイズ変更   NBC.SHIBUICHI  2009/03/29
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QHT741UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+set    FROMHOST_DIR = $FROMHOST1_DIR/qh/rcv         #HULFT DATA DIR
+setenv USERKEY      'QHTJO4UX'                      # ユーザキー
+set    KINOU      = '新ユニット番号変更テーブル登録'
+
+set TABLE_NAME    = QHEG_SEIKYUUNITT                # 対象テーブル名
+set MODULE = 'SHELL'
+$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+##################################
+# STEP-1 ＨＵＬＦＴデータＣＯＰＹ#
+##################################
+STEP_1:
+set MODULE = 'FILECOPY'
+$LOGWRITE     "$MODULE" I "開始:QHEG HULFT_DATAコピー" $USERKEY
+cp -r $FROMHOST_DIR/qhef_seiunit.hulft $QH_DATA_DIR/monthly/qhef_seikyuunit01.dat
+$LOGWRITE     "$MODULE" I "終了:QHEG HULFT_DATAコピー" $USERKEY
+
+##################################
+# STEP-2 主キー制約削除          #
+##################################
+STEP_2:
+
+set MODULE = 'SQL*PLUS-1'
+$LOGWRITE     "$MODULE" I "開始:QHEG 主キー制約削除" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME drop primary key;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHEG 主キー制約削除 RC=[$rc]"
+	$LOGWRITE       "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE      "$MODULE" I "終了:QHEG 主キー制約削除" $USERKEY
+
+##################################
+# STEP-3 データロード１          #
+##################################
+STEP_3:
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE    "$MODULE" I "開始:QHEG データロード１" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                     \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID          \
+   control=$LDR_CTRL_DIR/qhef_seikyuunitt.sql      \
+   data=$QH_DATA_DIR/monthly/qhef_seikyuunit01.dat \
+   log=$LDR_LOG_DIR/qhef_seikyuunit01.log          \
+#  direct=true                                     \
+               >> $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHEG データロード１ RC=[$rc]"
+	$LOGWRITE    "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE    "$MODULE" I "終了:QHEG データロード１" $USERKEY
+
+##################################
+# STEP-4 主キー制約付与         #
+##################################
+STEP_4:
+
+set MODULE = 'SQL*PLUS-2'
+$LOGWRITE       "$MODULE" I "開始:QHEG 主キー制約付与" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+#alter table $TABLE_NAME add
+#       PRIMARY KEY (QHEG_Keykigyocd, QHEG_Keysubrng,
+#              QHEG_Keynaibukaiin, QHEG_KeySeikyuym)
+#       USING INDEX  NOLOGGING
+#              TABLESPACE SEI1IDX04
+#              STORAGE (
+#                     INITIAL 300M
+#                     NEXT 50M
+#                     MINEXTENTS 1
+#                     MAXEXTENTS 100
+#                     PCTINCREASE 0
+#              );
+#quit SQL.SQLCODE
+#EOF
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+alter table $TABLE_NAME add
+       PRIMARY KEY (QHEG_Keykigyocd, QHEG_Keysubrng,
+              QHEG_Keynaibukaiin, QHEG_KeySeikyuym)
+       USING INDEX  NOLOGGING
+              TABLESPACE SEI1IDX04
+              STORAGE (
+                     INITIAL 32M
+                     NEXT 16M
+                     MINEXTENTS 1
+                     MAXEXTENTS 100
+                     PCTINCREASE 0
+              );
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:QHEG 主キー制約付与 RC=[$rc]"
+	$LOGWRITE      "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE    "$MODULE" I "終了:QHEG 主キー制約付与" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+##rm -f $FROMHOST_DIR/qhef_seiunit.hulft
+##touch $FROMHOST_DIR/qhef_seiunit.hulft
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

@@ -1,0 +1,217 @@
+#!/bin/csh
+# 　スクリプト名 ： QHTJC1UX
+#　 機  能       ： 請求配信・東分バックアップ
+#　 作成者       ： FIP
+#　 変  更       ： 2002/09/21 新請求書用に変更
+#                ： 2006/02/20 作業ディレクトリ変更 NBC.YOSHIKAWA 00001
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                           # シェル名
+setenv JOB_ID       $SHELL_NAME:t                # ジョブ名
+setenv JOBNET_ID   'QHTKY1UX'                    # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log  # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT     # ログ出力モジュール
+setenv USERKEY      'QHTJC1UX'                   # ユーザキー
+set    KINOU      = '請求配信・東分バックアップ'
+
+# add by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+set    SEIKYU_FROMHOST_DIR = '/d380/UFS/fromhost/qh/rcv'
+set    SEIKYU_DATA_DIR     = '/d380/UFS/data/qh/monthly'
+# add by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'cp      '
+$LOGWRITE "$MODULE" I "開始:会員１バックアップ" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#cp $FROMHOST1_DIR/qh/rcv/qhef_seikyu01.hulft \
+#   $QH_DATA_DIR/monthly/.
+cp $SEIKYU_FROMHOST_DIR/qhef_seikyu01.hulft \
+   $SEIKYU_DATA_DIR/.
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+set rc = $status                                 # リターンステータス待避
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:会員１バックアップ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:会員１バックアップ" $USERKEY
+
+#########################################
+# STEP-2                                #
+#########################################
+set MODULE = 'cp      '
+$LOGWRITE "$MODULE" I "開始:会員２バックアップ" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#cp $FROMHOST1_DIR/qh/rcv/qhef_seikyu02.hulft \
+#   $QH_DATA_DIR/monthly/.
+cp $SEIKYU_FROMHOST_DIR/qhef_seikyu02.hulft \
+   $SEIKYU_DATA_DIR/.
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set rc = $status                                 # リターンステータス待避
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:会員２バックアップ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:会員２バックアップ" $USERKEY
+
+#########################################
+# STEP-3                                #
+#########################################
+set MODULE = 'cp      '
+$LOGWRITE "$MODULE" I "開始:会員３バックアップ" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#cp $FROMHOST1_DIR/qh/rcv/qhef_seikyu03.hulft \
+#   $QH_DATA_DIR/monthly/.
+cp $SEIKYU_FROMHOST_DIR/qhef_seikyu03.hulft \
+   $SEIKYU_DATA_DIR/.
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set rc = $status                                 # リターンステータス待避
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:会員３バックアップ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:会員３バックアップ" $USERKEY
+
+#########################################
+# STEP-4                                #
+#########################################
+set MODULE = 'cp      '
+$LOGWRITE "$MODULE" I "開始:会員４バックアップ" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#cp $FROMHOST1_DIR/qh/rcv/qhef_seikyu04.hulft \
+#   $QH_DATA_DIR/monthly/.
+cp $SEIKYU_FROMHOST_DIR/qhef_seikyu04.hulft \
+   $SEIKYU_DATA_DIR/.
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set rc = $status                                 # リターンステータス待避
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:会員４バックアップ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:会員４バックアップ" $USERKEY
+
+#########################################
+# STEP-5                                #
+#########################################
+set MODULE = 'cp      '
+$LOGWRITE "$MODULE" I "開始:明細１バックアップ" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#cp $FROMHOST1_DIR/qh/rcv/qhef_meisai01.hulft \
+#   $QH_DATA_DIR/monthly/.
+cp $SEIKYU_FROMHOST_DIR/qhef_meisai01.hulft \
+   $SEIKYU_DATA_DIR/.
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set rc = $status                                 # リターンステータス待避
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:明細１バックアップ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:明細１バックアップ" $USERKEY
+
+#########################################
+# STEP-6                                #
+#########################################
+set MODULE = 'cp      '
+$LOGWRITE "$MODULE" I "開始:明細２バックアップ" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#cp $FROMHOST1_DIR/qh/rcv/qhef_meisai02.hulft \
+#   $QH_DATA_DIR/monthly/.
+cp $SEIKYU_FROMHOST_DIR/qhef_meisai02.hulft \
+   $SEIKYU_DATA_DIR/.
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set rc = $status                                 # リターンステータス待避
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:明細２バックアップ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:明細２バックアップ" $USERKEY
+
+#########################################
+# STEP-7                                #
+#########################################
+set MODULE = 'cp      '
+$LOGWRITE "$MODULE" I "開始:明細３バックアップ" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#cp $FROMHOST1_DIR/qh/rcv/qhef_meisai03.hulft \
+#   $QH_DATA_DIR/monthly/.
+cp $SEIKYU_FROMHOST_DIR/qhef_meisai03.hulft \
+   $SEIKYU_DATA_DIR/.
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set rc = $status                                 # リターンステータス待避
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:明細３バックアップ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:明細３バックアップ" $USERKEY
+
+#########################################
+# STEP-8                                #
+#########################################
+set MODULE = 'cp      '
+$LOGWRITE "$MODULE" I "開始:明細４バックアップ" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#cp $FROMHOST1_DIR/qh/rcv/qhef_meisai04.hulft \
+#   $QH_DATA_DIR/monthly/.
+cp $SEIKYU_FROMHOST_DIR/qhef_meisai04.hulft \
+   $SEIKYU_DATA_DIR/.
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set rc = $status                                 # リターンステータス待避
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:明細４バックアップ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:明細４バックアップ" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

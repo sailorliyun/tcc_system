@@ -1,0 +1,88 @@
+#!/bin/csh
+#-------------------------------------------------------#
+#　スクリプト名  ： QXEJQ2UX
+#  機能          ： 暗証手紙ファイル作成・リカバリ
+#  作成日        ： 2004/12/10
+#  作成者        ： FIP
+#
+#  管理番号  修正内容                        担当者      日付
+#  000001    繰越ファイル作成修正            nbc.hayashi 2007/07/24
+#-------------------------------------------------------#
+
+########################################################
+#   環境設定
+########################################################
+set    SHELL_NAME = $0                                  # シェル名
+setenv JOBNET_ID    'QLER02UX'                          # ジョブネット名
+setenv JOB_ID       'QXEJQ2UX'                          # ジョブ名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log         # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT            # ログ出力モジュール
+setenv USERKEY      'QXEJQ2UX'                          # ユーザキー
+set    DATDIR     = /d031/UFS/data/qxp/data             # データエリア
+set    MODULE     = $JOB_ID
+set    HUL_DIR    = /s030/UFS/fromhost/qxp/rcv          #
+
+########################################################
+#   開始
+########################################################
+echo "***<< $MODULE STR (`date +%y%m%d`/`date +%H%M%S`) >>***"
+echo "***<< $MODULE STR (`date +%y%m%d`/`date +%H%M%S`) >>***" > $LOGFILE
+set    KINOU      = '暗証手紙ファイル作成・リカバリ'
+$LOGWRITE  "$MODULE" I "ＪＯＢ開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+########################################################
+#   ＳＴＥＰ１：暗証手紙ファイル作成・リカバリ
+########################################################
+set    KINOU      = '暗証手紙ファイル作成・リカバリ'
+$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#000001 MOD hayashi 2007/07/24 START
+#### 受信ファイルを繰越ファイルにコピーする ###
+### 受信ファイルを退避ファイルにコピーする ###
+#000001 MOD hayashi 2007/07/24 END
+
+#000001 MOD hayashi 2007/07/24 START
+#cp $HUL_DIR/ansho_chk-get_dat.hulft $DATDIR/qxpb0400in_zen.kur
+cp $HUL_DIR/ansho_chk-get_dat.hulft $HUL_DIR/qxpb0400in.taihi
+#000001 MOD hayashi 2007/07/24 END
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                         # 異常終了
+endif
+
+#000001 ADD hayashi 2007/07/24 START
+### 前日の繰越ファイルとマージ ###
+
+cat $DATDIR/qxpb0400in_zen.kur  \
+    $HUL_DIR/qxpb0400in.taihi \
+  > $DATDIR/qxpb0400in.marge
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                         # 異常終了
+endif
+
+### マージファイルを繰越ファイルへ ###
+
+mv $DATDIR/qxpb0400in.marge $DATDIR/qxpb0400in_zen.kur
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                         # 異常終了
+endif
+#000001 ADD hayashi 2007/07/24 END
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"          # 終了メッセージの出力
+
+########################################################
+#   終了
+########################################################
+echo "***<< $MODULE END (`date +%y%m%d`/`date +%H%M%S`) >>***"
+echo "***<< $MODULE END (`date +%y%m%d`/`date +%H%M%S`) >>***" >> $LOGFILE
+set    KINOU      = '暗証手紙ファイル作成・リカバリ'
+$LOGWRITE  "$MODULE" I "ＪＯＢ終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+exit(0)

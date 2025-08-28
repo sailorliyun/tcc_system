@@ -1,0 +1,74 @@
+#!/bin/csh
+#　スクリプト名  ： QXDJLEUX
+#　 機  能       ： 事故売上管理：入金繰越データ連結
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QXD1D2UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+setenv USERKEY      'QXDJLEUX'                      # ユーザキー
+set    KINOU      = '事故売上管理：入金繰越データ連結'
+set    QX_DATA_DIR   = /d051/UFS/data/qxn/alarmdata   #TMP FILE DIR
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#連結用ファイルの作成（ファイルが存在しないとき作る）
+touch $QX_DATA_DIR/qxnj_loaddata_dat.bak
+
+###############################################
+# STEP-1 入金繰越データ連結　　　　　　　 #
+###############################################
+STEP_01:
+set MODULE = 'command:cat'
+$LOGWRITE "$MODULE" I "開始:本日取得分データと繰越データの結合（入金）" $USERKEY
+
+### 本日取得分ｈｕｌｆｔデータと繰越データの結合（入金） ###
+cat $QX_DATA_DIR/qxnj_loaddata_dat.dat \
+    $QX_DATA_DIR/qxnj_loaddata_dat.bak \
+  > $QX_DATA_DIR/qxnj_loaddata_dat.load
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:本日取得分データと繰越データの結合１（入金）RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:本日取得分データと繰越データの結合（入金）" $USERKEY
+
+#######################################################
+# STEP-2     繰越データのクリア                       #
+#######################################################
+STEP_02:
+
+set MODULE = 'command:rm'
+$LOGWRITE "$MODULE" I "開始:繰越データのクリア" $USERKEY
+
+### 繰越データのクリア ###
+rm -f $QX_DATA_DIR/qxnj_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:繰越データのクリア RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:繰越データのクリア" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

@@ -1,0 +1,77 @@
+#!/bin/csh
+#   スクリプト名 ： QHTJA1UX
+#   機  能       ： 請求書最古年データ削除処理
+#   作成者       ： imz.Yoshida
+#   作成日       ： 2006/06/14
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+#   00001    2008/05/09  NBC.ishida     保存ディスク変更
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID    'QHT751UX'                     # ジョブネット名
+setenv USERKEY      'QHTJA1UX'                     # ユーザキー
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+set    KINOU      = '請求書最古年データ削除処理'
+set    MODULE     = 'SHELL'
+# 00001 mod NBC.ishida 2008/05/09 start
+#set  QH_SAVE_DIR  = '/d370/UFS/data/qh/shift'
+set  QH_SAVE_DIR  = '/d380/UFS/data/qh/shift'
+# 00001 mod NBC.ishida 2008/05/09 end
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+##########################################################################
+# 削除対象年月を取得                                                     #
+##########################################################################
+set year   = `date +%Y`        # 処理年 (システム日付より)
+set month  = `date +%m`        # 処理月 (システム日付より)
+set bfmonth  = 14              # 14か月前のファイルを削除
+set oldmonth = 12
+
+@ month -= $bfmonth
+
+# 引いた値が０以下の場合、前年度に変換
+if ( $month < 1 ) then
+   @ year --
+   @ oldmonth  += $month
+   set month =  $oldmonth
+endif
+
+# １・２月の場合、前々年度に変換
+if ( $month < 1 ) then
+   set oldmonth = 12
+   @ year --
+   @ oldmonth  += $month
+   set month =  $oldmonth
+endif
+
+# 2桁文字列に変換
+if ( $month < 10 ) then
+   set month = 0$month
+endif
+
+
+##########################################################################
+# ファイル削除処理                                                       #
+##########################################################################
+# ファイルが存在しなければ削除処理をしない
+ls -l $QH_SAVE_DIR/qhef_*$year$month*.Z
+set rc = $status
+if ( $rc == 0 ) then
+   rm $QH_SAVE_DIR/qhef_*$year$month*.Z
+   set rc = $status
+   if ( $rc != 0 ) then
+      set MSG = "失敗:$KINOU RC=[$rc]"
+      $LOGWRITE "$MODULE" E "$MSG" $USERKEY
+      exit 1
+   endif
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+exit 0

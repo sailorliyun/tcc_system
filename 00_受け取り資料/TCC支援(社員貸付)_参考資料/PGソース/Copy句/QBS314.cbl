@@ -1,0 +1,45 @@
+      *****************************************************************
+      * 自社マスタＴ (QBS314)    レコード長：280Byte
+      *****************************************************************
+            03  QBS314-JISHAMST.
+              05  QBS314-TABANO                   PIC  X(006).
+              05  QBS314-UKETSUKENO               PIC  X(008).
+              05  QBS314-INQKBN                   PIC  X(001).
+              05  QBS314-KAZOKURENBAN             PIC  X(001).
+              05  QBS314-SAIIRAIKBN               PIC  X(001).
+              05  QBS314-SAIIRAICNT               PIC  X(003).
+              05  QBS314-CICINQREQ                PIC  X(001).
+              05  QBS314-CICINQRESULT             PIC  X(001).
+              05  QBS314-JISHAINQREQ              PIC  X(001).
+              05  QBS314-JISHAINQRESULT           PIC  X(001).
+              05  QBS314-BLACKINQREQ              PIC  X(001).
+              05  QBS314-BLACKINQRESULT           PIC  X(001).
+              05  QBS314-NGRIYU                   PIC  X(004).
+              05  QBS314-RECORDKBN                PIC  X(001).
+              05  QBS314-RECORDSKB1               PIC  X(001).
+              05  QBS314-RENBAN1                  PIC  X(002).
+              05  QBS314-RECORDSKB2               PIC  X(001).
+              05  QBS314-RENBAN2                  PIC  X(002).
+              05  QBS314-TYPE                     PIC  X(002).
+              05  QBS314-KAIINJYOTAI              PIC  X(008).
+              05  QBS314-KAIINNO                  PIC  X(016).
+              05  QBS314-BIRTHDAY                 PIC  X(019).
+              05  QBS314-BANKCD                   PIC  X(004).
+              05  QBS314-BANKNAME                 PIC  X(020).
+              05  QBS314-SHITENCD                 PIC  X(005).
+              05  QBS314-SHITENNAME               PIC  X(020).
+              05  QBS314-YOKINSBT                 PIC  X(001).
+              05  QBS314-JUSHOCD                  PIC  X(011).
+              05  QBS314-POSSTATUS                PIC  X(002).
+              05  QBS314-DAIHYOSTATUS             PIC  X(004).
+              05  QBS314-CARDJYOKYO               PIC  X(004).
+              05  QBS314-CIFNO                    PIC  X(008).
+              05  QBS314-SHOPPINGZANDAKA          PIC  X(011).
+              05  QBS314-CASHINGZANDAKA           PIC  X(011).
+              05  QBS314-AZUKARIKIN               PIC  X(011).
+              05  QBS314-RIYOUSHACD               PIC  X(001).
+              05  QBS314-STRDATE                  PIC  X(019).
+              05  QBS314-UPDDATE                  PIC  X(019).
+              05  QBS314-DELDATE                  PIC  X(019).
+              05  QBS314-OPID                     PIC  X(008).
+              05  QBS314-WSID                     PIC  X(020).

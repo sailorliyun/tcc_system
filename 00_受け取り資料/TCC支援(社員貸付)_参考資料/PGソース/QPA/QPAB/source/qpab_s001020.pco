@@ -1,0 +1,579 @@
+      *8...........2.........3.........4.........5........6........7..
+000100 IDENTIFICATION                  DIVISION.
+       PROGRAM-ID.                     QPAB-S001020.
+      ****************************************************************
+      *   システムコード       :  Ｑ                                 *
+      *   サブシステムコード   :  ＰＡ                               *
+      *   モジュール           :  部門マスタ更新処理                 *
+      *   作成者               :  ＦＩＰ                             *
+      *   作成日               :  H.22.08.10                         *
+      *   処理概要             :  部門情報抽出ファイルより店コード、 *
+      *                           部門コードをキーに部門マスタを更新 *
+      *                           する。（部門マスタに存在しない場合 *
+      *                           は追加）                           *
+      *--------------------------------------------------------------*
+      *                  修  正  履  歴                              *
+      *   管理NO            修正理由             担当者   修正日付   *
+      *                                                              *
+      *                                                              *
+      ****************************************************************
+       ENVIRONMENT                 DIVISION.
+       CONFIGURATION               SECTION.
+       SOURCE-COMPUTER.            FACOM.
+       OBJECT-COMPUTER.            FACOM.
+       SPECIAL-NAMES.
+           CONSOLE                 IS  DSP.
+       INPUT-OUTPUT                SECTION.
+       FILE-CONTROL.
+           SELECT  IN-FILE         ASSIGN  TO  INFILE
+                   FILE STATUS     IS STATUS-IN-FILE.
+      /*
+       DATA                        DIVISION.
+       FILE                        SECTION.
+      *
+      *    入力ファイル（部門情報抽出ファイル）
+       FD  IN-FILE  
+           LABEL   RECORD          STANDARD.
+       01  IN-REC.
+           COPY    QPS002   REPLACING  ==()==  BY  ==IN==.
+      *
+      /
+       WORKING-STORAGE             SECTION.
+      *    ＜  ワーク領域  ＞
+      *
+       01  WK-AREA.
+           03  DATA-AREA           PIC  X(24).
+      *
+      *    ＜  プログラムスイッチ領域  ＞
+      *
+       01  SW-AREA.
+           03  SW-ABEND            PIC  X(01)  VALUE "0".
+      *
+       01  FLG-AREA.
+           03  END-FLG             PIC  X(03).
+           03  SEL-FLG             PIC  X(01).
+           03  BMN-FLG             PIC  X(01).
+      *
+      *    ＜  ファイルスタータス領域  ＞
+      *
+       01  STATUS-AREA.
+           03    STATUS-IN-FILE    PIC  X(02).
+      *
+      *    ＜  カウント領域  ＞
+      *
+       01  CNT-AREA. 
+           03  CNT-I               PIC  9(07)  COMP-3  VALUE ZERO.
+      *    部門名の最大桁数
+           03  CNT-DATA-LEN        PIC  9(07)  COMP-3  VALUE 24.
+           03  CNT-IN-REC          PIC  9(07)  COMP-3  VALUE ZERO.
+           03  CNT-INS-REC         PIC  9(07)  COMP-3  VALUE ZERO.
+           03  CNT-UPD-REC         PIC  9(07)  COMP-3  VALUE ZERO.
+      *
+      *    ＜  メッセージ編集領域  ＞
+      *
+       01  DSP-MODULEID            PIC  X(12)  VALUE "QPAB_S001020".
+      *
+      *    ＝  処理開始  ＝
+       01  DSP-MSG1.
+           03  FILLER              PIC  X(08)  VALUE 
+               "START : ".
+           03  MSG1-TIME           PIC  X(08).
+           03  FILLER              PIC  X(02)  VALUE SPACE.
+           03  MSG1-YMD            PIC  X(08).
+      *
+      *    ＝  処理終了  ＝     
+       01  DSP-MSG2.
+           03  FILLER              PIC  X(08)  VALUE 
+               "END   : ".
+           03  MSG2-TIME           PIC  X(08).
+      *
+      *    ＝  入力処理件数  ＝    
+       01  DSP-MSG3-IN.
+           03  FILLER              PIC  X(08)  VALUE
+               "IN    : ".
+           03  MSG3-CNT-IN         PIC  ZZ,ZZZ,ZZ9.
+      *
+      *    ＝  追加処理件数  ＝
+       01  DSP-MSG3-INS.
+           03  FILLER              PIC  X(08)  VALUE
+               "INSERT: ".
+           03  MSG3-CNT-INS        PIC  ZZ,ZZZ,ZZ9.
+      *
+      *    ＝  更新処理件数  ＝
+       01  DSP-MSG3-UPD.
+           03  FILLER              PIC  X(08)  VALUE
+               "UPDATE: ".
+           03  MSG3-CNT-UPD        PIC  ZZ,ZZZ,ZZ9.
+      *
+      *    ＝  ファイルエラー  ＝
+       01  DSP-ERR1.
+           03  FILLER              PIC  X(19)  VALUE
+               "FILE       ERR :   ".
+           03  ERR1-STATUS         PIC  X(02).
+      *
+      *    ＝  編集領域  ＝
+       01  ED-WORK. 
+      *          時刻の編集用
+           03    WK-TIME           PIC  9(08).
+           03    FILLER            REDEFINES   WK-TIME.
+             05  WK-TIME-HH        PIC  9(02).
+             05  WK-TIME-MM        PIC  9(02).
+             05  WK-TIME-SS        PIC  9(02).
+           03    WK-ED-TIME.
+             05  WK-ED-TIME-HH     PIC  9(02).
+             05  FILLER            PIC  X(01)  VALUE ":".
+             05  WK-ED-TIME-MM     PIC  9(02).
+             05  FILLER            PIC  X(01)  VALUE ":".
+             05  WK-ED-TIME-SS     PIC  9(02).
+      *
+       01  WK-SQLERRML             PIC S9(04)
+                                   SIGN LEADING SEPARATE.
+       01  WK-SQLERRML-X           PIC  X(05).
+      *
+      *    埋込みＳＱＬ宣言開始（Ｂ領域：１２桁目以降）
+      *
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+           EXEC SQL INCLUDE ORACA END-EXEC.
+           EXEC ORACLE OPTION (ORACA=YES) END-EXEC.
+      *
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+      *
+       01    QPAF-DATA.
+           03    QPAF-SEG.
+             05  QPAF-PRM.
+               07  QPAF-PRMMISECD   PIC  X(03).
+               07  QPAF-PRMBUMONCD  PIC  X(06).
+             05  QPAF-BUMONNM       PIC  X(24).
+      *
+       01  SQL-AREA                 PIC X(10000).
+      *
+      *    埋込みＳＱＬ宣言終了
+           EXEC SQL  END  DECLARE SECTION END-EXEC.
+      *
+      *
+      *    ＜  その他のワーク領域  ＞
+      *
+       01  LINK-CONNECT-AREA.
+           03  LINK-SQLCODE         PIC S9(09) COMPUTATIONAL.
+           03  LINK-USERID          PIC  X(10).
+           03  LINK-USERID-LEN      PIC  9(02).
+           03  LINK-PASSWD          PIC  X(10).
+           03  LINK-PASSWD-LEN      PIC  9(02).
+           03  LINK-ORACLE          PIC  X(10).
+           03  LINK-ORACLE-LEN      PIC  9(02).
+      *
+      *    コンソールログ出力サブ・リンクエリア
+       01  LINK-CONS-AREA.
+           03  LINK-CONS-MODULEID   PIC  X(40).
+           03  LINK-CONS-MSGKBN     PIC  X(01).
+           03  LINK-CONS-MSG        PIC  X(1024).
+           03  LINK-CONS-STATUS     PIC  9(02).
+      *
+      /
+       PROCEDURE                     DIVISION.
+      ****************************************************************
+      *    (0.0)     プログラム  コントロール                        *
+      ****************************************************************
+       PROC-SECT                     SECTION.
+       PROC-START.
+      *
+      *    初期処理  [1.0]
+           PERFORM   INIT-PROC.
+      *
+      *    主処理    [2.0]
+           PERFORM   MAIN-PROC
+                     UNTIL  END-FLG  =  "END".
+      *
+      *    終了処理  [3.0]
+           PERFORM   FINAL-PROC.
+      *
+       PROC-EXIT.
+           EXIT       PROGRAM.
+      /***************************************************************
+      *    (1.0)     初期処理                                        *
+      ****************************************************************
+       INIT-PROC                     SECTION.
+      *
+      *    モジュールＩＤ設定
+           MOVE    DSP-MODULEID        TO      LINK-CONS-MODULEID.
+      *
+      *    オラクルコネクト処理
+           CALL    "QTAB-CONNECT"      USING   LINK-CONNECT-AREA.
+           IF      LINK-SQLCODE        NOT =   ZERO
+      *            処理開始メッセージ出力
+                   ACCEPT  WK-TIME     FROM    TIME
+                   MOVE    WK-TIME-HH  TO      WK-ED-TIME-HH
+                   MOVE    WK-TIME-MM  TO      WK-ED-TIME-MM
+                   MOVE    WK-TIME-SS  TO      WK-ED-TIME-SS
+                   MOVE    WK-ED-TIME  TO      MSG1-TIME
+                   MOVE    "I"         TO      LINK-CONS-MSGKBN
+                   MOVE    DSP-MSG1    TO      LINK-CONS-MSG
+      *            コンソールログ出力処理
+                   PERFORM CONS-PROC
+      *            処理終了メッセージ出力
+                   ACCEPT  WK-TIME     FROM    TIME
+                   MOVE    WK-TIME-HH  TO      WK-ED-TIME-HH
+                   MOVE    WK-TIME-MM  TO      WK-ED-TIME-MM
+                   MOVE    WK-TIME-SS  TO      WK-ED-TIME-SS
+                   MOVE    WK-ED-TIME  TO      MSG2-TIME
+                   MOVE    "I"         TO      LINK-CONS-MSGKBN
+                   MOVE    DSP-MSG2    TO      LINK-CONS-MSG
+      *            コンソールログ出力処理
+                   PERFORM CONS-PROC
+                   MOVE    099         TO      PROGRAM-STATUS
+                   EXIT    PROGRAM
+           END-IF.
+      *
+      *    処理開始メッセージ出力
+           ACCEPT  WK-TIME             FROM  TIME.
+           MOVE    WK-TIME-HH          TO    WK-ED-TIME-HH.
+           MOVE    WK-TIME-MM          TO    WK-ED-TIME-MM.
+           MOVE    WK-TIME-SS          TO    WK-ED-TIME-SS.
+           MOVE    WK-ED-TIME          TO    MSG1-TIME.
+           MOVE    "I"                 TO    LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG1            TO    LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+      *    初期化
+           INITIALIZE   FLG-AREA.
+      *
+      *    ファイルＯＰＥＮ
+           OPEN   INPUT                  IN-FILE.
+           IF  ( STATUS-IN-FILE NOT  =    ZERO )
+               MOVE    "01"             TO    DSP-ERR1(18:2)
+               MOVE    STATUS-IN-FILE   TO    ERR1-STATUS
+               MOVE    099              TO    PROGRAM-STATUS
+               EXIT    PROGRAM
+           END-IF.
+      *
+      *    初回の入力ファイル読み込み
+           PERFORM IN-READ-PROC.
+      *
+       INIT-PROC-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (2.0)     主処理                                          *
+      ****************************************************************
+       MAIN-PROC                     SECTION.
+      *
+      *    初期化
+           MOVE  SPACE   TO   SEL-FLG.
+           MOVE  SPACE   TO   BMN-FLG.
+           MOVE  ZERO    TO   SQLCODE.
+      *
+      *    部門マスタ検索処理
+           PERFORM DATA-KENSAKU.
+           IF  SW-ABEND   =   "1"
+               GO  TO   MAIN-PROC-EXIT
+           END-IF.
+      *
+      *    部門マスタ検索判定
+           IF  SEL-FLG  = "1"
+      *        部門名称チェック処理
+               PERFORM DATA-CHECK
+      *
+      *        部門マスタ更新処理判定
+               IF  (BMN-FLG  = "1")
+      *            部門マスタ更新処理
+                   PERFORM DATA-KOUSHIN
+                   IF  SW-ABEND   =   "1"
+                       GO  TO   MAIN-PROC-EXIT
+                   END-IF
+               ELSE
+                   CONTINUE
+               END-IF
+           ELSE
+      *        部門情報登録処理
+               PERFORM DATA-TOUROKU
+               IF  SW-ABEND   =   "1"
+                   GO  TO   MAIN-PROC-EXIT
+               END-IF
+           END-IF.
+      *
+      *    入力ファイル読み込み
+           PERFORM IN-READ-PROC.
+      *
+       MAIN-PROC-EXIT.
+           EXIT.
+      /***************************************************************
+      *    入力ファイル読込み処理                                    *
+      ****************************************************************
+       IN-READ-PROC                 SECTION.
+      *
+           READ  IN-FILE
+               AT END
+                  MOVE    "END"       TO  END-FLG
+               NOT  AT END
+      *           入力件数のカウント
+                  ADD      1          TO  CNT-IN-REC
+           END-READ.
+      *    入力ファイル読込み時ステータス判定
+           IF  (STATUS-IN-FILE    NOT =    ZERO) AND
+               (END-FLG           NOT =   "END")
+               MOVE   STATUS-IN-FILE  TO  ERR1-STATUS
+               MOVE   "S"             TO  LINK-CONS-MSGKBN
+               MOVE   DSP-ERR1        TO  LINK-CONS-MSG
+               MOVE   "READ"          TO  LINK-CONS-MSG(6:5)
+      *        コンソールログ出力処理
+               PERFORM CONS-PROC
+               MOVE   "1"             TO  SW-ABEND
+               MOVE   099             TO  PROGRAM-STATUS
+               EXIT   PROGRAM
+           END-IF.
+      *
+       IN-READ-PROC-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    (2.1)     部門マスタ検索処理                              *
+      ****************************************************************
+       DATA-KENSAKU                      SECTION.
+      *
+      *    該当データ無し
+           EXEC SQL WHENEVER NOT FOUND GO TO :INV-KENSAKU END-EXEC.
+      *
+      *    ＳＱＬエラー
+           EXEC SQL WHENEVER SQLERROR  GO TO :ERR-KENSAKU END-EXEC.
+      *
+      *    検索キー項目の設定
+      *    店コード
+           MOVE    IN-PRMMISECD        TO       QPAF-PRMMISECD.
+      *    部門コード
+           MOVE    IN-PRMBUMONCD       TO       QPAF-PRMBUMONCD.
+      *
+      *    データ抽出
+           EXEC SQL SELECT
+                    DECODE(QPAF_BUMONNM,NULL,' ',QPAF_BUMONNM)
+               INTO :QPAF-BUMONNM
+               FROM QPAF_BUMONM
+              WHERE QPAF_PRMMISECD     = :QPAF-PRMMISECD
+                AND QPAF_PRMBUMONCD    = :QPAF-PRMBUMONCD
+           END-EXEC.
+      *
+      *    部門マスタに存在する場合、更新処理実行
+           MOVE   "1"                  TO    SEL-FLG.
+      *
+           GO  TO  DATA-KENSAKU-EXIT.
+      *
+       ERR-KENSAKU.
+      *
+           MOVE    "1"                 TO      SW-ABEND.
+           MOVE    "END"               TO      END-FLG.
+      *
+           MOVE    "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE    SQLERRML            TO      WK-SQLERRML.
+           MOVE    WK-SQLERRML         TO      WK-SQLERRML-X.
+           STRING  "KENSAKU ERROR : "
+                   QPAF-PRMMISECD "+"
+                   QPAF-PRMBUMONCD "+"
+                   WK-SQLERRML-X " " SQLERRMC
+                   DELIMITED  BY  "*"  INTO    LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+           GO  TO  DATA-KENSAKU-EXIT.
+      *
+       INV-KENSAKU.
+      *
+      *    部門マスタに存在しない場合、登録処理実行
+           MOVE    SPACE               TO    SEL-FLG.
+      *
+       DATA-KENSAKU-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (2.2)     部門名称チェック処理                            *
+      ****************************************************************
+       DATA-CHECK                      SECTION.
+      *
+      *    部門名称判定
+           IF IN-BUMONNM  NOT = QPAF-BUMONNM
+      *       部門マスタの部門名称が入力ファイルの部門名称と異なる場合
+               MOVE  "1"      TO    BMN-FLG
+           ELSE
+               CONTINUE
+           END-IF.
+       DATA-CHECK-EXIT.
+           EXIT.
+
+      /***************************************************************
+      *    (2.3)     部門マスタ更新処理                              *
+      *              KEY項目が存在し、部門名称が異なる場合           *
+      ****************************************************************
+       DATA-KOUSHIN                        SECTION.
+      *
+      *    更新項目の設定
+      *    部門名称
+           MOVE    IN-BUMONNM          TO      QPAF-BUMONNM.
+      *    部門名称の有効桁のチェック
+           PERFORM  VARCHAR-X1.
+      *    ＳＱＬエラー
+           EXEC SQL WHENEVER SQLERROR  GO TO :ERR-KOUSIN END-EXEC.
+      *
+           MOVE    SPACE               TO      SQL-AREA.
+      *
+           STRING   "UPDATE QPAF_BUMONM SET "
+                  "       QPAF_BUMONNM   ='" QPAF-BUMONNM(1:CNT-I) "'"
+                  " WHERE QPAF_PRMMISECD ='" QPAF-PRMMISECD  "'"
+                  "   AND QPAF_PRMBUMONCD='" QPAF-PRMBUMONCD "'"
+               DELIMITED  BY    SIZE  INTO  SQL-AREA.
+      *
+      *    データ更新
+           EXEC SQL PREPARE P1 FROM :SQL-AREA END-EXEC.
+      *
+           EXEC SQL EXECUTE P1 END-EXEC.
+      *
+      *    更新件数のカウント
+           ADD     1                   TO    CNT-UPD-REC.
+      *
+           GO  TO  DATA-KOUSHIN-EXIT.
+      *
+       ERR-KOUSIN.
+      *
+           MOVE    "1"                 TO      SW-ABEND.
+           MOVE    "END"               TO      END-FLG.
+      *
+           MOVE    "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE    SQLERRML            TO      WK-SQLERRML.
+           MOVE    WK-SQLERRML         TO      WK-SQLERRML-X.
+           STRING  "UPDATE ERROR : "
+                   QPAF-PRMMISECD "+"
+                   QPAF-PRMBUMONCD "+"
+                   QPAF-BUMONNM "+"
+                   WK-SQLERRML-X " " SQLERRMC
+                   DELIMITED  BY  "*"  INTO    LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+       DATA-KOUSHIN-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (2.4)   部門情報登録処理                                  *
+      *            KEY項目が存在しない場合                           *
+      ****************************************************************
+       DATA-TOUROKU                     SECTION.
+      *
+      *
+      *    登録項目の設定
+      *    部門名称
+           MOVE    IN-BUMONNM          TO      QPAF-BUMONNM.
+      *    部門名称の有効桁のチェック
+           PERFORM  VARCHAR-X1.
+      *
+      *    ＳＱＬエラー
+           EXEC SQL WHENEVER SQLERROR GO TO :ERR-TOUROKU END-EXEC.
+      *
+           MOVE    SPACE               TO      SQL-AREA.
+      *
+           STRING   "INSERT INTO QPAF_BUMONM VALUES("
+                    "'" QPAF-PRMMISECD             "',"
+                    "'" QPAF-PRMBUMONCD            "',"
+                    "'" QPAF-BUMONNM(1:CNT-I)      "'"
+                    ")"
+                    DELIMITED  BY  SIZE  INTO  SQL-AREA.
+      *
+      *    データ登録
+           EXEC SQL PREPARE P2 FROM :SQL-AREA END-EXEC.
+      *
+           EXEC SQL EXECUTE P2 END-EXEC.
+      *
+      *    登録件数のカウント
+           ADD     1                   TO      CNT-INS-REC.
+      *
+           GO  TO  DATA-TOUROKU-EXIT.
+      *
+       ERR-TOUROKU.
+      *
+           MOVE    "1"                 TO      SW-ABEND.
+           MOVE    "END"               TO      END-FLG.
+      *
+           MOVE    "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE    SQLERRML            TO      WK-SQLERRML.
+           MOVE    WK-SQLERRML         TO      WK-SQLERRML-X.
+           STRING  "INSERT ERROR : "
+                   QPAF-PRMMISECD "+"
+                   QPAF-PRMBUMONCD "+"
+                   QPAF-BUMONNM "+"
+                   WK-SQLERRML-X " " SQLERRMC
+                   DELIMITED  BY  "*"  INTO    LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+       DATA-TOUROKU-EXIT.
+           EXIT.
+      /***************************************************************
+      *    部門名称の有効桁数算出                                    *
+      ****************************************************************
+       VARCHAR-X1                  SECTION.
+      *
+           PERFORM VARYING CNT-I FROM CNT-DATA-LEN BY -1 
+               UNTIL (CNT-I < 1) OR (QPAF-BUMONNM(CNT-I:1) NOT = " ")
+               CONTINUE 
+           END-PERFORM.
+      *
+       VARCHAR-X1-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (3.0)     終了処理                                        *
+      ****************************************************************
+       FINAL-PROC                    SECTION.
+      *
+      *    ファイルＣＬＯＳＥ
+           CLOSE   IN-FILE.
+      *
+      *    処理件数メッセージ出力
+           MOVE    CNT-IN-REC          TO      MSG3-CNT-IN.
+           MOVE    CNT-INS-REC         TO      MSG3-CNT-INS.
+           MOVE    CNT-UPD-REC         TO      MSG3-CNT-UPD.
+           MOVE    DSP-MSG3-IN         TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+           MOVE    DSP-MSG3-INS        TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+           MOVE    DSP-MSG3-UPD        TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+      *    処理終了メッセージ出力
+           ACCEPT  WK-TIME             FROM    TIME.
+           MOVE    WK-TIME-HH          TO      WK-ED-TIME-HH.
+           MOVE    WK-TIME-MM          TO      WK-ED-TIME-MM.
+           MOVE    WK-TIME-SS          TO      WK-ED-TIME-SS.
+           MOVE    WK-ED-TIME          TO      MSG2-TIME.
+           MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+           IF      SW-ABEND              =      "0"
+      *
+      *            データベーストランザクションコミット
+                   EXEC SQL  COMMIT    WORK   END-EXEC
+                   MOVE    000         TO     PROGRAM-STATUS
+           ELSE
+      *
+      *            データベーストランザクションロールバック
+                   EXEC SQL  ROLLBACK  WORK   END-EXEC
+                   MOVE    050         TO     PROGRAM-STATUS
+           END-IF.
+      *
+       FINAL-PROCE-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (C.0)   コンソールログ出力処理
+      ****************************************************************
+       CONS-PROC                       SECTION.
+      *
+      *    コンソールログ出力サブ
+           CALL    "QTAB-CONSLOG"      USING   LINK-CONS-AREA.
+           IF      LINK-CONS-STATUS    =       ZERO
+      *
+      *            データベーストランザクションコミット
+                   EXEC SQL COMMIT WORK END-EXEC
+                   MOVE    000           TO      PROGRAM-STATUS
+           ELSE
+                   MOVE    099           TO      PROGRAM-STATUS
+                   EXIT    PROGRAM
+           END-IF.
+      *
+       CONS-PROC-EXIT.
+           EXIT.

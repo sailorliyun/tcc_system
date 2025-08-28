@@ -1,0 +1,67 @@
+#!/bin/csh
+#　スクリプト名  ： QMTJ42UX
+#　 プロセス     ： オールリボエントリ状況Ｔ作成
+#　 機  能       ： オールリボ会員ホスト受信処理
+#　 作成者       ： FIP
+#　 更新者       ： 
+##########################################
+#         共通環境設定                   #
+##########################################
+set    SHELL_NAME = $0                                      # シェル名
+setenv JOB_ID       $SHELL_NAME:t                           # ジョブ名
+setenv JOBNET_ID    'QMT402UX'                              # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log             # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT                # ログ出力モジュール
+setenv USERKEY      'QMTJ42UX'                              # ユーザキー
+set    KINOU      = 'ポイント付与・オールリボ会員ホスト受信処理'
+
+##########################################
+#         固有環境設定                   #
+##########################################
+set    HULDIR     = /d321/UFS/fromhost/qma/rcv
+setenv HULFILE      $HULDIR/OFQWB0.hft
+setenv BAKFILE      $HULDIR/OFQWB0.bak
+set    DATDIR     = /d321/UFS/data/qma
+setenv INFILE       $DATDIR/OFQWB0.dat
+
+##########################################
+#         処理開始メッセージ             #
+##########################################
+set MODULE        = 'SHELL'                                 # モジュール
+$LOGWRITE "$MODULE" I "開始：$KINOU" "$USERKEY"             # 開始メッセージの出力
+
+##########################################
+# STEP-1  データコピー                   #
+##########################################
+STEP_1:
+set    MODULE     = cp                                      # モジュール名
+
+ cp -p $HULFILE  $INFILE
+
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗：$KINOU  RC=[$rc]"  "$USERKEY"
+    exit(1)
+endif
+##########################################
+# STEP-2  データバックアップ             #
+##########################################
+STEP_2:
+set    MODULE     = mv                                      # モジュール名
+
+ mv $HULFILE  $BAKFILE
+
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗：$KINOU  RC=[$rc]"  "$USERKEY"
+    exit(1)
+endif
+
+##########################################
+# STEP-99  終了メッセージ出力            #
+##########################################
+STEP_99:
+set MODULE        = 'SHELL'
+$LOGWRITE "$MODULE" I "終了：$KINOU" "$USERKEY"             # 終了メッセージの出力
+
+exit(0)

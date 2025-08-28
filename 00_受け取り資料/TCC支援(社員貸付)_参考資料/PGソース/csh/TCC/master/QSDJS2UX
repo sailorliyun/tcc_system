@@ -1,0 +1,101 @@
+#!/bin/csh
+#
+#  オラクル開始[日次処理開始前]  (QSDJS2UX)
+#
+#     機  能：1.主データベースを起動する。
+#             2.コンスログライタを起動する。  ADD '99.05.11 
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+# 変 更 履 歴
+# 項番	日      付	修                正	担 当 者
+# ----+-------------+-------------------------+---------
+# 001	2006/08/08	リスナー確認方法変更	NBC 齋藤
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+set  SHELL_NAME = $0                                    			# シェル名
+set  MODULE   =  $SHELL_NAME:t                          			# モジュール名
+set  LOGFILE  = $USER_LOG_DIR/db_ope.log                			# ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  			# ログ出力用共通シェル
+
+if ( $#argv == 1 ) then								# 引数が指定されていた場合
+    setenv ORACLE_SID   $1							# 環境変数ORACLE_SIDを設定
+endif
+
+#echo $MODULE " : " $ORACLE_SID
+
+$LOGWRITE  "オラクル開始\[日次処理\]" >> $LOGFILE
+
+
+#####################################################
+# 0. リスナーが万が一起動されていなかったら起動する #
+#####################################################
+
+# MOD-START 001 2006/08/08
+# set PRCNUM = `ps -ef | grep -v 'grep' | grep -c "tnslsnr"`
+# if ( $PRCNUM == 0 ) then
+lsnrctl status LISTENER
+set RC = $status
+if ( $RC != 0 ) then
+# MOD-END 001
+
+	$EXE_DIR/QUAJ_LSNRSTART.BAT 
+	if ( $status != 0 ) then
+		exit 1
+	endif
+endif
+
+
+#########################
+# 1. 主データベース開始 #
+#########################
+#$EXE_DIR/QUAJ_DBSTART.BAT  tcc
+#$EXE_DIR/QUAJ_DBSTART.BAT  PT1
+$EXE_DIR/QUAJ_DBSTART.BAT  $ORACLE_SID						# 環境変数を用いてＤＢ起動
+set RC = $status
+if ( $RC != 0 ) then
+	exit 1
+endif
+
+$LOGWRITE  "オラクル開始\[日次処理\]正常終了" >> $LOGFILE
+
+####################################################
+# 2.   コンスログライタ起動(バックグランドシェル)  #
+####################################################
+$EXE_DIR/QUAJ_LWTRSTART.BAT  conslog  $ORACLE_SID &				# 非同期モードにてコンソールログライタの起動
+set RC = $status
+if ( $RC != 0 ) then
+    exit 1
+endif
+
+echo "ConslogWriter Normaly Starting"
+$LOGWRITE  "ConslogWriter Normaly Starting" >> $LOGFILE
+
+####################################################
+# 3.   ＴＥＭＰ表領域の圧縮            2000.08.15  #
+####################################################
+set  LOGFILE2  = $USER_LOG_DIR/${MODULE}.log                			# ログファイル名
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S tccadmin/tccadmin << EOF > $LOGFILE2
+#sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE2
+#alter tablespace TEMP coalesce;
+#quit SQL.SQLCODE
+#EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	$LOGWRITE  " 異常終了[圧縮] RC=[$rc]" >> $LOGFILE
+	exit 1
+endif
+$LOGWRITE  "Tablespace=TEMP Normaly coalesce" >> $LOGFILE
+
+exit 0

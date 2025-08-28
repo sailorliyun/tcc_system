@@ -1,0 +1,48 @@
+#!/bin/csh
+#　スクリプト名  ： QXDJK3UX
+#　 機  能       ： 事故売上管理：未発行・売上エラー売上データ日次受信ファイル配信要求
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                           # シェル名
+setenv JOB_ID       $SHELL_NAME:t                # ジョブ名
+setenv JOBNET_ID   'QXDJK3UX'                    # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log  # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT     # ログ出力モジュール
+setenv USERKEY      'QXDJK3UX'                   # ユーザキー 
+set    KINOU      = '未発行・売上エラーデータ配信要求'   # 機能
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:未発行・売上エラーデータ配信要求" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQW53 -sync   #未発行・売上エラーデータ
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:未発行・売上エラーデータ配信要求 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:未発行・売上エラーデータ配信要求" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0
+

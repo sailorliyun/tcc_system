@@ -1,0 +1,80 @@
+#!/bin/csh
+#　スクリプト名  ： QBTJK2UX
+#　 機  能       ： FAX送信用件数・金額データ振分（旧G)起動処理
+#　 作成者       ： FIP
+#
+#   修正履歴
+#   項番   管理番号    修正内容                修正者         修正日
+#   000001 14120002    引数にWORKディレクトリ名追加  FIP．辻  2015.12.22
+#   000002 14120002    WORKディレクトリ変更    FIP．辻        2015.12.22
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                               			  	#シェル名
+setenv JOB_ID       $SHELL_NAME:t                     			 	#ジョブ名
+setenv JOBNET_ID   'QBTK21UX'										#ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/user.log	        				#ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT          			 	#ログ出力モジュール
+set    USERKEY    = 'QBTJK2UX'                   					#ユーザキー
+set    KINOU      = 'FAX送信用件数・金額データ振分（旧G)起動処理'	#機能
+
+set    FURIWAKE   = $EXE_DIR/qbkb_s000100.csh						#データ振分SHELL
+# MOD 000002  WORKディレクトリ変更  FIP．辻  2015.12.22
+#set    WORK_DIR   = $QB_DATA_DIR/qb/FAXWORK							#WORKディレクトリ
+set    WORK_DIR   = $QB_DATA_DIR/qb/FAXWORK1						#WORKディレクトリ1
+set    INPUT_FILENAME = $FROMHOST2_DIR/qb/rcv/OFQHF2A				#入力ファイル名
+
+set    WORK_FILE_NUM  = `ls -1 $WORK_DIR | wc -l`					#WORKディレクトリ配下のファイル数
+
+set    MODULE     = 'SHELL'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   					#開始メッセージの出力
+
+#################################################
+# STEP-1  出力先ディレクトリファイルチェック    #
+#################################################
+if ( $WORK_FILE_NUM != 0 ) then
+#	$LOGWRITE "$MODULE" E "失敗:WORKディレクトリ内にファイルがあります" "$USERKEY"
+	$LOGWRITE "$MODULE" E "失敗:WORKディレクトリ1内にファイルがあります" "$USERKEY"
+	exit 1		# 異常終了
+endif
+
+#################################################
+# STEP-2  件数金額データ（旧G）ファイルチェック #
+#################################################
+if ( ! -e ${INPUT_FILENAME} ) then
+	$LOGWRITE "$MODULE" E "失敗:件数金額データ（旧G）ファイルなし" "$USERKEY"
+	exit 1		# 異常終了
+endif
+
+#################################################
+# STEP-3  件数・金額データ振分SHELL起動         #
+#################################################
+$LOGWRITE "$MODULE" I "開始:件数・金額データ振分SHELL起動" "$USERKEY"		#開始メッセージ
+
+if ( -x ${FURIWAKE} ) then
+# MOD 000001  引数にWORKディレクトリ名追加  FIP．辻  2015.12.22
+#	${FURIWAKE} ${INPUT_FILENAME}							#データ振分SHELLを引数入力ファイル名で起動
+	${FURIWAKE} ${INPUT_FILENAME} ${WORK_DIR}				#データ振分SHELLを引数入力ファイル名、WORKディレクトリ2で起動
+
+	#直前に実行したコマンドが成功したら0、失敗したら1をRCにセット
+	set RC = $status
+	if ( $RC != 0 ) then
+	    $LOGWRITE  "$MODULE"  E  "失敗:件数・金額データ振分SHELL起動 RC=[$RC]" "$USERKEY"
+		exit 1		# 異常終了
+	endif
+
+else
+
+    $LOGWRITE  "$MODULE"  E  "失敗:実行プログラム[$FURIWAKE]が存在しません" "$USERKEY"
+    exit 1                                      			#異常終了
+
+endif
+
+$LOGWRITE "$MODULE" I "終了:件数・金額データ振分SHELL起動" "$USERKEY"    	#終了メッセージ
+
+#################################################
+# STEP-99  終了処理                             #
+#################################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   			#終了メッセージの出力
+exit 0                                           			#正常終了

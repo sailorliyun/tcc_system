@@ -1,0 +1,45 @@
+#!/bin/csh
+# 　スクリプト名 ： QSDJL3UX
+#　 機  能       ： データベース操作ログファイルの整理
+#   実行USER     ： oracle
+#　 作成者       ： 高橋
+#
+set  LOGFILE      = $USER_LOG_DIR/db_ope.log
+set  SAVE_LOGFILE = ${LOGFILE:r}_
+set  SUFFIX       = ${LOGFILE:e}
+set YOUBI = `date +%u`
+switch ( $YOUBI )
+	case  1:
+		set OSIRI = sun
+		breaksw
+	case  2:
+		set OSIRI = mon
+		breaksw
+	case  3:
+		set OSIRI = tue
+		breaksw
+	case  4:
+		set OSIRI = wed
+		breaksw
+	case  5:
+		set OSIRI = thu
+		breaksw
+	case  6:
+		set OSIRI = fri
+		breaksw
+	case  7:
+		set OSIRI = sat
+		breaksw
+	default:
+		set OSIRI = xxx
+		breaksw
+endsw
+
+set SAVE_LOGFILE = ${SAVE_LOGFILE}${OSIRI}.${SUFFIX}
+
+mv  $LOGFILE $SAVE_LOGFILE
+touch $LOGFILE
+chmod o+w $LOGFILE
+
+exit 0
+

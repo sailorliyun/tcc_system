@@ -1,0 +1,58 @@
+#!/bin/csh
+#　スクリプト名  ： QPHJB2UX
+#　 機  能       ： 控除データ送信（賞与分）
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPHBE2UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPHJB2UX'                         # ユーザキー
+set    KINOU      = '社員貸付：控除データ送信（賞与分）'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+
+#################################################
+# STEP-1控除データ改行コード削除                #
+#################################################
+#set MODULE = 'utllf'
+#$LOGWRITE "$MODULE" I "開始:社員貸付控除データ改行コード削除（賞与分）" "$USERKEY"     # 開始メッセージの出力
+
+#utllf  -d -i  $QP_DATA_DIR/syouyohiki.dat -o  $QP_HUL_DIR/syouyohiki.dat -r
+#set rc = $status
+
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                      # 異常終了
+#endif
+#$LOGWRITE "$MODULE" I "終了:社員貸付控除データ改行コード削除（賞与分）" "$USERKEY"     # 終了メッセージの出力
+
+#################################################
+# STEP-2控除データ送信  （ＴＣＣ→新人事サーバ）#
+#################################################
+###ディレクトリの移動 2005/11/10 ###
+cp -p $QP_DATA_DIR/syouyohiki.dat $QP_HUL_DIR/syouyohiki.dat
+
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:社員貸付控除データ送信（賞与分）" "$USERKEY"     # 開始メッセージの出力
+
+### 送信の実行 ###
+### ファイルＩＤ変更 2005/11/10 START ###
+### utlsend  -f OFQY02 -sync
+   utlsend  -f OFQY58 -sync
+### ファイルＩＤ変更 2005/11/10 END   ###
+set rc = $status
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:社員貸付控除データ送信（賞与分）" "$USERKEY"     # 終了メッセージの出力
+
+exit 0                                           # 正常終了
+

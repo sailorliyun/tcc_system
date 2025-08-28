@@ -1,0 +1,164 @@
+#!/bin/csh
+#　スクリプト名  ： QSTJ22UX
+#　 機  能       ： 自振返戻照合
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QST122UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSTJ22UX'                         # ユーザキー 
+set    KINOU      = '自振返戻照合'
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'COBOL1'
+set KINOU  = '自振返戻照合（データ変換）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qsab_s000150.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qsaf_jfhenrei.hft
+    setenv OTFILE $QJ_DATA_DIR/qt/data/svr/dat/qsaf_jfhenrei.dat
+    #
+    #
+    rm $QJ_DATA_DIR/qt/data/svr/dat/qsaf_jfhenrei.dat
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM      >& $LOGFILE                    # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+#########################################
+# STEP-2                                #
+#########################################
+set MODULE = 'COBOL2'
+set KINOU  = '自振返戻照合（データ抜き出し）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qjab_sbatqsa1.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv INFILE $QJ_DATA_DIR/qt/data/svr/dat/qsaf_jfhenrei.dat
+    setenv OTFILE $QJ_DATA_DIR/qt/data/svr/dat/qsaf_jfhenrei.dat1
+    #
+    #
+    rm $QJ_DATA_DIR/qt/data/svr/dat/qsaf_jfhenrei.dat1
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM      >>& $LOGFILE                   # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-3                                #
+#########################################
+set MODULE = 'COBOL3'
+set KINOU  = '自振返戻照合（アラームデータ作成）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qjab_sbat010.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv QSA1FILE $QJ_DATA_DIR/qt/data/svr/dat/qsaf_jfhenrei.dat1
+    setenv SBATFILE $QJ_DATA_DIR/qt/data/svr/dat/qjaf_armrenban.dat
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM      >>& $LOGFILE                   # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-4                                #
+#########################################
+set MODULE = 'BACKUP'
+set KINOU  = '自振返戻照合（データバックアップ）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+
+cp $QJ_DATA_DIR/qt/data/host/zen/qsaf_jfhenrei.kur  $QJ_DATA_DIR/qt/data/svr/backup/qsaf_jfhenrei.zen.bak
+
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+
+cp $QJ_DATA_DIR/qt/data/host/merge/qsaf_jfhenrei.hft  $QJ_DATA_DIR/qt/data/svr/backup/qsaf_jfhenrei.hft.bak
+
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+
+cp $QJ_DATA_DIR/qt/data/svr/dat/qsaf_jfhenrei.dat  $QJ_DATA_DIR/qt/data/svr/backup/qsaf_jfhenrei.dat.bak
+
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+
+cp $QJ_DATA_DIR/qt/data/svr/dat/qjaf_armrenban.dat  $QJ_DATA_DIR/qt/data/svr/backup/qsaf_armrenban.dat.bak
+
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+exit 0                                           # 正常終了
+

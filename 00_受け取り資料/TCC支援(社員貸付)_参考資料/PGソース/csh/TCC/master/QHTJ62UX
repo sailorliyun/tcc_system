@@ -1,0 +1,95 @@
+#!/bin/csh
+#　スクリプト名  ： QHTJ62UX
+#　 機  能       ： 請求会員情報最新年月吸い上げ処理
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID   'QHT611UX'                      # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QHTJ62UX'                     # ユーザキー
+set    KINOU      = '請求会員情報最新年月吸い上げ'
+
+set    QH_SHIFT_DIR = $QH_DATA_DIR/shift
+set    QH_SAVE_DIR  = /d271/UFS/data/qh/shift
+set    STEP_F       = $QH_DATA_DIR/${JOB_ID}_STEP_.tmp
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+
+
+if ( ! -e $STEP_F ) then
+    touch $STEP_F
+endif
+
+##################################
+# STEP-1  最新年月吸上           #
+##################################
+set MODULE = 'qheb_s000400'
+set STEPKINOU = '請求情報 最新年月吸上'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"     # 開始メッセージの出力
+
+rm -f $QH_SHIFT_DIR/qhef_qhe3kaiin01.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe3kaiin02.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe3kaiin03.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe3kaiin04.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe3kaiin05.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe3kaiin06.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe3kaiin07.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe3kaiin08.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe5rireki01.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe5rireki02.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe6rikaiin01.dat.shiftbackup.Z
+rm -f $QH_SHIFT_DIR/qhef_qhe6rikaiin02.dat.shiftbackup.Z
+
+touch $QH_SHIFT_DIR/qhef_qhe5rireki02.dat.shiftbackup
+touch $QH_SHIFT_DIR/qhef_qhe6rikaiin02.dat.shiftbackup
+
+setenv OUT1FIL1 $QH_SHIFT_DIR/qhef_qhe3kaiin01.dat.shiftbackup
+setenv OUT1FIL2 $QH_SHIFT_DIR/qhef_qhe3kaiin02.dat.shiftbackup
+setenv OUT1FIL3 $QH_SHIFT_DIR/qhef_qhe3kaiin03.dat.shiftbackup
+setenv OUT1FIL4 $QH_SHIFT_DIR/qhef_qhe3kaiin04.dat.shiftbackup
+setenv OUT1FIL5 $QH_SHIFT_DIR/qhef_qhe3kaiin05.dat.shiftbackup
+setenv OUT1FIL6 $QH_SHIFT_DIR/qhef_qhe3kaiin06.dat.shiftbackup
+setenv OUT1FIL7 $QH_SHIFT_DIR/qhef_qhe3kaiin07.dat.shiftbackup
+setenv OUT1FIL8 $QH_SHIFT_DIR/qhef_qhe3kaiin08.dat.shiftbackup
+setenv OUT2FILE $QH_SHIFT_DIR/qhef_qhe5rireki01.dat.shiftbackup
+#setenv OUT2FIL2 $QH_SHIFT_DIR/qhef_qhe5rireki02.dat.shiftbackup
+setenv OUT3FILE $QH_SHIFT_DIR/qhef_qhe6rikaiin01.dat.shiftbackup
+#setenv OUT3FIL2 $QH_SHIFT_DIR/qhef_qhe6rikaiin02.dat.shiftbackup
+
+set PROGRAM = $EXE_DIR/qheb_s000400.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"   # 終了メッセージの出力
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+/bin/rm $STEP_F
+
+set MODULE = 'SHELL       '
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

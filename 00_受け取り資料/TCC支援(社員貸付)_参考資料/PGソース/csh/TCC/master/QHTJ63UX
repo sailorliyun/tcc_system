@@ -1,0 +1,1305 @@
+#!/bin/csh
+#　スクリプト名  ： QHTJ63UX
+#　 機  能       ： 請求会員Ｔ登録
+#　 作成者       ： FIP
+#　 改造         ： ��1999/12/08 compressタイミング終了MSG前に移動
+#                ： ��2000/06/08 SKIP処理を削除
+#                ： ��2000/08/15 SQL*Loader後のindexｴﾗｰ確認処理追加
+#
+#　 修正履歴
+# 項番   管理番号 修正内容                         修正者         修正日
+# 000001          シフト処理時間短縮               NBC.SAITOH     2006/09/15
+# 000002          ﾛｰﾀﾞｰｴﾗｰﾁｪｯｸ修正                 NBC.HAYASHI    2006/11/13
+# 000003 0807073  非互換対応                       NBC.ISHIDA  2009/03/29
+# 000003 0807073  INITIAL値・NEXT値のサイズ変更    NBC.ISHIDA  2009/03/29
+# 000003 0808052  非互換対応                       NBC.ISHIDA  2009/03/29
+# 000003 0808052  INITIAL値・NEXT値のサイズ変更    NBC.ISHIDA  2009/03/29
+# 000004          索引表領域を指定修正             NBC.ISHIDA  2009/08/15
+#
+
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID   'QHT611UX'                      # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QHTJ63UX'                     # ユーザキー
+set    KINOU      = 'QHE3 請求会員Ｔ登録'
+
+set    QH_SHIFT_DIR = $QH_DATA_DIR/shift
+set    QH_SAVE_DIR  = /d271/UFS/data/qh/shift
+set    STEP_F       = $QH_DATA_DIR/${JOB_ID}_STEP_.tmp
+
+set    TABLE_NAME   = QHE3_SEIKYUKAIT                 # 対象テーブル名
+
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+set    INDEX_NAME   = XIEQHE3_SEIKYUKAIT                 # 対象インデックス名
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+#ADD 000004 NBC.ISHIDA 2009/08/15 start
+set    INDEX_SPACE  = SEI1IDX02
+#ADD 000004 NBC.ISHIDA 2009/08/15 end
+
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+
+#set year  = $1                             # 処理年  入力パラメータ
+#set month = $2                             # 処理月  入力パラメータ
+set year  = `date +%Y`                     # 処理年 (システム日付より)
+set month = `date +%m`                     # 処理月 (システム日付より)
+
+# 処理月Leading Zero Suppress
+@ month ++
+@ month --
+
+# 前月算出
+set zen_year  = $year
+set zen_month = $month
+if ( $zen_month == 1 ) then
+	@ zen_year --
+	set zen_month = 12
+else
+	@ zen_month --
+endif
+
+if ( $zen_month < 10 ) then
+	set zen_month = 0$zen_month
+endif
+
+# add 000001 NBC.Saitoh 2006/09/15 start
+# 翌月算出
+set next_year  = $year
+set next_month = $month
+
+@ next_month += 1
+# 年を跨いだ時の算出
+if ( $next_month > 12 ) then
+   @ next_year  += 1
+   @ next_month -= 12
+endif
+# 2桁算出
+if ( $next_month < 10 ) then
+   set next_month = 0$next_month
+endif
+# add 000001 NBC.Saitoh 2006/09/15 end
+
+if ( $month < 10 ) then
+	set month = 0$month
+endif
+
+#if ( ! -e $STEP_F ) then
+#    touch $STEP_F
+#endif
+
+# mod 000001 NBC.Saitoh 2006/09/15 start
+# 以下、前月を当月にコメント、ログ修正
+##################################
+# STEP-1 当月パーティション検索  #
+##################################
+set MODULE = 'SQL*PLUS-1'
+set STEPKINOU = 'QHE3 当月パーティション検索'
+# mod 000001 NBC.Saitoh 2006/09/15 end
+
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+set sqlp ""
+set sqln off
+set pause off
+set hea   off
+set lin 200
+column QHEE_PRMPARTITIONMEI format A50
+column QHEE_TABLESPACEMEI format A50
+select max( QHEE_BOUNDTI )
+       from QHEE_PARTTABLET
+       where QHEE_PRMTABLEMEI = '$TABLE_NAME'
+           and QHEE_BOUNDTI != ( select max( QHEE_BOUNDTI )
+                                   from QHEE_PARTTABLET
+                                   where QHEE_PRMTABLEMEI = '$TABLE_NAME');
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+set val = `grep "^[0-9]" $LOGFILE`
+if ( "$val" == "" ) then
+	set MSG = "失敗:$STEPKINOU（該当無し） "
+	$LOGWRITE  "$MODULE"  E  "$MSG" "$USERKEY"
+	exit  1
+endif
+
+set ZEN_BOUND = $val[1]
+
+# mod 000001 NBC.Saitoh 2006/09/15 start
+# if ( $ZEN_BOUND != $zen_year$zen_month ) then
+if ( $ZEN_BOUND != $year$month ) then
+# mod 000001 NBC.Saitoh 2006/09/15 end
+	set MSG = "失敗:$STEPKINOU 処理年月が間違っています[$ZEN_BOUND]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" "$USERKEY"
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-2 最新パーティション検索  #
+##################################
+set MODULE = 'SQL*PLUS-2'
+set STEPKINOU = 'QHE3 最新パーティション検索'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+set sqlp ""
+set sqln off
+set pause off
+set hea   off
+set lin 200
+column QHEE_PRMPARTITIONMEI format A50
+column QHEE_TABLESPACEMEI format A50
+select QHEE_PRMPARTITIONMEI,QHEE_TABLESPACEMEI
+       from QHEE_PARTTABLET
+       where QHEE_PRMTABLEMEI = '$TABLE_NAME'
+           and QHEE_BOUNDTI = ( select max( QHEE_BOUNDTI )
+                                  from QHEE_PARTTABLET
+                                  where QHEE_PRMTABLEMEI = '$TABLE_NAME');
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+set val = `grep QHE3 $LOGFILE`
+if ( "$val" == "" ) then
+	set MSG = "失敗:$STEPKINOU（該当無し） "
+	$LOGWRITE  "$MODULE"  E  "$MSG" "$USERKEY"
+	exit  1
+endif
+
+set MAX_PART  = $val[1]
+set MAX_SPACE = $val[2]
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-3 最古パーティション検索  #
+##################################
+set MODULE = 'SQL*PLUS-3'
+set STEPKINOU = 'QHE3 最古パーティション検索'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+set sqlp ""
+set sqln off
+set pause off
+set hea   off
+set lin 200
+column QHEE_PRMPARTITIONMEI format A50
+column QHEE_TABLESPACEMEI format A50
+select QHEE_PRMPARTITIONMEI,QHEE_TABLESPACEMEI
+       from QHEE_PARTTABLET
+       where QHEE_PRMTABLEMEI = '$TABLE_NAME'
+           and QHEE_BOUNDTI = ( select min( QHEE_BOUNDTI )
+                                 from QHEE_PARTTABLET
+                                 where QHEE_PRMTABLEMEI = '$TABLE_NAME');
+quit SQL.SQLCODE
+EOF
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+set val = `grep QHE3 $LOGFILE`
+if ( "$val" == "" ) then
+	set MSG = "失敗:$STEPKINOU（該当無し） "
+	$LOGWRITE  "$MODULE"  E  "$MSG" "$USERKEY"
+	exit  1
+endif
+
+set OLD_PART  = $val[1]
+set OLD_SPACE = $val[2]
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-4 主キー制約削除          #
+##################################
+STEP_PRM_KEY_DROP_PROC:
+
+#set cnt = `grep -c "STEP4" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_OLD_PART_DROP_PROC
+#endif
+
+set MODULE = 'SQL*PLUS-4'
+set STEPKINOU = 'QHE3 主キー制約削除'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME drop primary key;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP4" > $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-5 最古パーティション削除  #
+##################################
+STEP_OLD_PART_DROP_PROC:
+
+#set cnt = `grep -c "STEP5" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_MAX_PART_DROP_PROC
+#endif
+
+set MODULE = 'SQL*PLUS-5'
+set STEPKINOU = 'QHE3 最古パーティション削除'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME drop partition $OLD_PART;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP5" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-6 最新パーティション削除  #
+##################################
+STEP_MAX_PART_DROP_PROC:
+
+#set cnt = `grep -c "STEP6" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_GEN_PART_ADD_PROC
+#endif
+
+set MODULE = 'SQL*PLUS-6'
+set STEPKINOU = 'QHE3 最新パーティション削除'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME drop partition $MAX_PART;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP6" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+# mod 000001 NBC.Saitoh 2006/09/15 start
+# 以下、当月を次月にコメント、ログ修正
+##################################
+# STEP-7 次月パーティション追加  #
+##################################
+STEP_GEN_PART_ADD_PROC:
+
+#set cnt = `grep -c "STEP7" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_MAX_PART_ADD_PROC
+#endif
+
+set MODULE = 'SQL*PLUS-7'
+set STEPKINOU = 'QHE3 次月パーティション追加'
+# mod 000001 NBC.Saitoh 2006/09/15 end
+
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#MOD 000004 NBC.ISHIDA 2009/08/15 start
+## mod 000001 NBC.Saitoh 2006/09/15 start
+#
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+##alter table $TABLE_NAME add partition $OLD_PART
+##            values less than ('$year$month')
+##            tablespace $OLD_SPACE;
+##quit SQL.SQLCODE
+##EOF
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+#alter table $TABLE_NAME add partition $OLD_PART
+#            values less than ('$next_year$next_month')
+#            tablespace $OLD_SPACE;
+#quit SQL.SQLCODE
+#EOF
+#
+## mod 000001 NBC.Saitoh 2006/09/15 end
+##MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME add partition $OLD_PART
+            values less than ('$next_year$next_month')
+            tablespace $OLD_SPACE
+            update indexes ($INDEX_NAME
+            (partition tablespace $INDEX_SPACE))
+;
+quit SQL.SQLCODE
+EOF
+
+#MOD 000004 NBC.ISHIDA 2009/08/15 end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP7" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-8 最新パーティション追加  #
+##################################
+STEP_MAX_PART_ADD_PROC:
+
+#set cnt = `grep -c "STEP8" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_SQLLDR_PROC_1
+#endif
+
+set MODULE = 'SQL*PLUS-8'
+set STEPKINOU = 'QHE3 最新パーティション追加'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#MOD 000004 NBC.ISHIDA 2009/08/15 start
+##MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+#alter table $TABLE_NAME add partition $MAX_PART
+#       values less than (MAXVALUE)
+#       tablespace $MAX_SPACE;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME add partition $MAX_PART
+       values less than (MAXVALUE)
+       tablespace $MAX_SPACE
+       update indexes ($INDEX_NAME
+       (partition tablespace $INDEX_SPACE))
+;
+quit SQL.SQLCODE
+EOF
+
+#MOD 000004 NBC.ISHIDA 2009/08/15 end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP8" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-9 請求会員データロード１  #
+##################################
+STEP_SQLLDR_PROC_1:
+
+#set cnt = `grep -c "STEP9" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_SQLLDR_PROC_2
+#endif
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QHE3 請求会員データロード１'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlldr $DB_USERID/$DB_PASSWORD                        \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai_shift.sql     \
+   data=$QH_SHIFT_DIR/qhef_qhe3kaiin01.dat.shiftbackup \
+   log=$LDR_LOG_DIR/qhed_seikyukai_shift01.log        \
+   direct=true                                        \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:$STEPKINOU（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP9" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-10 請求会員データロード２ #
+##################################
+STEP_SQLLDR_PROC_2:
+
+#set cnt = `grep -c "STEP10" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_SQLLDR_PROC_3
+#endif
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QHE3 請求会員データロード２'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlldr $DB_USERID/$DB_PASSWORD                        \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai_shift.sql     \
+   data=$QH_SHIFT_DIR/qhef_qhe3kaiin02.dat.shiftbackup \
+   log=$LDR_LOG_DIR/qhed_seikyukai_shift02.log        \
+   direct=true                                        \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:$STEPKINOU（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP10" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-11 請求会員データロード３ #
+##################################
+STEP_SQLLDR_PROC_3:
+
+#set cnt = `grep -c "STEP11" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_SQLLDR_PROC_4
+#endif
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QHE3 請求会員データロード３'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlldr $DB_USERID/$DB_PASSWORD                        \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai_shift.sql     \
+   data=$QH_SHIFT_DIR/qhef_qhe3kaiin03.dat.shiftbackup \
+   log=$LDR_LOG_DIR/qhed_seikyukai_shift03.log        \
+   direct=true                                        \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:$STEPKINOU（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP11" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-12 請求会員データロード４ #
+##################################
+STEP_SQLLDR_PROC_4:
+
+#set cnt = `grep -c "STEP12" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_SQLLDR_PROC_5
+#endif
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QHE3 請求会員データロード４'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlldr $DB_USERID/$DB_PASSWORD                        \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai_shift.sql     \
+   data=$QH_SHIFT_DIR/qhef_qhe3kaiin04.dat.shiftbackup \
+   log=$LDR_LOG_DIR/qhed_seikyukai_shift04.log        \
+   direct=true                                        \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:$STEPKINOU（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP12" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-13 請求会員データロード５ #
+##################################
+STEP_SQLLDR_PROC_5:
+
+#set cnt = `grep -c "STEP13" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_SQLLDR_PROC_6
+#endif
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QHE3 請求会員データロード５'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlldr $DB_USERID/$DB_PASSWORD                        \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai_shift.sql     \
+   data=$QH_SHIFT_DIR/qhef_qhe3kaiin05.dat.shiftbackup \
+   log=$LDR_LOG_DIR/qhed_seikyukai_shift05.log        \
+   direct=true                                        \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:$STEPKINOU（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP13" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-14 請求会員データロード６ #
+##################################
+STEP_SQLLDR_PROC_6:
+
+#set cnt = `grep -c "STEP14" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_SQLLDR_PROC_7
+#endif
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QHE3 請求会員データロード６'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlldr $DB_USERID/$DB_PASSWORD                        \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai_shift.sql     \
+   data=$QH_SHIFT_DIR/qhef_qhe3kaiin06.dat.shiftbackup \
+   log=$LDR_LOG_DIR/qhed_seikyukai_shift06.log        \
+   direct=true                                        \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:$STEPKINOU（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP14" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-15 請求会員データロード７ #
+##################################
+STEP_SQLLDR_PROC_7:
+
+#set cnt = `grep -c "STEP15" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_SQLLDR_PROC_8
+#endif
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QHE3 請求会員データロード７'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlldr $DB_USERID/$DB_PASSWORD                        \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai_shift.sql     \
+   data=$QH_SHIFT_DIR/qhef_qhe3kaiin07.dat.shiftbackup \
+   log=$LDR_LOG_DIR/qhed_seikyukai_shift07.log        \
+   direct=true                                        \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:$STEPKINOU（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP15" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-16 請求会員データロード８ #
+##################################
+STEP_SQLLDR_PROC_8:
+
+#set cnt = `grep -c "STEP16" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_PRM_KEY_ADD_PROC
+#endif
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QHE3 請求会員データロード８'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlldr $DB_USERID/$DB_PASSWORD                        \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                        \
+   control=$LDR_CTRL_DIR/qhed_seikyukai_shift.sql     \
+   data=$QH_SHIFT_DIR/qhef_qhe3kaiin08.dat.shiftbackup \
+   log=$LDR_LOG_DIR/qhed_seikyukai_shift08.log        \
+   direct=true                                        \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#----------------------------------------------------------#
+#   インデックスエラーのチェック              2000/08/15
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#000002 ADD NBC.HAYASHI 2006/11/13 START
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> ${LOGFILE}2
+set lin 200
+select index_name,status from user_ind_partitions
+       where index_name = '$INDEX_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU（sqlplus2） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+#000002 ADD NBC.HAYASHI 2006/11/13 END
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+	set MSG = "失敗:$STEPKINOU（grep） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP16" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##################################
+# STEP-17 主キー制約付与         #
+##################################
+STEP_PRM_KEY_ADD_PROC:
+
+#set cnt = `grep -c "STEP17" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_GEN_PART_MOD_PROC
+#endif
+
+set MODULE = 'SQL*PLUS-9'
+set STEPKINOU = 'QHE3 主キー制約付与'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#alter table $TABLE_NAME add
+#       PRIMARY KEY (QHE3_KeyRecShikibetsu, QHE3_KeySeikyuYm,
+#              QHE3_KeySeqNo, QHE3_KeyBunkatsuNo, QHE3_KeyVersionNo,
+#              QHE3_KeyRecNo)
+#       USING INDEX NOLOGGING
+#              TABLESPACE SEIIDX01
+#              STORAGE (
+#                     INITIAL 370M
+#                     NEXT 30M
+#                     MINEXTENTS 1
+#                     MAXEXTENTS 100
+#                     PCTINCREASE 0
+#              );
+#quit SQL.SQLCODE
+#EOF
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table $TABLE_NAME add
+       PRIMARY KEY (QHE3_KeyRecShikibetsu, QHE3_KeySeikyuYm,
+              QHE3_KeySeqNo, QHE3_KeyBunkatsuNo, QHE3_KeyVersionNo,
+              QHE3_KeyRecNo)
+       USING INDEX NOLOGGING
+              TABLESPACE SEIIDX01
+              STORAGE (
+                     INITIAL    11M
+                     NEXT        1M
+                     MINEXTENTS   1
+                     MAXEXTENTS 100
+                     PCTINCREASE  0
+              );
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+#echo "STEP17" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##########################################
+# STEP-18 期日管理テーブル更新           #
+##########################################
+STEP_GEN_PART_MOD_PROC:
+
+#set cnt = `grep -c "STEP18" $STEP_F`
+#if ( $cnt > 0 ) then
+#	goto STEP_END_PROC
+#endif
+
+set MODULE = 'SQL*PLUS10'
+set STEPKINOU = 'QHE3 期日管理テーブル更新'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+# mod 000001 NBC.Saitoh 2006/09/15 start
+
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#update QHEE_PARTTABLET set QHEE_BOUNDTI = '$year$month'
+#       where QHEE_PRMTABLEMEI = '$TABLE_NAME'
+#         and QHEE_PRMPARTITIONMEI = '$OLD_PART';
+#quit SQL.SQLCODE
+#EOF
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+update QHEE_PARTTABLET set QHEE_BOUNDTI = '$next_year$next_month'
+       where QHEE_PRMTABLEMEI = '$TABLE_NAME'
+         and QHEE_PRMPARTITIONMEI = '$OLD_PART';
+quit SQL.SQLCODE
+EOF
+
+# mod 000001 NBC.Saitoh 2006/09/15 end
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+compress -f $QH_SHIFT_DIR/qhef_qhe3kaiin??.dat.shiftbackup
+
+#echo "STEP18" >> $STEP_F
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+#/bin/rm $STEP_F
+
+#compress -f $QH_SHIFT_DIR/qhef_qhe3kaiin??.dat.shiftbackup
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

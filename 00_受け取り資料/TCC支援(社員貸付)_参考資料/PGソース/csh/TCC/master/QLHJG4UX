@@ -1,0 +1,39 @@
+#!/bin/csh
+#　スクリプト名  ： QLHJG4UX
+#　 機  能       ： 期末受信Ｆ作成9・クレジット帳票 (売掛金残高表９（期計）) 
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLHG30UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'JYUSIN-FILE'                      # ユーザキー
+set    KINOU      = '期末受信Ｆ作成9・クレジット帳票 (売掛金残高表９（期計）) '
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+### ファイルをマージする ###
+cp $FROMHOST2_DIR/qv/rcv/QVCF_S005400.jsn $QV_DATA_DIR/qv/data/host/merge/QVCF_S005400.hft
+
+set rc = $status
+
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了

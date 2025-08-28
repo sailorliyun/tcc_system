@@ -1,0 +1,218 @@
+#!/bin/csh
+#
+#　スクリプト名  ： QXDJP1UX
+#　 機  能       ： 繰越データバックアップ
+#　 作成者       ： FIP
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QLER02UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+setenv USERKEY      'QXDJP1UX'                      # ユーザキー
+set    KINOU      = '繰越データバックアップ'
+set    QX_DATA_DIR   = /d051/UFS/data/qxn/alarmdata   #TMP FILE DIR
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+###################################################
+# STEP-1 繰越リプリデータ退避　　　　　　　　　　 #
+###################################################
+STEP_01:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '繰越リプリデータ退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#-----loader対象のリプリデータを繰越ファイルとしてコピーしてリカばる---------
+cp $QX_DATA_DIR/qxn1_loaddata_dat.load \
+   $QX_DATA_DIR/qxn1_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###################################################
+# STEP-2 繰越海外返品データ退避　　　　　　　　　 #
+###################################################
+STEP_02:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '繰越海外返品データ退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#-----loader対象の海外返品データを繰越ファイルとしてコピーしてリカばる---------
+cp $QX_DATA_DIR/qxn2_loaddata_dat.load \
+   $QX_DATA_DIR/qxn2_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###################################################
+# STEP-3 繰越売上エラーデータ退避　　　　　　　　 #
+###################################################
+STEP_03:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '繰越売上エラーデータ退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#-----loader対象の売上エラーデータを繰越ファイルとしてコピーしてリカばる---------
+cp $QX_DATA_DIR/qxn3_loaddata_dat.load \
+   $QX_DATA_DIR/qxn3_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###################################################
+# STEP-4 繰越警告データ退避　　　　　　　　　　 #
+###################################################
+STEP_04:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '繰越警告データ退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#-----loader対象の警告データを繰越ファイルとしてコピーしてリカばる---------
+cp $QX_DATA_DIR/qxn4_loaddata_dat.load \
+   $QX_DATA_DIR/qxn4_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###################################################
+# STEP-5 繰越悪用データ退避　　　　　　　　　　 #
+###################################################
+STEP_05:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '繰越悪用データ退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#-----loader対象の悪用データを繰越ファイルとしてコピーしてリカばる---------
+cp $QX_DATA_DIR/qxn5_loaddata_dat.load \
+   $QX_DATA_DIR/qxn5_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###################################################
+# STEP-6 繰越本人悪用データ退避　　　　　　　　　 #
+###################################################
+STEP_06:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '繰越本人悪用データ退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#-----loader対象の本人悪用データを繰越ファイルとしてコピーしてリカばる---------
+cp $QX_DATA_DIR/qxn6_loaddata_dat.load \
+   $QX_DATA_DIR/qxn6_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###################################################
+# STEP-7 繰越手紙データ退避　　　　　　　　　　　 #
+###################################################
+STEP_07:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '繰越手紙データ退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#-----loader対象の手紙データを繰越ファイルとしてコピーしてリカばる---------
+cp $QX_DATA_DIR/qxn7_loaddata_dat.load \
+   $QX_DATA_DIR/qxn7_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###################################################
+# STEP-8 入金データ退避　　　　　　　　　　　　　 #
+###################################################
+STEP_07:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '入金データ退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#-----loader対象の入金データを繰越ファイルとしてコピーしてリカばる---------
+cp $QX_DATA_DIR/qxnj_loaddata_dat.load \
+   $QX_DATA_DIR/qxnj_loaddata_dat.bak
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0
+
+

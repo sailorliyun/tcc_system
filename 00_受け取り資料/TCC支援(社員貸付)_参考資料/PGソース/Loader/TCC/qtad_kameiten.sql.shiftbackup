@@ -1,0 +1,62 @@
+UNRECOVERABLE
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QTAK_KAMEITENT
+FIELDS TERMINATED BY "q"
+(
+       QTAK_PRMUriTuuBan           CHAR, --  NUMBER(13) NOT NULL,
+       QTAK_URITorihikiA           CHAR, --  CHAR(2) NOT NULL,
+       QTAK_URITorihikiB           CHAR, --  CHAR(1) NOT NULL,
+       QTAK_URITorihikiC           CHAR, --  CHAR(1) NOT NULL,
+       QTAK_URICardNo              CHAR, --  CHAR(16) NOT NULL,
+       QTAK_URIRiyouBi             DATE NULLIF(QTAK_URIRiyouBi="00000000"),
+       QTAK_URIUketsukeBi          DATE NULLIF(QTAK_URIUketsukeBi="00000000"),
+       QTAK_URIKeijyouBi           DATE NULLIF(QTAK_URIKeijyouBi="00000000"),
+       QTAK_URIShiharaiHoho        CHAR, --  CHAR(2) NOT NULL,
+       QTAK_URIBunkatsuKaisu       CHAR, --  NUMBER(3) NOT NULL,
+       QTAK_URIRiyouKng            CHAR, --  NUMBER(9) NOT NULL,
+       QTAK_URIUriageKng           CHAR, --  NUMBER(9) NOT NULL,
+       QTAK_URIZeiSouryou          CHAR, --  NUMBER(7) NOT NULL,
+       QTAK_URIUriageGoukei        CHAR, --  NUMBER(9) NOT NULL,
+       QTAK_URIWaribikiGaku        CHAR, --  NUMBER(7) NOT NULL,
+       QTAK_URIGaiTesuryou         CHAR, --  NUMBER(9) NOT NULL,
+       QTAK_URIShouninNo           CHAR, --  CHAR(7) NOT NULL,
+       QTAK_URIKokunaiKaigai       CHAR, --  CHAR(1) NOT NULL,
+       QTAK_KAITuukaGaku           CHAR, --  NUMBER(13,3) NOT NULL,
+       QTAK_KAIKanSanRate          CHAR, --  NUMBER(13,7) NOT NULL,
+       QTAK_KAIKanSanBi            DATE NULLIF(QTAK_KAIKanSanBi="00000000"),
+       QTAK_KAIToshiMei            CHAR, --  VARCHAR2(13) NULL,
+       QTAK_KAITuukaKoshou         CHAR, --  VARCHAR2(25) NULL,
+       QTAK_KAITuukaCd             CHAR, --  CHAR(3) NOT NULL,
+       QTAK_KAIShuuCd              CHAR, --  CHAR(3) NOT NULL,
+       QTAK_KAIKuniCd              CHAR, --  CHAR(3) NOT NULL,
+       QTAK_TKSShoukaiNo1          CHAR, --  CHAR(23) NOT NULL,
+       QTAK_TKSShoukaiNo2          CHAR, --  CHAR(23) NOT NULL,
+       QTAK_TKSKameitenNo          CHAR, --  CHAR(15) NOT NULL,
+       QTAK_TKSKameitenMei1        CHAR, --  VARCHAR2(25) NULL,
+       QTAK_TKSKameitenMei2        CHAR, --  VARCHAR2(25) NULL,
+       QTAK_TKSGyoushuCd           CHAR, --  CHAR(5) NOT NULL,
+       QTAK_TKSPosEntryCd          CHAR, --  CHAR(2) NOT NULL,
+       QTAK_TKSBonusHyouji         CHAR, --  CHAR(1) NOT NULL,
+       QTAK_KJKKigyouCd            CHAR, --  CHAR(4) NOT NULL,
+       QTAK_KJKSubRangeKey         CHAR, --  CHAR(4) NOT NULL,
+       QTAK_KJKNaibuKaiinNo        CHAR, --  CHAR(8) NOT NULL,
+       QTAK_KJKKanriTen            CHAR, --  CHAR(2) NOT NULL,
+       QTAK_KJKCardKbn             CHAR, --  CHAR(6) NOT NULL,
+       QTAK_KJKCardKaiinMei        CHAR, --  VARCHAR2(30) NULL,
+       QTAK_HostShoriYmd           CHAR, --  CHAR(8) NOT NULL,
+       QTAK_HostShoriTime          CHAR, --  CHAR(6) NOT NULL,
+       QTAK_SvrKoushinYmd          DATE NULLIF(QTAK_SvrKoushinYmd="00000000"),
+-- *** 2000/07/26 çÄñ⁄ÇÃí«â¡ ***********
+       QTAK_KMTCHARGEBACK  	       CHAR, -- NUMBER(1),
+       QTAK_KMTKJYAGOU 		       CHAR, -- VARCHAR2(40),
+       QTAK_KMTDENPYOUKI	       CHAR, -- CHAR(24),
+       QTAK_KMTSEISANKBN	       CHAR, -- CHAR(1)
+-- *** 2002/11/27 çÄñ⁄ÇÃí«â¡ ***********
+       QTAK_MOTOECINDICATOR	       CHAR, -- CHAR(1)
+       QTAK_CHACTTERMINDICATOR     CHAR, -- CHAR(1)
+       QTAK_AUTHSOURCECODE	       CHAR, -- CHAR(1)
+       QTAK_TCQ				       CHAR  -- CHAR(1)
+)

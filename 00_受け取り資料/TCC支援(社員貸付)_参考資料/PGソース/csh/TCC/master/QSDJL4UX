@@ -1,0 +1,44 @@
+#!/bin/csh
+# 　スクリプト名 ： QSDJL4UX
+#　 機  能       ： 外字変換エラーファイルの整理
+#   実行USER     ： root
+#　 作成者       ： 高橋
+#
+set  FILE      = $CONV_ERROR
+set  SAVE_FILE = ${FILE:r}_
+set  SUFFIX    = ${FILE:e}
+set YOUBI = `date +%u`
+switch ( $YOUBI )
+	case  1:
+		set OSIRI = sun
+		breaksw
+	case  2:
+		set OSIRI = mon
+		breaksw
+	case  3:
+		set OSIRI = tue
+		breaksw
+	case  4:
+		set OSIRI = wed
+		breaksw
+	case  5:
+		set OSIRI = thu
+		breaksw
+	case  6:
+		set OSIRI = fri
+		breaksw
+	case  7:
+		set OSIRI = sat
+		breaksw
+	default:
+		set OSIRI = xxx
+		breaksw
+endsw
+
+set SAVE_FILE = ${SAVE_FILE}${OSIRI}.${SUFFIX}
+
+mv  $FILE $SAVE_FILE
+touch $FILE
+chmod o+w $FILE
+
+exit 0

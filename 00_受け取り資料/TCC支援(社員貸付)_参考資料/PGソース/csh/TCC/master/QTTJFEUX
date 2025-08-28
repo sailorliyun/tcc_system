@@ -1,0 +1,113 @@
+#!/bin/csh
+#　 スクリプト名 ： QTTJFEUX
+#　 機  能       ： 顧客分析データ利用行ファイル作成　６後
+#　 作成者       ： FIP
+#　 修正履歴     ： 00001 ディレクトリ変更        IMZ.YOSHIDA 2005/11/25
+#------------------------------------------------------#
+# 環境設定                                             #
+#------------------------------------------------------#
+setenv JOBNET_ID    QTT4B6UX                           # ジョブネット名
+setenv JOB_ID       QTTJFEUX                           # ジョブ名
+setenv USERKEY      QTTJFEUX                           # ユーザキー
+set    KINOU      = '顧客分析データ家族・利用行5･6'    # 機能
+set    HULFT_DIR1 = (/d290/UFS/data/qta)               # HULFT受信ＤＩＲ１
+set    HULFT_DIR2 = (/d311/UFS/data/qta)               # HULFT受信ＤＩＲ２
+# add by IMZ.YOSHIDA 2005/11/25 00001 ==>
+set    HULFT_DIR3 = (/d371/UFS/data/qta)               # HULFT受信ＤＩＲ３
+# add by IMZ.YOSHIDA 2005/11/25 00001 <==
+#et    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+#------------------------------------------------------#
+# STEP-1                                               #
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+#------------------------------------------------------#
+set    MODULE     = YYMMDD                             # モジュール名
+set    YYYYMM     = `cut -b1-6 $HULFT_DIR1/QTAB_YYYYMM.txt`
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END QTAB_YYYYMM  RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+#　 機  能       ： 利用明細行抽出Ａ
+echo "*** qtab_s006400 ***"
+set    IN_F       = ($HULFT_DIR2/qtab_s006700.6datB)
+set    OT_F       = ($HULFT_DIR2/qtab_s006400.6datB)
+echo   "入力ファイル名：$IN_F"
+echo   "出力ファイル名：$OT_F"
+setenv INFILE     $IN_F
+setenv OTFILE     $OT_F
+#-------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006400.exe $YYYYMM
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006400 B RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#-------------------------------------------------------#
+#　 機  能       ： コンバート変換（利用明細行）
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#set    OT_F2      = ($HULFT_DIR2/qtab_s008400.6datB)
+set    OT_F2      = ($HULFT_DIR3/qtab_s008400.6datB)
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+echo   "入力ファイル名：$OT_F"
+echo   "出力ファイル名：$OT_F2"
+setenv IQTS840    $OT_F
+setenv OQTS840    $OT_F2
+#-------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006600.exe QTS840
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006600 B RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+set    MODULE     = compress                           # モジュール名
+compress -f       $OT_F
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+compress -f       $OT_F2
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+exit 0                                                 # 正常終了

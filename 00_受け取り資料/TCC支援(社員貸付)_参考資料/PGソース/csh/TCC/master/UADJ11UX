@@ -1,0 +1,14 @@
+#!/bin/csh -f
+#---------------------------------------------------------------------#
+#  autodsfl
+#
+#
+#  make :    2009/01/10 BY  Watanabe
+#
+#---------------------------------------------------------------------#
+source /usr/local/auto/autoenv.csh
+source /usr/local/auto/aplenv.csh
+#
+dsfl >& autodsfl_log
+#
+utlsend -f ofua26

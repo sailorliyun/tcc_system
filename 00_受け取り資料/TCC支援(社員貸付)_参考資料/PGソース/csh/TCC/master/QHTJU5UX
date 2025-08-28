@@ -1,0 +1,53 @@
+#!/bin/csh
+# 　スクリプト名 ： QHTJU5UX
+#　 機  能       ： 請求配信・請求会員５配信処理
+#　 作成者       ： FIP
+#　 変  更       ： 2006/02/20 作業ディレクトリ変更 NBC.YOSHIKAWA 00001
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+#   00001    2006/05/17  imz.Yoshida    HOST側のHULFTヴァージョンアップに伴い
+#                                       0件送信を停止
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                           # シェル名
+setenv JOB_ID       $SHELL_NAME:t                # ジョブ名
+setenv JOBNET_ID   'QHTKS1UX'                    # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log  # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT     # ログ出力モジュール
+setenv USERKEY      'QHTJU5UX'                   # ユーザキー
+set    KINOU      = '請求配信・請求会員５配信処理' # 機能
+# add by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+set    SEIKYU_FROMHOST_DIR = '/d380/UFS/fromhost/qh/rcv'
+# add by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#rm     $FROMHOST1_DIR/qh/rcv/qhef_seikyu05.hulft
+#touch  $FROMHOST1_DIR/qh/rcv/qhef_seikyu05.hulft
+rm     $SEIKYU_FROMHOST_DIR/qhef_seikyu05.hulft
+touch  $SEIKYU_FROMHOST_DIR/qhef_seikyu05.hulft
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+# 00001 del by imz.Yoshida 2006/05/17 start ==>
+#### 送信要求の実行 ###
+#utlsend  -f OFQ304 -sync
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#	set MSG = "失敗:$KINOU RC=[$rc]"
+#	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#	exit  1                                      # 異常終了
+#endif
+# 00001 del by imz.Yoshida 2006/05/17 end <==
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

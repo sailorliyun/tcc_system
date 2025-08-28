@@ -1,0 +1,136 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJ41UX
+#　 機  能       ： 期日テーブル設定処理
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSD211UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSDJ41UX'                         # ユーザキー 
+set    KINOU      = '期日テーブル設定処理'
+
+#  03.11.05 追加 -->
+# 中間ファイルの削除
+set    datdir     = ($QJ_DATA_DIR/qt/data/host/merge)
+touch $datdir/sokuhatu_kaiin1.hft
+rm -f $datdir/sokuhatu_kaiin1.hft
+touch $datdir/sokuhatu_kaiin2.hft
+rm -f $datdir/sokuhatu_kaiin2.hft
+touch $datdir/qtaf_kaiin11.hft
+rm -f $datdir/qtaf_kaiin11.hft
+#--------------------------------------------------#
+#   cp  会員登録コピー処理
+#--------------------------------------------------#
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+cp    $QJ_DATA_DIR/qt/data/host/merge/qtaf_kaiin1.hft  $datdir/sokuhatu_kaiin1.hft
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 会員登録コピー処理 cp RC=[$rc]" "$USERKEY"
+    echo "cp     ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+#--------------------------------------------------#
+#   SDBT092  申込書抽出処理（即時発券切替分）
+#--------------------------------------------------#
+setenv DDKAIINI $QJ_DATA_DIR/qt/data/host/merge/qtaf_kaiin2.hft
+setenv DDKAIINO $datdir/sokuhatu_kaiin2.hft
+
+$EXE_DIR/qbab_sdbt092.exe
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 申込書抽出処理 sdbt092 RC=[$rc]" "$USERKEY"
+    echo "SDBT092 ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+cat   $datdir/sokuhatu_kaiin1.hft  $datdir/sokuhatu_kaiin2.hft  > $datdir/qtaf_kaiin11.hft
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 申込書抽出処理 cat RC=[$rc]" "$USERKEY"
+    echo "cat    ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+#  03.11.05 追加 <--
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'COBOL1'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qtab_s005000.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+#  03.11.05 変更 -->
+#    setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_kaiin1.hft
+    setenv INFILE $datdir/qtaf_kaiin11.hft
+#  03.11.05 変更 <--
+    setenv RJFILE $QJ_DATA_DIR/qt/data/svr/dat/qtaf_kaiinkijitu.rj.dat
+    #
+    if ( ! -e $RJFILE ) then
+        touch $RJFILE
+    endif
+    #
+    rm $RJFILE
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > $LOGFILE                          # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+   exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-2                                #
+#########################################
+set MODULE = 'COBOL2'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出
+set PROGRAM = $EXE_DIR/qtab_s005100.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_black1.hft
+    setenv RJFILE $QJ_DATA_DIR/qt/data/svr/dat/qtaf_blackkijitu.rj.dat
+    #
+    if ( ! -e $RJFILE ) then
+        touch $RJFILE
+    endif
+    #
+    rm $RJFILE
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM >> $LOGFILE                         # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+exit 0                                           # 正常終了
+

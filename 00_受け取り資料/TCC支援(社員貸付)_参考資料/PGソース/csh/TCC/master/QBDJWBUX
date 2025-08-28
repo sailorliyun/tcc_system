@@ -1,0 +1,129 @@
+#!/bin/csh
+#   スクリプト名： QBDJWBUX
+#   機  能	： 繰越ファイル結合
+#   作成者	： NBC 斎藤
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBD603UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY     'QBDJWBUX'                          # ユーザキー
+set    KINOU      = '繰越ファイル結合'                 # 機能名
+set    IDXDIR     = /d360/UFS/imgkanri/image_buffer
+set    KURDIR     = /d360/UFS/data/fromhost/qb/zen
+
+set MODULE = 'SHELL'
+
+# 開始メッセージの出力
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"
+
+#############################################
+# STEP-0 繰越ファイル結合＋繰越ファイル作成 #
+#############################################
+
+#############################################
+# STEP-1 O.F.QA01.txt                       #
+#############################################
+cat $KURDIR/O.F.QA01.txt >> $IDXDIR/O.F.QA01.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA01.txt繰越連結不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp -p $IDXDIR/O.F.QA01.txt $KURDIR/O.F.QA01.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA01.txt繰越作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+#############################################
+# STEP-2 O.F.QA02.txt                       #
+#############################################
+cat $KURDIR/O.F.QA02.txt >> $IDXDIR/O.F.QA02.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA02.txt繰越連結不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp -p $IDXDIR/O.F.QA02.txt $KURDIR/O.F.QA02.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA02.txt繰越作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+#############################################
+# STEP-3 O.F.QA03.txt                       #
+#############################################
+cat $KURDIR/O.F.QA03.txt >> $IDXDIR/O.F.QA03.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA03.txt繰越連結不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp -p $IDXDIR/O.F.QA03.txt $KURDIR/O.F.QA03.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA03.txt繰越作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+#############################################
+# STEP-4 O.F.QA04.txt                       #
+#############################################
+cat $KURDIR/O.F.QA04.txt >> $IDXDIR/O.F.QA04.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA04.txt繰越連結不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp -p $IDXDIR/O.F.QA04.txt $KURDIR/O.F.QA04.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA04.txt繰越作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+#############################################
+# STEP-5 O.F.QA05.txt                       #
+#############################################
+cat $KURDIR/O.F.QA05.txt >> $IDXDIR/O.F.QA05.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA05.txt繰越連結不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+cp -p $IDXDIR/O.F.QA05.txt $KURDIR/O.F.QA05.txt
+set rc = $status
+if ( $rc != 0 ) then
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU O.F.QA05.txt繰越作成不可 RC=[$rc]" "$USERKEY"
+	exit 1
+endif
+
+#############################################
+# STEP-9 処理終了                           #
+#############################################
+
+### 終了メッセージの出力
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"
+exit 0

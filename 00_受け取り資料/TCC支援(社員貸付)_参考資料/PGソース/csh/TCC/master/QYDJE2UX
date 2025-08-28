@@ -1,0 +1,72 @@
+#!/bin/csh
+#　スクリプト名  ： QYDJE2UX
+#　 機  能       ： 手紙テーブル期日管理
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID   'QYDE01UX'                      # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QYDJE2UX'                     # ユーザキー 
+set    KINOU      = '手紙テーブル期日管理'
+
+set    QY_SAVE_DIR  = /d271/UFS/data/qy            #本番 期日 SAVE DIR
+#set    QY_SAVE_DIR  = $QY_DATA_DIR                #ＳＴ 期日 SAVE DIR
+
+set    TABLE_NAME   = QYA2_TEGAMIDATAT             # 対象テーブル名
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+
+set year  = `date +%Y`                     # 処理年 (システム日付より)本番
+set month = `date +%m`                     # 処理月 (システム日付より)本番
+set day   = `date +%d`                     # 処理日 (システム日付より)本番
+
+##################################
+# STEP-1 手紙テーブル　期日管理  #
+##################################
+STEP_1:
+
+set MODULE = 'qyab_s000500'
+set STEPKINOU = '手紙テーブル　期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+rm -f $QY_SAVE_DIR/kijitu/qyaf_qya2tegami.dat.$year$month$day.Z
+
+setenv OT1FILE $QY_SAVE_DIR/kijitu/qyaf_qya2tegami.dat.$year$month$day
+
+set PROGRAM = $EXE_DIR/qyab_s000500.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+compress -f $QY_SAVE_DIR/kijitu/qyaf_qya2tegami.dat.$year$month$day
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+set MODULE = 'SHELL       '
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

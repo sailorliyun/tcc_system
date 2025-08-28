@@ -1,0 +1,135 @@
+#!/bin/csh
+#set   SHELL_NAME = $0
+setenv JOBNET_ID    QBDD00UX
+setenv JOB_ID       QBDJD0UX
+setenv USERKEY      QBDJD0UX
+set    MODULE     = QBDJD0UX
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    datdir     = $QB_DATA_DIR
+#set    huldir     = $QJ_DATA_DIR/qt/data/host/merge
+set    qbwdir     = (/d041/UFS/data/qb/QBWORK)
+#set    oradir     = (/d041/UFS/data/qb/ORAWRK)
+#set    logdir     = (/d041/UFS/data/qb/FLOLOG)
+set    date       = `date +%y%m%d`
+
+$LOGWRITE "$MODULE" I "START : 申込書更新処理" "$USERKEY"
+#--------------------------------------------------#
+#   会員登録情報コピー       99.08.05 削除
+#--------------------------------------------------#
+#cp $huldir/qtaf_kaiin1.hft  $datdir/Kaiin.rcv
+#set rc = $status
+#if ($rc != 0 ) then
+#    $LOGWRITE "$MODULE" E "ERROR : 会員登録情報コピー RC=[$rc]" "$USERKEY"
+#    echo "FILECOPY(KaiinTouroku) ABNORMAL ENDED : RC=[$rc]"
+#    exit(1)
+#endif
+#  03.10.28 追加 -->
+# 中間ファイルの削除
+touch $datdir/Kaiin3.rcv
+rm -f $datdir/Kaiin3.rcv
+touch $datdir/Kaiin4.rcv
+rm -f $datdir/Kaiin4.rcv
+#--------------------------------------------------#
+#   SDBT092  申込書抽出処理
+#--------------------------------------------------#
+setenv DDKAIINI $datdir/Kaiin2.rcv
+setenv DDKAIINO $datdir/Kaiin3.rcv
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qbab_sdbt092.exe
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 申込書抽出処理 sdbt092 RC=[$rc]" "$USERKEY"
+    echo "SDBT092 ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+mv    $datdir/Kaiin.rcv  $datdir/Kaiin4.rcv
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 申込書抽出処理 mv RC=[$rc]" "$USERKEY"
+    echo "mv     ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+cat   $datdir/Kaiin4.rcv  $datdir/Kaiin3.rcv  > $datdir/Kaiin.rcv
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 申込書抽出処理 cat RC=[$rc]" "$USERKEY"
+    echo "cat    ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+#  03.10.28 追加 <--
+#--------------------------------------------------#
+#   SDBT090  申込書更新処理
+#--------------------------------------------------#
+setenv DDKAIIN  $datdir/Kaiin.rcv
+setenv DDFURIF  $datdir/sdbt090o01_$date.txt
+setenv DDYUUCHO $qbwdir/sdbt090o02.txt
+setenv DDLOAN   $qbwdir/sdbt090o03.txt
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qbab_sdbt090.exe
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 申込書更新処理 RC=[$rc]" "$USERKEY"
+    echo "SDBT090 ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+#-- 99/12/7 KaiinData Backup & Clear ADD --#
+cp    $datdir/Kaiin.rcv $datdir/Kaiin_$date.rcv
+rm -f $datdir/Kaiin.rcv
+touch $datdir/Kaiin.rcv
+
+#--------------------------------------------------#
+#   SDBT144  郵貯事前認可状作成
+#--------------------------------------------------#
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qbap_sdbt144pkg.qbap_sdbt144('$JOBNET_ID','$JOB_ID','$qbwdir','sdbt090o02.txt')"
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 郵貯事前認可状作成 RC=[$rc]" "$USERKEY"
+    echo "SDBT144 ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+#--------------------------------------------------#
+#   SDBT141  約定入力指示リスト作成
+#--------------------------------------------------#
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qbap_sdbt141pkg.qbap_sdbt141('$JOBNET_ID','$JOB_ID','$qbwdir','sdbt090o03.txt')"
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 約定入力指示リスト作成 RC=[$rc]" "$USERKEY"
+    echo "SDBT141 ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+# 2004/09/01 ＦｌｏＷａｒｅ削除の処理 -->
+##-----------------------------------------------------#
+##  Move2 (QB090010 --> QB100010)
+##-----------------------------------------------------#
+#setenv FW_HostName         sueswc
+#setenv IF_MIFAM_NAME       mifam
+#setenv FW_Operation        Move2
+#setenv FW_UserID           ifam
+#setenv DBPASSWORD          ifam
+#setenv FW_MapName          TCCMAP01
+#setenv FW_ActivityName     QB090010
+#setenv FW_WorkReturnStatus QB100010
+#setenv FW_CourierEntry     '*'
+#setenv FW_CourierDelete    '*'
+#setenv FW_LogPath          $logdir/
+#setenv FW_CourierMove      $datdir/sdbt090o01_$date.txt
+#setenv FW_CourierResult    $oradir/sdbt090Dmy.txt
+#setenv FW_ErrLogFile       $logdir/sdbt090Err.txt
+#
+#$EXE_DIR/qbwc_sfw0001
+#set rc = $status
+#if ($rc != 0 ) then
+#    $LOGWRITE "$MODULE" E "ERROR : クーリア返却 RC=[$rc]" "$USERKEY"
+#    echo "SFW0001(MOVE2) ABNORMAL ENDED : RC=[$rc]"
+#    exit(1)
+#endif
+# 2004/09/01 ＦｌｏＷａｒｅ削除の処理 <--
+
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)
+

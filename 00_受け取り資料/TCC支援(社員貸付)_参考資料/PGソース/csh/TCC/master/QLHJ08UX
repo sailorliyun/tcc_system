@@ -1,0 +1,90 @@
+#!/bin/csh
+#　 スクリプト名 ： QLHJ08UX
+#　 業務         : クレジット帳票
+#　 機  能       ： 経理月次決算月６日処理
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名 file 名=job名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLH061UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = $JOBNET_ID                         # ユーザキー
+set    PRM_JOBNET =  "'"$JOBNET_ID"'"
+set    PRM_JOB    = "'"$JOB_ID"'"
+
+
+###################################################################
+# STEP-1     ストアド・プロシジャの実行                           #
+###################################################################
+set   MODULE = 'qusc_sspexec.exe'
+
+######################################################################
+# STEP-2.1   ストアド・プロシジャの実行     カード取扱高月計印刷作成 #
+######################################################################
+set    KINOU      = 'クレジット帳票：経理月次決算月６日処理(カード取扱高月計印刷作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S001600Pkg.QVBP_S001600( $PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+######################################################################
+# STEP-2.2   ストアド・プロシジャの実行     カード種類別印刷作成     #
+######################################################################
+set    KINOU      = 'クレジット帳票：経理月次決算月６日処理(カード種類別印刷作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S001700Pkg.QVBP_S001700( $PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+######################################################################
+# STEP-2.3   ストアド・プロシジャの実行     手数料収益内訳表印刷作成 #
+######################################################################
+set    KINOU      = 'クレジット帳票：経理月次決算月６日処理(カード種類別印刷作成)'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVBP_S001800Pkg.QVBP_S001800( $PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+
+###################################################################
+#                           終 了                                 #
+###################################################################
+exit 0                                           # 正常終了
+
+~

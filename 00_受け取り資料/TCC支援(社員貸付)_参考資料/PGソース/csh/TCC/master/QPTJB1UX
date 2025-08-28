@@ -1,0 +1,51 @@
+#!/bin/csh
+#　スクリプト名  ： QPTJB1UX
+#　 機  能       ： 控除テーブル更新月次処理（給与）
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPDIXXUX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPTJB1UX'                         # ユーザキー
+set    KINOU      = '控除テーブル更新月次処理（給与）'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+
+
+##########################################
+# STEP-1 控除テーブル更新月次処理（給与）#
+##########################################
+
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:控除テーブル更新月次処理（給与）" "$USERKEY"     # 開始メッセージの出力
+
+
+set PROGRAM = $EXE_DIR/qpab_s000200.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    $LOGWRITE "$MODULE" E "異常終了:控除テーブル更新月次処理（給与）" "$USERKEY"     # 終了メッセージの出力
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:控除テーブル更新月次処理（給与）" "$USERKEY"     # 終了メッセージの出力
+exit 0                                           # 正常終了
+

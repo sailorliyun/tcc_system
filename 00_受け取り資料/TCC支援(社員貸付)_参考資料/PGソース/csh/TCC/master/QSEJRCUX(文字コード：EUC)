@@ -1,0 +1,230 @@
+#!/bin/csh
+#
+#  随時日次終了時ＢＣＶリカバリー (QSEJRCUX)
+#
+#     機  能：1.ＢＣＶからデータベースを復元する。
+#             2.REDOログファイル、REDOアーカイブログファイルを復元する。
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+# 項番   管理番号    修正内容                  修正者         修正日
+# 000001 1409036     仮想環境移行作業（TCC支援 FIP.Eriguchi   2014/11/06
+# 000002 2015080034  EMCディスク切替対応       FIP.Tsuji      2015/09/04 
+#
+set  SHELL_NAME = $0                                    # シェル名
+set  MODULE   =  $SHELL_NAME:t                          # モジュール名
+set  LOGFILE  =  $USER_LOG_DIR/db_ope.log               # ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ログ出力用共通シェル
+set  SYMCLI_DIR = /usr/symcli/bin
+set  DEVICE_FILE = /usr/symmapps/tcc.bcv                # ﾃﾞﾊﾞｲｽファイル名
+set  DG_FILE = tcc_dg
+
+## ADD 000001 仮想環境移行作業（TCC支援） 20141106 FIP.Eriguchi
+## MOD 000002 EMCディスク切替対応         20150904 FIP.Tsuji
+#setenv SYMCLI_CONNECT       'SYMAPI_SERVER'  # 仮想化基盤サーバ経由_EMC接続設定（IT運用G指示）
+setenv SYMCLI_CONNECT       'sueswl'
+setenv SYMCLI_CONNECT_TYPE  'REMOTE'         # 仮想化基盤サーバ経由_EMC接続設定
+setenv SYMCLI_CTL_ACCESS    'PARALLEL'       # 仮想化基盤サーバ経由_EMC接続設定
+## ADD 000002 EMCディスク切替対応         20150904 FIP.Tsuji
+setenv SYMCLI_WAIT_ON_DB     1
+setenv SYMCLI_WAIT_ON_GK     1
+
+$LOGWRITE  "随時日次終了時ＢＣＶリカバリー開始" >> $LOGFILE
+
+##################################################################
+#     オラクル起動確認 2000/07/11                                #
+#     オラクル停止状態の時は、オラクル停止処理スキップ           #
+##################################################################
+set PRCNUM = `ps -ef | grep -v 'grep' | grep -c "ora_.*${ORACLE_SID}"`
+if ( $PRCNUM < 6 ) then
+    goto oracle_skip
+endif
+
+##### 暫定処置 1999/04/12 #######################################
+# オラクル停止 #
+su - oracle -c "/usr/local/auto/master/QSDJE2UX"
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+	$LOGWRITE "オラクル停止失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+##### END of 暫定処置  ###########################################
+
+oracle_skip:
+
+###############################
+# 1. データベース復元         #
+###############################
+$LOGWRITE  "BCVからﾎﾞﾘｭｰﾑ復元開始" >> $LOGFILE
+
+### Standard Volume UNMOUNT ###
+$EXE_DIR/QUAJ_VOLOPE.BAT u
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+	$LOGWRITE "STD VOL アンマウント失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+
+### RESTORE ###
+$SYMCLI_DIR/symmir -g $DG_FILE restore -i 60 -c 10 -noprompt  # BCVからﾎﾞﾘｭｰﾑ復元
+#sleep 120               # 2000/04/18 追加
+#bcv restore -i -w 600 -f $DEVICE_FILE  >> $LOGFILE  # BCVからﾎﾞﾘｭｰﾑ復元
+set RC = $status                          # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+
+if ( $RC != 0 ) then
+	$LOGWRITE "RESTORE失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+
+### ｺﾋﾟｰ完了監視 ###
+while(1)
+        $SYMCLI_DIR/symmir -g $DG_FILE verify > /dev/null     # BCVからﾎﾞﾘｭｰﾑ復元の確認
+#	bcv verify -f $DEVICE_FILE > /dev/null  # BCVからﾎﾞﾘｭｰﾑ復元の確認
+	set RC = $status                        # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+	if ( $RC == 0 ) then
+		break
+	else if ( $RC != 4 && $RC != 5 ) then
+		$LOGWRITE "VERIFY失敗 \[RC=$RC\]"  >> $LOGFILE
+		exit 1
+	endif
+	sleep 60                          # １分間待機
+end
+
+
+### SPLIT ###
+$SYMCLI_DIR/symmir -g $DG_FILE split -noprompt # Standard VolumeをBCVからの切り離す
+#bcv split -f $DEVICE_FILE         # Standard VolumeをBCVからの切り離す
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+	$LOGWRITE "SPLIT失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+
+### standard Volume MOUNT ###
+$EXE_DIR/QUAJ_VOLOPE.BAT m
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+	$LOGWRITE "STD VOL マウント失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+
+$LOGWRITE  "BCVからﾎﾞﾘｭｰﾑ復元正常終了" >> $LOGFILE
+
+#######################################################
+# 2. REDOオンラインログ & アーカイブログファイル復元  #
+#######################################################
+### 正 ###
+$LOGWRITE  "REDO & ARCHIVEログファイル(正)復元開始" >> $LOGFILE
+
+set CNT = `ls -1 /d230/DBF/qs_tcc/arch | wc -l`
+if ( $CNT > 0 ) then
+	rm /d230/DBF/qs_tcc/arch/*
+	set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+	if ( $RC != 0 ) then
+		$LOGWRITE "REDO ARCHIVE in /d230 削除失敗 \[RC=$RC\]"  >> $LOGFILE
+		exit 1
+	endif
+endif
+
+cp -pR  /d231/UFS/save_sei/DBF /d230
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+	$LOGWRITE "REDO & ARCHIVEログファイル(正)復元失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+
+$LOGWRITE  "REDO & ARCHIVEログファイル(正)復元正常終了" >> $LOGFILE
+
+### 副 ###
+$LOGWRITE  "REDO & ARCHIVEログファイル(副)復元開始" >> $LOGFILE
+
+set CNT = `ls -1 /d240/DBF/qs_tcc/arch | wc -l`
+if ( $CNT > 0 ) then
+	rm /d240/DBF/qs_tcc/arch/*
+	set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+	if ( $RC != 0 ) then
+		$LOGWRITE "REDO ARCHIVE in /d240 削除失敗 \[RC=$RC\]"  >> $LOGFILE
+		exit 1
+	endif
+endif
+
+cp -pR  /d241/UFS/save_huku/DBF /d240
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+	$LOGWRITE "REDO & ARCHIVEログファイル(副)復元失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+
+$LOGWRITE  "REDO & ARCHIVEログファイル(副)復元正常終了" >> $LOGFILE
+
+##### 請求管理分 一時追加 #######################################
+/usr/local/auto/master/QUEJREUX.new
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "請求管理リカバリ失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+##### END of 請求管理分   #######################################
+
+##### 不正利用分 一時追加 #######################################
+/usr/local/auto/master/QUEJRGUX.new
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "不正利用リカバリ失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+##### END of 不正利用分   #######################################
+
+##### 新請求関連 一時追加 #########################################
+/usr/local/auto/master/QUEJRIUX.new
+set RC = $status                  #ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "新請求関連リカバリ失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+##### END of 新請求関連   ##########################################
+
+#20040910ＣＳ対応に伴う追加 FIP.UEHARA
+##### ＣＳ関連 一時追加 #########################################
+/usr/local/auto/master/QUEJRKUX.new
+set RC = $status                  #ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "ＣＳ関連リカバリ失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+##### END of ＣＳ関連   ##########################################
+#20040910
+
+#20050929キャッシング明細対応に伴う追加 NBC.YOSHIKAWA
+##### キャッシング明細関連 一時追加 #########################################
+/usr/local/auto/master/QUEJRMUX.new
+set RC = $status                  #ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "キャッシング明細関連リカバリ失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+##### END of キャッシング明細関連   ##########################################
+#20050929
+
+##### 暫定処置 1999/04/12 #######################################
+# オラクル開始 #
+su - oracle -c "/usr/local/auto/master/QSDJS2UX"
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+	$LOGWRITE "オラクル開始失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+
+# オラクル停止 #
+su - oracle -c "/usr/local/auto/master/QSDJE2UX"
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+	$LOGWRITE "オラクル停止失敗 \[RC=$RC\]"  >> $LOGFILE
+	exit 1
+endif
+##### END of 暫定処置  ###########################################
+
+$LOGWRITE  "随時日次終了時ＢＣＶリカバリー 終了" >> $LOGFILE
+
+exit 0

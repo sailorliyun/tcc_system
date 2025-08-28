@@ -1,0 +1,45 @@
+#!/bin/csh
+#　スクリプト名  ： QPDJG2UX
+#　 機  能       ： 小口入金転送データ送信
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPDGA2UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY     'QPDJG2UX'                          # ユーザキー
+set    KINOU      = 'TCCINFO:諸変更受付転送データ送信'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+###############################################
+# STEP-1 小口入金転送データ送信               #
+###############################################
+
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:小口入金転送データ送信" "$USERKEY"     # 開始メッセージの出力
+
+### 送信の実行 ###
+utlsend  -f OFQY44 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:小口入金転送データ送信" "$USERKEY"     # 終了メッセージの出力
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+

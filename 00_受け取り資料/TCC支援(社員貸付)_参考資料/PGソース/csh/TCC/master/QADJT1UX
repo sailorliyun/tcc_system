@@ -1,0 +1,209 @@
+#!/bin/csh
+#-------------------------------------------------------#
+#　スクリプト名  ： QADJT1UX
+#  機能          ： ETCﾃﾞｰﾀﾃｰﾌﾞﾙ登録用ﾌｧｲﾙ作成
+#  作成日        ： 2005/01/07
+#  作成者        ： FIP
+#-------------------------------------------------------#
+
+########################################################
+#   環境設定
+########################################################
+set    SHELL_NAME = $0                                  # シェル名
+setenv JOBNET_ID    'QADQ01UX'                          # ジョブネット名
+setenv JOB_ID       'QADJT1UX'                          # ジョブ名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log         # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT            # ログ出力モジュール
+setenv USERKEY      'QADJT1UX'                          # ユーザキー 
+set    DATDIR     = /d051/UFS/data/qa                   # データエリア（本番用）
+set    MODULE     = $JOB_ID
+set    HUL_DIR    = /s020/UFS/fromhost/qa/rcv           #
+
+########################################################
+#   開始
+########################################################
+echo "***<< $MODULE STR (`date +%y%m%d`/`date +%H%M%S`) >>***"
+echo "***<< $MODULE STR (`date +%y%m%d`/`date +%H%M%S`) >>***" > $LOGFILE
+set    KINOU      = 'ETCﾃﾞｰﾀﾃｰﾌﾞﾙ登録用ﾌｧｲﾙ作成'
+$LOGWRITE  "$MODULE" I "ＪＯＢ開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+########################################################
+#   ＳＴＥＰ１：ETCﾃﾞｰﾀCOPY
+########################################################
+set    KINOU      = 'ETCﾃﾞｰﾀCOPY'
+$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+cp $DATDIR/ETCDAT $DATDIR/qapb_s020100in.dat
+
+set rc = $status                                        # リターンステータス待避
+if $rc != 0 then
+   $LOGWRITE "$MODULE " E "ERROR :$KINOU(cobol) RC=[$rc]" "$USERKEY"
+   exit(1)
+endif
+
+$LOGWRITE  "$MODULE" I "終了:$KINOU" "$USERKEY"          # 終了メッセージの出力
+########################################################
+#   ＳＴＥＰ２：ETCﾃﾞｰﾀﾃｰﾌﾞﾙ登録用ﾌｧｲﾙ作成１
+########################################################
+set    KINOU      = 'ETCﾃﾞｰﾀﾃｰﾌﾞﾙ登録用ﾌｧｲﾙ作成１'
+$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#--入出力の定義--
+setenv INFILE  $DATDIR/qapb_s020100in.dat
+setenv OTFILE  $DATDIR/qapb_s020100out.dat
+
+#--プログラムの起動--
+setenv NLS_LANG Japanese_Japan.JA16SJIS                 
+$EXE_DIR/qapb_s020100.exe  >> $LOGFILE                  # プログラム起動（本番）
+set rc = $status                                        # リターンステータス待避
+setenv NLS_LANG Japanese_Japan.JA16EUC                  # 文字コード体系をEUCに戻す
+
+if $rc != 0 then
+   $LOGWRITE "$MODULE " E "ERROR :$KINOU(cobol) RC=[$rc]" "$USERKEY"
+   echo "qapb_s020100($KINOU) : RC=[$rc]"
+   exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"          # 終了メッセージの出力
+
+########################################################
+#   ＳＴＥＰ３：ETCﾃﾞｰﾀﾃｰﾌﾞﾙ登録用ﾌｧｲﾙ作成２
+########################################################
+set    KINOU      = 'ETCﾃﾞｰﾀﾃｰﾌﾞﾙ登録用ﾌｧｲﾙ作成２'
+$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#--入出力の定義--
+setenv INFILE  $DATDIR/qapb_s020100out.dat
+setenv OTFILE  $DATDIR/qapb_s020800out.dat
+
+#--プログラムの起動--
+setenv NLS_LANG Japanese_Japan.JA16SJIS                 
+$EXE_DIR/qapb_s020800.exe  >> $LOGFILE                  # プログラム起動（本番）
+set rc = $status                                        # リターンステータス待避
+setenv NLS_LANG Japanese_Japan.JA16EUC                  # 文字コード体系をEUCに戻す
+
+if $rc != 0 then
+   $LOGWRITE "$MODULE " E "ERROR :$KINOU(cobol) RC=[$rc]" "$USERKEY"
+   echo "qapb_s020800($KINOU) : RC=[$rc]"
+   exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"          # 終了メッセージの出力
+
+########################################################
+#   ＳＴＥＰ４：ＣＴ－ＳＴＡＧＥ送信用エリアにコピー
+########################################################
+set    KINOU      = 'CT-STAGE送信用エリアコピー処理'
+$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+### 削除 ###
+rm     $HUL_DIR/etctouroku.hft                          #（本番用）
+set rc = $status
+
+if ( $rc != 0 ) then
+	echo  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                             # 異常終了
+endif
+
+### 送信用エリアにコピー ###
+cp $DATDIR/qapb_s020800out.dat  $HUL_DIR/etctouroku.hft #（本番用）
+set rc = $status
+
+if ( $rc != 0 ) then
+	echo  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                             # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"          # 終了メッセージの出力
+
+########################################################
+#   ＳＴＥＰ５：出力ファイルのバックアップ
+########################################################
+set    KINOU      = '出力ファイルのバックアップ'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"          # 開始メッセージの出力
+
+#add     バックアップファイル名変更 2005.03.16 Yasui@NBC -->
+set newfile = `date +%Y%m%d%H%M%S`
+#add <-- バックアップファイル名変更 2005.03.16 Yasui@NBC 
+
+#Update     バックアップファイル名変更 2005.03.16 Yasui@NBC -->
+cp $DATDIR/qapb_s020100out.dat $DATDIR/qapb_s020100out$newfile.dat
+####cp $DATDIR/qapb_s020100out.dat $DATDIR/qapb_s020100out`date +%Y%m%d`.dat
+#Update <-- バックアップファイル名変更 2005.03.16 Yasui@NBC
+
+set rc = $status                                        # リターンステータス待避
+
+if $rc != 0 then
+   $LOGWRITE "$MODULE " E "ERROR :$KINOU RC=[$rc]" "$USERKEY"
+   exit(1)
+endif
+
+
+### 圧縮 ###
+#Update      バックアップファイル名変更 2005.03.16 Yasui@NBC -->
+compress -f $DATDIR/qapb_s020100out$newfile.dat
+####compress $DATDIR/qapb_s020100out`date +%Y%m%d`.dat
+#Update <--- バックアップファイル名変更 2005.03.16 Yasui@NBC 
+
+set rc = $status                                        # リターンステータス待避
+
+if $rc != 0 then
+   $LOGWRITE "$MODULE " E "ERROR :$KINOU RC=[$rc]" "$USERKEY"
+   exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+########################################################
+#   ＳＴＥＰ６：一定期間を過ぎたバックアップの削除
+########################################################
+set    KINOU      = '一定期間を過ぎたバックアップの削除'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"          # 開始メッセージの出力
+
+#前々月取得処理
+set year  = `date +%Y`                     # 処理年 (システム日付より)
+set month = `date +%m`                     # 処理月 (システム日付より)
+
+# 処理月Leading Zero Suppress 
+@ month ++
+@ month --
+
+if ( $month < 10 ) then
+        set month = 0$month
+endif
+
+set year2  = $year
+set month2 = $month
+
+# １ヶ月前を求める
+@ month2 --
+if ( $month2 == 0 ) then
+        @ year2 --
+        set month2 = 12
+endif
+
+# そこから更に１ヶ月前を求める
+@ month2 --
+if ( $month2 == 0 ) then
+        @ year2 --
+        set month2 = 12
+endif
+
+if ( $month2 < 10 ) then
+        set month2 = 0$month2
+endif
+set  newym = $year2$month2
+
+# ファイルの削除
+rm $DATDIR/qapb_s020100out$newym*
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+########################################################
+#   終了
+########################################################
+echo "***<< $MODULE END (`date +%y%m%d`/`date +%H%M%S`) >>***"
+echo "***<< $MODULE END (`date +%y%m%d`/`date +%H%M%S`) >>***" >> $LOGFILE
+set    KINOU      = 'ETCﾃﾞｰﾀﾃｰﾌﾞﾙ登録用ﾌｧｲﾙ作成'
+$LOGWRITE  "$MODULE" I "ＪＯＢ終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+exit(0)

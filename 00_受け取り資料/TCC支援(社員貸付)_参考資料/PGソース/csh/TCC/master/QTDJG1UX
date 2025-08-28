@@ -1,0 +1,41 @@
+#!/bin/csh
+
+# 修正履歴
+#  管理番号  修正内容                        担当者      日付
+#  000001    繰越ファイル作成修正            nbc.hayashi 2007/07/24
+
+# set SHELL_NAME = $0
+setenv JOBNET_ID   QTD4D1UX
+setenv JOB_ID      QTDJG1UX
+setenv USERKEY     QTDJG1UX
+
+#------------------------------------------------------------#
+#   COPY   HOST-FILE(GENDENSUMT)
+#------------------------------------------------------------#
+set    LOGWRITE = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    HUL_DIR = /s020/UFS/fromhost/qt/rcv
+set    DAT_DIR = /d051/UFS/data/qt
+set    MODULE  =  QTDJG1UX
+$LOGWRITE "$MODULE" I " START : 加盟店原伝集計Ｆコピー" "$USERKEY"
+
+#000001 DEL hayashi 2007/07/24 START
+#cp     $HUL_DIR/qtax_gendensum.rcv  $DAT_DIR/qtax_gendensum.dat
+#000001 DEL hayashi 2007/07/24 END
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE "$MODULE" E " ERROR : 加盟店原伝集計Ｆコピー RC=[$rc]" "$USERKEY"
+    echo "HOST-F COPY ABNORMAL ENDED : RC=[$rc]"
+    exit  (1)
+endif
+
+#000001 ADD hayashi 2007/07/24 START
+#------------------------------------------------------------#
+#   CAT   HOST-FILE(GENDENSUMT)
+#------------------------------------------------------------#
+cat   $HUL_DIR/qtax_gendensum.rcv \
+      $DAT_DIR/qtax_gendensum.kur \
+    > $DAT_DIR/qtax_gendensum.dat
+#000001 ADD hayashi 2007/07/24 END
+
+$LOGWRITE "$MODULE" I " END   : 加盟店原伝集計Ｆコピー" "$USERKEY"
+exit(0)

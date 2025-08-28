@@ -1,0 +1,53 @@
+#!/bin/csh
+#　スクリプト名  ： QBTJ75UX
+#　 機  能       ： JR旧Gイメージ取込み情報テーブル期日管理
+#                  イメージ取込み情報テーブル期日管理処理を起動する
+#　 作成者       ： FIP.Kemmochi
+#   作成日       ： 2013/02/05
+#   修正履歴
+#   項番   管理番号    修正内容                修正者         修正日
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID   'QBT751UX'                      # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QBTJ75UX'                     # ユーザキー 
+set    KINOU      = 'JR旧Gイメージ取込み情報テーブル期日管理'
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     		# 開始メッセージ
+
+############################################################
+# STEP-1  イメージ取込み情報テーブル期日管理               #
+############################################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:JR旧Gイメージ取込み情報テーブル期日管理 " "$USERKEY" 	# 開始メッセージの出力
+set PROGRAM = $EXE_DIR/qbgb_s000500.exe
+if ( -x $PROGRAM ) then
+    #    
+    setenv NLS_LANG Japanese_Japan.JA16SJIS     	# 文字コード体系をSJISにする
+    $PROGRAM                                    	# プログラム起動
+    set rc = $status                            	# リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC      	# 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                      	# 異常終了
+endif
+if ( $rc != 0 ) then                           		# リターンステータス判定
+    $LOGWRITE  "$MODULE"  E  "失敗:イメージ取込み情報テーブル期日管理起動 RC=[$rc]" "$USERKEY"
+    exit  1                                     	# 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:JR旧Gイメージ取込み情報テーブル期日管理 " "$USERKEY"  		# 終了メッセージの出力
+
+#########################################
+# STEP-99  終了処理                     #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  	# 終了メッセージの出力
+exit 0                                          	# 正常終了

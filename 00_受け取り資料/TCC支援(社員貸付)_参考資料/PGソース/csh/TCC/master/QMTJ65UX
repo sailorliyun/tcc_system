@@ -1,0 +1,93 @@
+#!/bin/csh
+#　スクリプト名  ： QMTJ65UX
+#　 プロセス     ： ポイント付与候補者抽出
+#　 機  能       ： 抽選候補者抽出３
+#　 作成者       ： FIP
+#　 更新者       ： 
+##########################################
+#         共通環境設定                   #
+##########################################
+set    SHELL_NAME = $0                                      # シェル名
+setenv JOB_ID       $SHELL_NAME:t                           # ジョブ名
+setenv JOBNET_ID    'QMT406UX'                              # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log             # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT                # ログ出力モジュール
+setenv USERKEY      'QMTJ65UX'                              # ユーザキー
+set    KINOU      = 'ポイント付与・抽選候補者抽出３'
+
+##########################################
+#         固有環境設定                   #
+##########################################
+set    DATDIR     = /d321/UFS/data/qma
+setenv MGFILE1      $DATDIR/qmab_s000800_OT1_C1.dat
+setenv MGFILE2      $DATDIR/qmab_s000800_OT1_C2.dat
+setenv MGFILE3      $DATDIR/qmab_s000800_OT1_C3.dat
+setenv MGFILE4      $DATDIR/qmab_s000800_OT1_C4.dat
+setenv INFILE1      $DATDIR/qmab_s000900_IN1_3.dat
+setenv OUTFILE1     $DATDIR/qmab_s000900_OT1_3.dat
+setenv PRMFILE1     $DATDIR/QMAB_PARAM_JOKEN3.dat
+set    JOKEN      = `cat $PRMFILE1`
+
+##########################################
+#         処理開始メッセージ             #
+##########################################
+set MODULE        = 'SHELL'                                 # モジュール
+$LOGWRITE "$MODULE" I "開始：$KINOU" "$USERKEY"             # 開始メッセージの出力
+
+##########################################
+# STEP-1  データ移動                     #
+##########################################
+STEP_1:
+set    MODULE     = cat                                     # モジュール名
+set STEPKINOU     = 'ポイント付与会員Ｆマージ'
+
+ cat  $MGFILE1 $MGFILE2 $MGFILE3 $MGFILE4 > $INFILE1
+
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗：$KINOU  RC=[$rc]"  "$USERKEY"
+    exit(1)
+endif
+
+##########################################
+# STEP-2  抽選候補者抽出                 #
+##########################################
+STEP_2:
+set MODULE = 'QMAB_S000900'
+set STEPKINOU = '抽選候補者抽出'
+$LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"         #開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qmab_s000900.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG  Japanese_Japan.JA16SJIS                #文字コード体系をSJISにする
+    $PROGRAM $JOKEN       >&  $LOGFILE                      #プログラム起動
+    set rc = $status                                        #リターンステータス退避
+    setenv NLS_LANG  Japanese_Japan.JA16EUC                 #文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit (1)                                                #異常終了
+endif
+
+if ($rc != 0) then                                          #リターンステータス判定
+    set MSG = "失敗：$STEPKINOU RC=[$rc]"
+
+    $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+
+$LOGWRITE  "$MODULE" I "終了：$STEPKINOU" "$USERKEY"        #終了メッセージの出力
+
+##########################################
+# STEP-3 中間ファイル削除                #
+##########################################
+STEP_3:
+rm $INFILE1
+
+##################################
+# STEP-99  終了メッセージ出力    #
+##################################
+STEP_99:
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了：$KINOU" "$USERKEY"          # 終了メッセージの出力
+
+exit(0)

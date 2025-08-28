@@ -1,0 +1,149 @@
+#!/bin/csh
+#
+#  オラクル停止[月次処理終了後]  (QSTJE1UX)
+#
+#     機  能：0.ログライタを停止する。
+#             1.主データベースを停止する。 
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+# 修正履歴
+# 項番   管理番号    修正内容                         修正者         修正日
+# 00001              アーカイブログ削除スイッチ追加  NBC 斎藤      2006/11/15
+#                    アーカイブログ削除方法修正      NBC 斎藤      2006/11/15
+# 00002              アーカイブログ削除スイッチ削除  NBC 齋藤      2006/11/28
+#
+set  SHELL_NAME = $0                                    			# シェル名
+set  MODULE   =  $SHELL_NAME:t                          			# モジュール名
+set  LOGFILE  = $USER_LOG_DIR/db_ope.log                			# ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  			# ログ出力用共通シェル
+
+# 002 START-DEL 2006/11/28
+# 001 START-ADD 2006/11/15
+#set PGRUNSW = /s020/UFS/data/pg_run_switch/arclogdel.sw 			# アーカイブログ削除スイッチファイル
+# 001 END-ADD 2006/11/15
+# 002 END-DEL 2006/11/28
+
+if ( $#argv == 1 ) then								# 引数が指定されていた場合
+    setenv ORACLE_SID   $1							# 環境変数ORACLE_SIDを設定
+endif
+
+$LOGWRITE  "オラクル停止\[月次処理\]" >> $LOGFILE
+
+
+# 002 START-DEL 2006/11/28
+# 001 START-ADD 2006/11/15
+#############################################################
+# -1.  アーカイブログ削除用スイッチファイル削除 2006.11.15  #
+#############################################################
+# DBに大量に登録・更新・削除を行った場合、アーカイブログ用ディスクが
+# パンクする為、アーカイブログ削除用スイッチファイルが存在する場合
+# 古いアーカイブログを削除するプログラムが実行される。
+#
+# アーカイブログ削除用スイッチファイルが存在する場合、削除する
+#if ( -f $PGRUNSW ) then
+#	/usr/bin/rm -f $PGRUNSW
+#	set rc = $status
+#	if ( $rc != 0 ) then
+#		$LOGWRITE  "アーカイブログ削除スイッチファイルが削除出来ませんでした" >> $LOGFILE
+#		exit 1
+#	endif
+#endif
+#
+# 001 END-ADD 2006/11/15
+# 002 END-DEL 2006/11/28
+
+
+#############################
+# 0. コンスログライタ停止   #
+#############################
+$EXE_DIR/QUAJ_LWTRSTOP.BAT conslog $ORACLE_SID					# コンソールログライタの停止
+set RC = $status
+if ( $RC != 0 ) then
+    $LOGWRITE  "ConslogWriter Stopping error occured[RC=$RC]" >> $LOGFILE 
+    exit 1
+endif
+
+#########################
+# 1. 主データベース停止 #
+#########################
+#$EXE_DIR/QUAJ_DBSTOP.BAT  tcc
+#$EXE_DIR/QUAJ_DBSTOP.BAT  PT1
+$EXE_DIR/QUAJ_DBSTOP.BAT  $ORACLE_SID						# 環境変数を用いてＤＢ停止
+set RC = $status
+if ( $RC != 0 ) then
+	exit 1
+endif
+
+#2005/04/21  IMZ_YOSHIDA  ADD-------->>  
+###########################################
+# REDOアーカイブログファイルをクリアする  #
+###########################################
+set CNT = `ls -1 /d230/DBF/qs_tcc/arch | wc -l`
+if ( $CNT > 0 ) then
+
+# 001 START-MOD 2006/11/15
+
+#        rm /d230/DBF/qs_tcc/arch/*
+#        set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+#        if ( $RC != 0 ) then
+#                $LOGWRITE "REDO ARCHIVE in /d230 削除失敗 \[RC=$RC\]"   >> $LOGFILE
+#                exit 1
+#        endif
+
+        rm -r /d230/DBF/qs_tcc/arch
+        set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+        if ( $RC != 0 ) then
+                $LOGWRITE "REDO ARCHIVE in /d230 削除失敗 \[RC=$RC\]"   >> $LOGFILE
+                exit 1
+        endif
+
+        mkdir /d230/DBF/qs_tcc/arch
+        set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+        if ( $RC != 0 ) then
+                $LOGWRITE "REDO ARCHIVE in /d230 作成失敗 \[RC=$RC\]"   >> $LOGFILE
+                exit 1
+        endif
+
+# 001 END-MOD 2006/11/15
+
+endif
+
+set CNT = `ls -1 /d240/DBF/qs_tcc/arch | wc -l`
+if ( $CNT > 0 ) then
+
+# 001 START-MOD 2006/11/15
+
+#        rm /d240/DBF/qs_tcc/arch/*
+#        set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+#        if ( $RC != 0 ) then
+#                $LOGWRITE "REDO ARCHIVE in /d240 削除失敗 \[RC=$RC\]"   >> $LOGFILE
+#                exit 1
+#        endif
+
+        rm -r /d240/DBF/qs_tcc/arch
+        set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+        if ( $RC != 0 ) then
+                $LOGWRITE "REDO ARCHIVE in /d240 削除失敗 \[RC=$RC\]"   >> $LOGFILE
+                exit 1
+        endif
+
+        mkdir /d240/DBF/qs_tcc/arch
+        set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+        if ( $RC != 0 ) then
+                $LOGWRITE "REDO ARCHIVE in /d240 作成失敗 \[RC=$RC\]"   >> $LOGFILE
+                exit 1
+        endif
+
+# 001 END-MOD 2006/11/15
+
+endif
+
+#2005/04/21   IMZ_YOSHIDA  ADD <<-------
+
+
+$LOGWRITE  "オラクル停止\[月次処理\]正常終了" >> $LOGFILE
+
+exit 0

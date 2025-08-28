@@ -1,0 +1,56 @@
+#!/bin/csh
+#-------------------------------------------------------#
+#　スクリプト名  ： QXEJQ1UX
+#  機能          ： 暗証チェック抽出ファイル作成・リカバリ
+#  作成日        ： 2004/12/10
+#  作成者        ： FIP
+#-------------------------------------------------------#
+
+########################################################
+#   環境設定
+########################################################
+set    SHELL_NAME = $0                                  # シェル名
+setenv JOBNET_ID    'QLER01UX'                          # ジョブネット名
+setenv JOB_ID       'QXEJQ1UX'                          # ジョブ名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log         # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT            # ログ出力モジュール
+setenv USERKEY      'QXEJQ1UX'                          # ユーザキー 
+set    DATDIR     = /d031/UFS/data/qxp/data             # データエリア
+set    MODULE     = $JOB_ID
+set    HUL_DIR    = /s030/UFS/fromhost/qxp/snd          # 
+
+########################################################
+#   開始
+########################################################
+echo "***<< $MODULE STR (`date +%y%m%d`/`date +%H%M%S`) >>***"
+echo "***<< $MODULE STR (`date +%y%m%d`/`date +%H%M%S`) >>***" > $LOGFILE
+set    KINOU      = '暗証チェック抽出ファイル作成・リカバリ'
+$LOGWRITE  "$MODULE" I "ＪＯＢ開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+########################################################
+#   ＳＴＥＰ１：暗証チェック抽出ファイル作成・リカバリ
+########################################################
+set    KINOU      = '暗証チェック抽出ファイル作成・リカバリ'
+$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+### 送信ファイルを繰越ファイルにコピーする ###
+
+cp $HUL_DIR/ansho_chk_dat.hulft $DATDIR/ansho_chk_dat.zen.kur
+
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                         # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"          # 終了メッセージの出力
+
+########################################################
+#   終了
+########################################################
+echo "***<< $MODULE END (`date +%y%m%d`/`date +%H%M%S`) >>***"
+echo "***<< $MODULE END (`date +%y%m%d`/`date +%H%M%S`) >>***" >> $LOGFILE
+set    KINOU      = '暗証チェック抽出ファイル作成・リカバリ'
+$LOGWRITE  "$MODULE" I "ＪＯＢ終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+exit(0)

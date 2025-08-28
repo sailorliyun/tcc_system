@@ -1,0 +1,675 @@
+      *8...........2.........3.........4.........5........6........7..
+000200 IDENTIFICATION                  DIVISION.
+       PROGRAM-ID.                     QPAB-S000800.
+      ****************************************************************
+      *   システムコード       :  Ｑ                                 *
+      *   サブシステムコード   :  ＰＡ                               *
+      *   モジュール           :  入金データ作成                     *
+      *                                                              *
+      *   作成者               :  ＦＩＰ                             *
+      *   作成日               :  H.15.01.27                         *
+      *   処理概要             :  後方支援側のDBをから、入金に関する *
+      *                           データを抽出し、入金データファイル *
+      *                           を作成する。                       *
+      *--------------------------------------------------------------*
+      *                  修  正  履  歴                              *
+      *   管理NO            修正理由             担当者   修正日付   *
+      *                                                              *
+      ****************************************************************
+      *
+      * $Revision: 1.6 $
+      *
+       ENVIRONMENT                     DIVISION.
+       CONFIGURATION                   SECTION.
+       SOURCE-COMPUTER.                FACOM.
+       OBJECT-COMPUTER.                FACOM.
+       SPECIAL-NAMES.
+           CONSOLE                     IS  DSP
+           ENVIRONMENT-NAME            IS  ENVNM
+           ENVIRONMENT-VALUE           IS  ENVVAL.
+       INPUT-OUTPUT                    SECTION.
+       FILE-CONTROL.
+      *##########################################################
+      *#  諸変更ホスト連携ファイル（出力ファイル）              #
+      *#                                                        #
+      *##########################################################
+      *  出力ファイル１
+           SELECT  OT-FILE            ASSIGN  TO    OTFILE
+                   FILE STATUS        IS STATUS-OT-FILE.
+      /*
+       DATA                            DIVISION.
+       FILE                            SECTION.
+      *
+      *##########################################################
+      *#  設計書に記載されている出力ファイル数分をレコード      #
+      *#  定義をする                                            #
+      *#  総データ長のみ変更すれば良い                          #
+      *##########################################################
+      *  出力ファイル１
+       FD  OT-FILE
+           LABEL   RECORD              STANDARD.
+       01  OT-REC1.
+           03  STR-AREA1               PIC  X(61).
+      *
+      /
+       WORKING-STORAGE                 SECTION.
+      *
+      *##########################################################
+      *#  設計書に記載されている出力ファイルの実際のレコード    #
+      *#  定義をする                                            #
+      *#  項目単位に定義する                                    #
+      *##########################################################
+      *  出力ファイルの項目定義
+       01  WK-OT-AREA.
+           03  WK-OT-NYUKINBI             PIC  X(08).
+           03  WK-OT-TOROKUYMD            PIC  X(08).
+           03  WK-OT-SYAINCD2             PIC  X(07).
+           03  WK-OT-MISECD               PIC  X(02).
+           03  WK-OT-NYUKINGAKU.
+             05  WK-OT-NYUKINGAKU-SIGN    PIC  X(01).
+             05  WK-OT-NYUKINGAKU-VAL     PIC  9(09).
+           03  WK-OT-ZANDAKA.
+             05  WK-OT-ZANDAKA-SIGN       PIC  X(01).
+             05  WK-OT-ZANDAKA-VAL        PIC  9(09).
+           03  WK-OT-GENDOGAKU.
+             05  WK-OT-GENDOGAKU-SIGN     PIC  X(01).
+             05  WK-OT-GENDOGAKU-VAL      PIC  9(09).
+           03  WK-OT-RESERVED             PIC  X(05).
+           03  WK-OT-LF                   PIC  X(01).
+      *
+      *##########################################################
+      *    ＜  ワークエリア領域  ＞
+      *##########################################################
+       01  WKS-AREA.
+           03  WK-ISREAD               PIC  X(01).
+      *
+      *##########################################################
+      *    ＜  プログラムスイッチ領域  ＞
+      *##########################################################
+      *
+       01  SW-AREA.
+           03  SW-ABEND                PIC  X(01)  VALUE "0".
+      *
+      *##########################################################
+      *    ＜  ファイルスタータス領域  ＞
+      *##########################################################
+      *
+       01  STATUS-AREA.
+           03  STATUS-OT-FILE          PIC  X(02).
+      *
+      *##########################################################
+      *    ＜  カウント領域  ＞
+      *##########################################################
+      *
+       01  CNT-AREA.
+      *    総データ出力件数
+           03  CNT-OTREC             PIC  9(07)  COMP-3  VALUE ZERO.
+      *
+      *##########################################################
+      *    ＜  メッセージ編集領域  ＞
+      *##########################################################
+      *
+       01  DSP-MODULEID              PIC  X(12)  VALUE "QPAB-S000800".
+      *
+      *    ＝  処理開始  ＝
+      *
+       01  DSP-MSG1.
+           03  FILLER                  PIC  X(08)  VALUE
+               "START : ".
+           03  MSG1-TIME               PIC  X(08).
+      *
+      *    ＝  処理終了  ＝
+      *
+       01  DSP-MSG2.
+           03  FILLER                  PIC  X(08)  VALUE
+               "END   : ".
+           03  MSG2-TIME               PIC  X(08).
+      *
+      *    ＝  処理件数  ＝
+      *
+       01  DSP-MSG3.
+           03  FILLER                  PIC  X(08)  VALUE
+               "OUT   : ".
+           03  MSG3-CNT1               PIC  ZZ,ZZZ,ZZ9.
+      *
+      *    ＝  ファイルへの書込みエラー  ＝
+      *
+       01  DSP-ERR1.
+           03  FILLER                  PIC  X(19)  VALUE
+               "FILE WRITE ERROR : ".
+           03  ERR1-STATUS             PIC  X(02).
+      *
+      *    ＝  編集領域  ＝
+      *
+       01  ED-WORK.
+      *          時刻の編集用
+           03    WK-TIME               PIC  9(08).
+           03    FILLER                REDEFINES   WK-TIME.
+             05  WK-TIME-HH            PIC  9(02).
+             05  WK-TIME-MM            PIC  9(02).
+             05  WK-TIME-SS            PIC  9(02).
+           03    WK-ED-TIME.
+             05  WK-ED-TIME-HH         PIC  X(02).
+             05  FILLER                PIC  X(01)  VALUE ":".
+             05  WK-ED-TIME-MM         PIC  X(02).
+             05  FILLER                PIC  X(01)  VALUE ":".
+             05  WK-ED-TIME-SS         PIC  X(02).
+      *          日付編集用
+           03    WK-DATE               PIC  9(08).
+           03    FILLER                REDEFINES  WK-DATE.
+             05  WK-DATE-YYYY          PIC  9(04).
+             05  WK-DATE-MM            PIC  9(02).
+             05  WK-DATE-DD            PIC  9(02).
+           03    WK-ED-DATE.
+             05  WK-ED-DATE-YYYY       PIC  X(04).
+             05  FILLER                PIC  X(01)  VALUE "/".
+             05  WK-ED-DATE-MM         PIC  X(02).
+             05  FILLER                PIC  X(01)  VALUE "/".
+             05  WK-ED-DATE-DD         PIC  X(02).
+      *          数値編集用
+           03    WK-NUM10-EDIT.
+             05  WK-NUM10-INPUT        PIC  9(07) COMP-3.
+             05  WK-NUM10-OUTPUT.
+               07  WK-NUM10-OUTPUT-S   PIC  X(01).
+               07  WK-NUM10-OUTPUT-V   PIC  9(09).
+      *          店コード用
+           03    WK-MISE-EDIT.
+             05  WK-MISE-EDIT-1        PIC  X(01).
+             05  WK-MISE-EDIT-2        PIC  X(02).
+      ****************************************************************
+      * ORACLE HOST変数
+      ****************************************************************
+      *
+       01  WK-SQLERRML                 PIC S9(04)
+                                       SIGN LEADING SEPARATE.
+       01  WK-SQLERRML-X               PIC  X(05).
+      *
+      *    埋込みＳＱＬ宣言開始（Ｂ領域：１２桁目以降）
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+           EXEC SQL INCLUDE ORACA END-EXEC.
+           EXEC ORACLE OPTION (ORACA=YES) END-EXEC.
+      *
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+      *    コードテーブル（外部パラメタ）値取得エリア
+       01  HQSA2-DATA.
+           03  HQSA2-TUKI              PIC  9(002).
+      *##########################################################
+      *#  設計書に記載されている入力テーブルの実際のレコード    #
+      *#  定義をする            ~~~~~~~~~~~~                    #
+      *#  項目単位に定義する（以下のように定義するとよい）      #
+      *##########################################################
+      *    コードテーブル(ホスト)データエリア
+       01  SV-NYUKIN.
+           03  SV-NYUKINBI             PIC  X(08).
+           03  SV-TOROKUYMD            PIC  X(08).
+           03  SV-SYAINCD2             PIC  X(07).
+           03  SV-MISECD               PIC  X(03).
+           03  SV-NYUKINGAKU           PIC  9(07) COMP-3.
+           03  SV-ZANDAKA              PIC  9(07) COMP-3.
+           03  SV-GENDOGAKU            PIC  9(07) COMP-3.
+      *
+      *    システム日付取得エリア
+        01  HOST-TOROKU-DATE-TIME.
+           03  HOST-TOROKU-DATE        PIC  X(08).
+           03  HOST-TOROKU-TIME        PIC  X(06).
+      *
+      *    抽出条件対象日時
+        01 TGT-DTTM.
+           03  TGT-DTTM-ST             PIC  X(14).
+           03  FILLER                  REDEFINES  TGT-DTTM-ST.
+             05  TGT-DT-ST             PIC  X(08).
+             05  TGT-TM-ST             PIC  X(06).
+      *
+           03  TGT-DTTM-ED             PIC  X(14).
+           03  FILLER                  REDEFINES  TGT-DTTM-ED.
+             05  TGT-DT-ED             PIC  X(08).
+             05  TGT-TM-ED             PIC  X(06).
+      *
+      *    処理日付取得サブ用パラメータ領域
+       01  LINK-AREA.
+           03  LINK-DATE               PIC  X(08).
+      *
+      *    埋込みＳＱＬ宣言終了
+           EXEC SQL  END  DECLARE SECTION END-EXEC.
+      *
+      *###########################################################
+      *    ＜  その他のワーク領域  ＞
+      *###########################################################
+      *
+       01  LINK-CONNECT-AREA.
+           03  LINK-SQLCODE            PIC S9(09)  COMPUTATIONAL.
+           03  LINK-USERID             PIC  X(10).
+           03  LINK-USERID-LEN         PIC  9(02).
+           03  LINK-PASSWD             PIC  X(10).
+           03  LINK-PASSWD-LEN         PIC  9(02).
+           03  LINK-ORACLE             PIC  X(10).
+           03  LINK-ORACLE-LEN         PIC  9(02).
+      *
+      *  単体試験用ワークエリア（試験終了後削除）
+       01  WK-TESUTO.
+           03  WK-LOOP-CNT             PIC  9(03) COMP-3 VALUE 1.
+      *
+      *    コンソールログ出力サブ・リンクエリア
+      *
+       01  LINK-CONS-AREA.
+           03  LINK-CONS-MODULEID      PIC  X(40).
+           03  LINK-CONS-MSGKBN        PIC  X(01).
+           03  LINK-CONS-MSG           PIC  X(1024).
+           03  LINK-CONS-STATUS        PIC  9(02).
+      *
+      /
+       PROCEDURE                       DIVISION.
+      ****************************************************************
+      *    (0.0)   プログラム  コントロール                          *
+      ****************************************************************
+       PROC-SECT                       SECTION.
+       PROC-START.
+      *
+      *＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+      *＊  初期処理  [1.0]                                           ＊
+      *＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+      *
+           PERFORM INIT-PROC.
+      *
+      *＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+      *＊  主処理    [2.0]                                           ＊
+      *＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+      *
+           PERFORM MAIN-PROC.
+      *
+      *＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+      *＊  終了処理  [3.0]                                           ＊
+      *＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+      *
+           PERFORM FINAL-PROC.
+      *
+       PROC-EXIT.
+           EXIT    PROGRAM.
+      /***************************************************************
+      *    (1.0)   初期処理                                          *
+      ****************************************************************
+       INIT-PROC                       SECTION.
+      *
+      *    初期化が必要なワーク領域の初期化を行う
+      *
+           MOVE    DSP-MODULEID        TO      LINK-CONS-MODULEID.
+      *
+      *    オラクルコネクト処理
+           CALL    "QTAB-CONNECT"      USING   LINK-CONNECT-AREA.
+           IF    LINK-SQLCODE        NOT =   ZERO
+      *        処理開始メッセージ出力
+               ACCEPT  WK-TIME     FROM    TIME
+               MOVE    WK-TIME-HH  TO      WK-ED-TIME-HH
+               MOVE    WK-TIME-MM  TO      WK-ED-TIME-MM
+               MOVE    WK-TIME-SS  TO      WK-ED-TIME-SS
+               MOVE    WK-ED-TIME  TO      MSG1-TIME
+               MOVE    "I"         TO      LINK-CONS-MSGKBN
+               MOVE    DSP-MSG1    TO      LINK-CONS-MSG
+      *        コンソールログ出力処理
+               PERFORM CONS-PROC
+      *        処理終了メッセージ出力
+               ACCEPT  WK-TIME     FROM    TIME
+               MOVE    WK-TIME-HH  TO      WK-ED-TIME-HH
+               MOVE    WK-TIME-MM  TO      WK-ED-TIME-MM
+               MOVE    WK-TIME-SS  TO      WK-ED-TIME-SS
+               MOVE    WK-ED-TIME  TO      MSG2-TIME
+               MOVE    "I"         TO      LINK-CONS-MSGKBN
+               MOVE    DSP-MSG2    TO      LINK-CONS-MSG
+      *        コンソールログ出力処理
+               PERFORM CONS-PROC
+               MOVE    099         TO      PROGRAM-STATUS
+               EXIT    PROGRAM
+           END-IF.
+      *
+      *    処理開始メッセージ出力
+           ACCEPT  WK-TIME             FROM    TIME.
+           MOVE    WK-TIME-HH          TO      WK-ED-TIME-HH.
+           MOVE    WK-TIME-MM          TO      WK-ED-TIME-MM.
+           MOVE    WK-TIME-SS          TO      WK-ED-TIME-SS.
+           MOVE    WK-ED-TIME          TO      MSG1-TIME.
+           MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+           MOVE    DSP-MSG1            TO      LINK-CONS-MSG.
+      *
+      *    コンソールログ出力処理
+           PERFORM CONS-PROC.
+      *
+      *   出力ファイルのＯＰＥＮを行う
+      *   （当処理で使用するファイルは全てＯＰＥＮしておく）
+           OPEN  OUTPUT  OT-FILE.
+           IF  ( STATUS-OT-FILE NOT  =    ZERO )
+               MOVE    "01"             TO    DSP-ERR1(14:2)
+               MOVE    STATUS-OT-FILE   TO    ERR1-STATUS
+               MOVE    099              TO    PROGRAM-STATUS
+               EXIT    PROGRAM
+           END-IF.
+      *
+      *    システム日付の取得
+           PERFORM    SYSDATEGET-PROC.
+      *  
+      *    カーソル定義
+           PERFORM    DEC-CUR-PROC.
+       INIT-PROC-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    (1.1)   システム日付取得処理                              *
+      ****************************************************************
+       SYSDATEGET-PROC                SECTION.
+      *
+      *    オラクルのシステム日付時間を取得する
+           EXEC SQL
+             SELECT
+               TO_CHAR(SYSDATE-1,'YYYYMMDD') || '180000',
+               TO_CHAR(SYSDATE,  'YYYYMMDD') || '180000'
+             INTO
+               :TGT-DTTM-ST,
+               :TGT-DTTM-ED
+             FROM DUAL
+           END-EXEC.
+      *
+      * DEBUG CODE (2003/01/21 ～ 2003/01/22)
+      *     MOVE    "20000120"    TO    TGT-DT-ST.
+      *     MOVE    "20000130"    TO    TGT-DT-ED.
+      *
+       SYSDATEGET-PROC-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    (1.2)   カーソル定義                                      *
+      ****************************************************************
+      *
+       DEC-CUR-PROC                        SECTION.
+      *
+      *    オラクル使用時の定義
+      *
+      *    ＳＱＬエラー
+           EXEC SQL WHENEVER SQLERROR  GO TO :ERR-DC END-EXEC.
+      *
+      *    該当データ無し
+      *     EXEC SQL WHENEVER NOT FOUND GO TO :INV-DC END-EXEC.
+      *
+      *    カーソル宣言を行う
+      *   （以下のように設定する）
+           EXEC SQL DECLARE CUR_QPA5 CURSOR FOR
+             SELECT
+               TO_CHAR(Q5.QPA5_NYUKINYMD, 'YYYYMMDD'),
+               TO_CHAR(Q5.QPA5_TOROKUYMD, 'YYYYMMDD'),
+               NVL(Q5.QPA5_SYAINCD2, '0000000'),
+               NVL(QC.QPAC_MISECD, ' '),
+               NVL(Q5.QPA5_NYUKINGAKU, 0),
+               NVL(Q1.QPA1_KYUYOZANDAKA, 0),
+               NVL(Q1.QPA1_GENDOGAKU, 0)
+             FROM
+               QPA5_KGCNYUKINT Q5,
+               QPA1_KGCDAICYOT Q1,
+               QPAC_SYAINM QC
+             WHERE
+               Q5.QPA5_TOROKUYMD >
+                    TO_DATE(:TGT-DTTM-ST, 'YYYYMMDDHH24MISS')
+              AND
+               Q5.QPA5_TOROKUYMD <=
+                    TO_DATE(:TGT-DTTM-ED, 'YYYYMMDDHH24MISS')
+              AND
+               Q5.QPA5_SYAINCD1 = Q1.QPA1_PRMSYAINCD1(+)
+              AND
+               Q5.QPA5_SYAINCD2 = Q1.QPA1_PRMSYAINCD2(+)
+              AND
+               Q5.QPA5_SYAINCD1 = QC.QPAC_PRMSYAINCD1(+)
+              AND
+               Q5.QPA5_SYAINCD2 = QC.QPAC_PRMSYAINCD2(+)
+           END-EXEC.
+      *
+      *    カーソルＯＰＥＮ
+           EXEC SQL OPEN CUR_QPA5 END-EXEC.
+      *
+           GO   TO      DEC-CUR-PROC-EXIT.
+      *
+      *----------------------------------------------------------
+      * SQLエラー例外
+       ERR-DC.
+           EXEC SQL WHENEVER SQLERROR CONTINUE END-EXEC.
+      *
+           MOVE      "1"      TO   SW-ABEND.
+      *
+           MOVE      "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE      SQLERRML            TO      WK-SQLERRML.
+           MOVE      WK-SQLERRML         TO      WK-SQLERRML-X.
+           STRING    "QSA2_SCODET" WK-SQLERRML-X " " SQLERRMC
+                     DELIMITED  BY  "*"  INTO    LINK-CONS-MSG.
+           PERFORM   CONS-PROC.
+      *
+       DEC-CUR-PROC-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (2.0)   主処理                                            *
+      ****************************************************************
+       MAIN-PROC                       SECTION.
+      *
+      *    テーブルの読み込み（ＦＥＴＣＨ）を行う
+      *    （以下のように設定する）
+      *
+           PERFORM NO LIMIT
+               PERFORM   READ-PROC
+               IF     WK-ISREAD  =  "0"
+                    GO  TO        INV-QPA5
+               END-IF
+               IF     SW-ABEND   =  "1"
+                    GO  TO        ERR-QPA5
+               END-IF
+      *
+      *        データ編集処理
+               PERFORM   DATA-EDIT
+      *
+      *        データ書き込み
+               PERFORM   DATA-WRITE
+               IF    SW-ABEND  =  "1"
+                    GO  TO        ERR-QPA5
+               END-IF
+      *
+           END-PERFORM.
+      *-----------------------------------------------------
+      *    テーブル読み込み異常時の処理
+       ERR-QPA5.
+      *
+           EXEC SQL ROLLBACK WORK RELEASE END-EXEC.
+      *
+           MOVE    "1"                 TO      SW-ABEND.
+      *
+           MOVE    "E"                 TO      LINK-CONS-MSGKBN.
+           MOVE    SQLERRML            TO      WK-SQLERRML.
+           MOVE    WK-SQLERRML         TO      WK-SQLERRML-X.
+           STRING  "QSA2_SCODET" WK-SQLERRML-X " " SQLERRMC
+                   DELIMITED  BY  "*"  INTO    LINK-CONS-MSG.
+           PERFORM CONS-PROC.
+      *
+      *
+           GO  TO                      MAIN-PROC-EXIT.
+      *--------------------------------------------------------
+      *    正常時ではこのセクションを終了する
+      *    （カーソルもクローズする）
+       INV-QPA5.
+      *
+           EXEC SQL COMMIT WORK RELEASE END-EXEC.
+      *
+      *    カーソルＣＬＯＳＥ
+           EXEC SQL CLOSE CUR_QPA5 END-EXEC.
+      *
+           GO  TO          MAIN-PROC-EXIT.
+      *
+       MAIN-PROC-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (2.1) テーブルの読み込み処理                              *
+      ****************************************************************
+       READ-PROC                         SECTION.
+      *    ＳＱＬエラー
+           EXEC SQL WHENEVER SQLERROR  GO TO :ERR-READ END-EXEC.
+      *    該当データ無し
+           EXEC SQL WHENEVER NOT FOUND GO TO :INV-READ END-EXEC.
+      *
+           EXEC SQL
+             FETCH
+               CUR_QPA5
+             INTO
+               :SV-NYUKINBI,
+               :SV-TOROKUYMD,
+               :SV-SYAINCD2,
+               :SV-MISECD,
+               :SV-NYUKINGAKU,
+               :SV-ZANDAKA,
+               :SV-GENDOGAKU
+           END-EXEC.
+      *
+           MOVE      "1"      TO   WK-ISREAD.
+      *
+           GO  TO    READ-PROC-EXIT.
+      *----------------------------------------------------------
+      * SQLエラー例外
+       ERR-READ.
+           EXEC SQL WHENEVER SQLERROR CONTINUE END-EXEC.
+      *
+           MOVE      "0"      TO   WK-ISREAD.
+           MOVE      "1"      TO   SW-ABEND.
+      *
+           GO  TO    READ-PROC-EXIT.
+      *
+      *----------------------------------------------------------
+      * 該当のレコードが見当たらない
+       INV-READ.
+           EXEC SQL WHENEVER NOT FOUND CONTINUE END-EXEC.
+      *
+           MOVE    "0"   TO    WK-ISREAD.
+      *
+       READ-PROC-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    (2.2)   データ編集処理                                    *
+      ****************************************************************
+      *
+       DATA-EDIT                      SECTION.
+      *
+      *
+           MOVE    SPACE            TO    WK-OT-AREA.
+      *
+           MOVE    SV-NYUKINBI      TO    WK-OT-NYUKINBI.
+      *
+           MOVE    SV-TOROKUYMD     TO    WK-OT-TOROKUYMD.
+      *
+           MOVE    SV-SYAINCD2      TO    WK-OT-SYAINCD2.
+      *
+           MOVE    SV-MISECD        TO    WK-MISE-EDIT.
+           MOVE    WK-MISE-EDIT-2   TO    WK-OT-MISECD.
+      *
+      *     MOVE    SV-NYUKINGAKU    TO    WK-OT-NYUKINGAKU.
+           MOVE    SV-NYUKINGAKU    TO    WK-NUM10-INPUT.
+           PERFORM  NUM-EDIT.
+           MOVE    WK-NUM10-OUTPUT-S  TO  WK-OT-NYUKINGAKU-SIGN.
+           MOVE    WK-NUM10-OUTPUT-V  TO  WK-OT-NYUKINGAKU-VAL.
+      *
+      *     MOVE    SV-ZANDAKA       TO    WK-OT-ZANDAKA.
+           MOVE    SV-ZANDAKA       TO    WK-NUM10-INPUT.
+           PERFORM  NUM-EDIT.
+           MOVE    WK-NUM10-OUTPUT-S  TO  WK-OT-ZANDAKA-SIGN.
+           MOVE    WK-NUM10-OUTPUT-V  TO  WK-OT-ZANDAKA-VAL.
+      *
+           MOVE    SV-GENDOGAKU       TO    WK-NUM10-INPUT.
+           PERFORM  NUM-EDIT.
+           MOVE    WK-NUM10-OUTPUT-S  TO  WK-OT-GENDOGAKU-SIGN.
+           MOVE    WK-NUM10-OUTPUT-V  TO  WK-OT-GENDOGAKU-VAL.
+      *
+           MOVE    SPACE            TO    WK-OT-RESERVED.
+      *
+           MOVE    X"0A"            TO    WK-OT-LF.
+       DATA-EDIT-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (2.3)   抽出データ出力処理                                *
+      ****************************************************************
+       DATA-WRITE                      SECTION.
+      *
+      *    出力ファイルに出力する
+           WRITE  OT-REC1  FROM  WK-OT-AREA.
+      *
+      *    書込みエラー判定
+           IF  STATUS-OT-FILE      NOT =   ZERO
+               MOVE    STATUS-OT-FILE      TO      ERR1-STATUS
+               MOVE    "S"         TO      LINK-CONS-MSGKBN
+               MOVE    DSP-ERR1    TO      LINK-CONS-MSG
+      *        コンソールログ出力処理
+               PERFORM CONS-PROC
+               MOVE    "1"         TO      SW-ABEND
+           END-IF.
+      *
+      *    総出力件数のカウント
+           ADD  1  TO  CNT-OTREC.
+      *
+       DATA-WRITE-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    (2.4)   数値編集処理                                      *
+      ****************************************************************
+       NUM-EDIT                        SECTION.
+           IF  WK-NUM10-INPUT < 0
+               MOVE    "-"           TO    WK-NUM10-OUTPUT-S
+           ELSE
+               MOVE    "+"           TO    WK-NUM10-OUTPUT-S
+           END-IF.
+           MOVE    WK-NUM10-INPUT    TO    WK-NUM10-OUTPUT-V.
+       NUM-EDIT-EXIT.
+           EXIT.
+      /***************************************************************
+      *    (3.0)   終了処理                                          *
+      ****************************************************************
+       FINAL-PROC                      SECTION.
+      *
+      *    ファイルＣＬＯＳＥ
+           CLOSE   OT-FILE.
+      *
+      *    処理件数メッセージ出力
+      *     MOVE    CNT-OTREC           TO      MSG3-CNT1.
+      *     MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+      *     MOVE    DSP-MSG3            TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+      *     PERFORM CONS-PROC.
+      *
+      *    処理終了メッセージ出力
+      *     ACCEPT  WK-TIME             FROM    TIME.
+      *     MOVE    WK-TIME-HH          TO      WK-ED-TIME-HH.
+      *     MOVE    WK-TIME-MM          TO      WK-ED-TIME-MM.
+      *     MOVE    WK-TIME-SS          TO      WK-ED-TIME-SS.
+      *     MOVE    WK-ED-TIME          TO      MSG2-TIME.
+      *     MOVE    "I"                 TO      LINK-CONS-MSGKBN.
+      *     MOVE    DSP-MSG2            TO      LINK-CONS-MSG.
+      *    コンソールログ出力処理
+      *     PERFORM CONS-PROC.
+      *
+      *    処理終了時のプログラムステータスの設定
+           IF      SW-ABEND            =       "0"
+                   MOVE    000         TO      PROGRAM-STATUS
+           ELSE
+                   MOVE    050         TO      PROGRAM-STATUS
+           END-IF.
+      *
+       FINAL-PROC-EXIT.
+           EXIT.
+      *
+      /***************************************************************
+      *    (C.1)   コンソールログ出力処理
+      ****************************************************************
+       CONS-PROC                       SECTION.
+      *
+           CALL    "QTAB-CONSLOG"      USING   LINK-CONS-AREA.
+           IF      LINK-CONS-STATUS    =       ZERO
+      *
+      *            データベーストランザクションコミット
+                   EXEC SQL COMMIT WORK END-EXEC
+                   MOVE    000         TO      PROGRAM-STATUS
+           ELSE
+                   MOVE    099         TO      PROGRAM-STATUS
+                   EXIT    PROGRAM
+           END-IF.
+      *
+       CONS-PROC-EXIT.
+           EXIT.

@@ -1,0 +1,86 @@
+#!/bin/csh
+#
+#  オンライン終了  (QUOJE1UX)
+#
+#     機  能：0.ログライタを停止する。
+#             1.主データベースを停止する。
+#             2.セキュリティデータベースを停止する。
+#             3.リスナーを停止する。
+#            
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+set  SHELL_NAME = $0                                    			# シェル名
+set  MODULE   =  $SHELL_NAME:t                          			# モジュール名
+set  LOGFILE  = $USER_LOG_DIR/db_ope.log                			# ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  			# ログ出力用共通シェル
+
+if ( $#argv == 1 ) then								# 引数が指定されていた場合
+    setenv ORACLE_SID   $1							# 環境変数ORACLE_SIDを設定
+endif
+
+#echo $MODULE " : " $ORACLE_SID
+
+$LOGWRITE  "オンライン終了" >> $LOGFILE
+
+#####################################
+# 0. ログライタ停止（コンスログ）   #
+#####################################
+$EXE_DIR/QUAJ_LWTRSTOP.BAT conslog $ORACLE_SID					# コンソールログライタの停止
+set RC = $status
+if ( $RC != 0 ) then
+    $LOGWRITE  "ConslogWriter Stopping error occured[RC=$RC]" >> $LOGFILE 
+    exit 1
+endif
+
+#####################################
+# 1. ログライタ停止（オペログ）     #
+#####################################
+$EXE_DIR/QUAJ_LWTRSTOP.BAT opelog $ORACLE_SID					# オペログライタの停止
+set RC = $status
+if ( $RC != 0 ) then
+    $LOGWRITE  "OpelogWriter Stopping error occured[RC=$RC]" >> $LOGFILE 
+    exit 1
+endif
+
+#########################
+# 2. 主データベース停止 #
+#########################
+#$EXE_DIR/QUAJ_DBSTOP.BAT  tcc
+#$EXE_DIR/QUAJ_DBSTOP.BAT  PT1
+$EXE_DIR/QUAJ_DBSTOP.BAT  $ORACLE_SID						# 環境変数を用いてＤＢ停止
+set RC = $status
+if ( $RC != 0 ) then
+	exit 1
+endif
+
+if ( $ORACLE_SID == PT1 ) then							# ORACLE_SIDがPT1の時
+	$LOGWRITE  "オンライン終了正常終了" >> $LOGFILE				# ログ出力
+	exit 0									# 終了
+endif
+
+### 以下はPT1以外の時動作 ###
+
+###################################
+# 3. セキュリティデータベース停止 #
+###################################
+$EXE_DIR/QUAJ_DBSTOP.BAT  SECU							# セキュリティＤＢ停止
+set RC = $status
+if ( $RC != 0 ) then
+	exit 1
+endif
+
+########################
+# 4. リスナー停止      #
+########################
+$EXE_DIR/QUAJ_LSNRSTOP.BAT 							# リスナー停止
+set RC = $status
+if ( $RC != 0 ) then
+	exit 1
+endif
+
+$LOGWRITE  "オンライン終了正常終了" >> $LOGFILE
+
+exit 0

@@ -1,0 +1,15 @@
+#!/bin/csh -f
+#---------------------------------------------------------------------#
+#  DELY PARAMETER UPDATE 
+#
+#
+#  make :    2009/01/16 BY  FIP)OKAZAKI
+#
+#---------------------------------------------------------------------#
+#source /usr/local/auto/autoenv.csh
+#source /usr/local/auto/aplenv.csh
+#
+icom v,e,f=01
+#
+exit 0
+#

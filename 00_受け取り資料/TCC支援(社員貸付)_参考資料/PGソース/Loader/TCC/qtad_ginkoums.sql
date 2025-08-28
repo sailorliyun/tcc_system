@@ -1,0 +1,41 @@
+LOAD DATA
+CHARACTERSET JA16SJIS
+TRUNCATE
+PRESERVE BLANKS
+INTO TABLE QTA7_GINKOUM
+fields terminated by "q"
+(QTA7_PRMKikanCd               CHAR,
+ QTA7_PRMShitenCd              CHAR,
+ QTA7_PRMHukaCd                CHAR,
+ QTA7_KNMKinyuKikan            CHAR,
+ QTA7_KNMShiten                CHAR,
+ QTA7_YubinNo                  CHAR,
+ QTA7_KikanShubetsu            CHAR,
+ QTA7_KNJTodoHukenA            CHAR,
+ QTA7_KNJShikugunA             CHAR,
+ QTA7_KNJKatagaki1             CHAR,
+ QTA7_KNJKatagaki2             CHAR,
+ QTA7_KatagakiKeta             CHAR,
+ QTA7_KukakuCd                 CHAR,
+ QTA7_MasterCH                 CHAR,
+ QTA7_JushoCdJIS               CHAR,
+ QTA7_Tel                      CHAR,
+ QTA7_TegataKoukansho          CHAR,
+ QTA7_KinyuKikanNMKJ           CHAR,
+ QTA7_SitenNMKJ                CHAR,
+ QTA7_KJJAKeta                 CHAR,
+ QTA7_KJJAKenKeta              CHAR,
+ QTA7_KJJAGunKeta              CHAR,
+ QTA7_KJJAMuraKeta             CHAR,
+ QTA7_KJJBKeta                 CHAR,
+ QTA7_KJJTenpo                 CHAR,
+ QTA7_KJJBKatagaki1            CHAR,
+ QTA7_KJJBKatagaki2            CHAR,
+ QTA7_ZenginKameiCH            CHAR,
+ QTA7_DataTourokuYmd           DATE NULLIF (QTA7_DataTourokuYmd="00000000"), --  DATE NULL,
+ QTA7_KinkyuShuseiYmd          DATE NULLIF (QTA7_KinkyuShuseiYmd="00000000"), --  DATE NULL,
+ QTA7_DataShubetsu             CHAR,
+ QTA7_HostShoriYmd             CHAR, --  CHAR(8) NOT NULL,
+ QTA7_HostShoriTime            CHAR, --  CHAR(6) NOT NULL,
+ QTA7_SvrKoushinYmd            DATE NULLIF (QTA7_SvrKoushinYmd="00000000") --  DATE NULL,
+)

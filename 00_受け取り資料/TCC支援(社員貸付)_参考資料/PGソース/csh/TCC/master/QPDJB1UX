@@ -1,0 +1,49 @@
+#!/bin/csh
+#　スクリプト名  ： QPDJB1UX
+#　 機  能       ： ホスト貸付データ移行ロードファイル処理
+#　 作成者       ： FIP
+#
+#  管理番号  修正内容                        担当者      日付
+#  000001    繰越ファイル作成修正            nbc.hayashi 2007/07/24
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPDIXXUX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPDJB1UX'                         # ユーザキー
+set    KINOU      = 'ホスト貸付データロードファイル処理'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+
+
+#########################################
+# STEP-1  ホストからのハルフトをコピー  #
+#########################################
+
+set MODULE = 'shell'
+$LOGWRITE "$MODULE" I "開始:ホスト貸付データロードファイル処理１" "$USERKEY"    # 開始メッセージの出力
+#000001 MOD hayashi 2007/07/24 START
+#  cp $QP_HUL_DIR/qpb1_hostkasituke.dat $QP_DATA_DIR/qpb1_hostkasituke.dat
+  cat   $QP_DATA_DIR/qpb1_hostkasituke.kur \
+        $QP_HUL_DIR/qpb1_hostkasituke.dat  \
+      > $QP_DATA_DIR/qpb1_hostkasituke.dat
+#000001 MOD hayashi 2007/07/24 END
+$LOGWRITE "$MODULE" I "終了:ホスト貸付データロードファイル処理１" "$USERKEY"    # 終了メッセージの出力
+
+#000001 DEL hayashi 2007/07/24 START
+##########################################
+## STEP-2  ﾊﾙﾌﾄ側ﾌｧｲﾙを０件に            #
+##########################################
+#
+#set MODULE = 'shell'
+#$LOGWRITE "$MODULE" I "開始:ホスト貸付データロードファイル処理２" "$USERKEY"    # 開始メッセージの出力
+#  cp /dev/null $QP_HUL_DIR/qpb1_hostkasituke.dat
+#$LOGWRITE "$MODULE" I "終了:ホスト貸付データロードファイル処理２" "$USERKEY"    # 終了メッセージの出力
+##000001 DEL hayashi 2007/07/24 END
+
+exit 0                                           # 正常終了
+

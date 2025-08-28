@@ -1,0 +1,38 @@
+#!/bin/csh
+#　スクリプト名  ： QPDJB2UX
+#　 機  能       ： 貸付データ0件送信
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPDIXXUX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPDJB2UX'                         # ユーザキー
+set    KINOU      = '貸付データ0件送信'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+
+#################################################
+# STEP-1貸付データ0件送信（ＴＣＣ→人事ホスト） #
+#################################################
+
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:貸付データ0件送信" "$USERKEY"     # 開始メッセージの出力
+
+### 送信の実行 ###
+utlsend  -f OFQY05 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:貸付データ0件送信" "$USERKEY"     # 終了メッセージの出力
+
+exit 0                                           # 正常終了
+

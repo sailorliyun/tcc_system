@@ -1,0 +1,85 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJ12UX
+#　 機  能       ： 会員マスタ更新（更新上書）
+#　 作成者       ： FIP
+#　 修正履歴     ： ｉｍｚ．Ｙｏｓｈｉｄａ エラーログ追加対応 2005/07/04
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSD111UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSDJ12UX'                         # ユーザキー 
+set    KINOU      = '会員マスタ更新（更新上書）'
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'COBOL1'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qtab_s000200.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_kaiin2.hft
+    setenv OTFILE $QJ_DATA_DIR/qt/data/svr/dat/qtaf_kaiin2.dat
+    setenv RJFILE $QJ_DATA_DIR/qt/data/svr/dat/qtaf_kaiin2.rj.dat
+    #
+    #
+    rm $QJ_DATA_DIR/qt/data/svr/dat/qtaf_kaiin2.dat
+    rm $QJ_DATA_DIR/qt/data/svr/dat/qtaf_kaiin2.rj.dat
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM                                     # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+# 2005/07/04 Added by imz.Yoshida エラーログ追加対応 ==>
+   $LOGWRITE  "$MODULE"  E  "$KINOU RC=[$rc]" "$USERKEY"
+# 2005/07/04 Added by imz.Yoshida エラーログ追加対応 <==
+   exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-2                                #
+#########################################
+set MODULE = 'COBOL2'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出
+set PROGRAM = $EXE_DIR/qtab_s000210.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv INFILE $QJ_DATA_DIR/qt/data/svr/dat/qtaf_kaiin2.dat
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM       > $LOGFILE                    # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+# 2005/07/04 Added by imz.Yoshida エラーログ追加対応 ==>
+   $LOGWRITE  "$MODULE"  E  "$KINOU RC=[$rc]" "$USERKEY"
+# 2005/07/04 Added by imz.Yoshida エラーログ追加対応 <==
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+exit 0                                           # 正常終了
+

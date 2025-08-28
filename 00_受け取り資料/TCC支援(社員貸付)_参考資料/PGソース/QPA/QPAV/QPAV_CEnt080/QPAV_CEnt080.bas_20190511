@@ -1,0 +1,2395 @@
+Attribute VB_Name = "MainModule"
+Option Explicit
+Public Const cpubMyPrjName = "QPAV_CEnt080" 'ƒvƒƒOƒ‰ƒ€–¼
+Public Const gcnsNumeric = "0123456789"     '“ü—Í•¶š§Œä—p
+Public Const gcnsstrSysChng = "2001/11/01"    'VƒVƒXƒeƒ€ˆÈ~“ú
+
+Public lngErrCode             As Long       'ƒGƒ‰[ƒR[ƒh
+Public strErrDescription      As String     'ƒGƒ‰[ƒƒbƒZ[ƒW
+Public gblnExecute            As Boolean    'q‰æ–Ê‚ÅÀs‚³‚ê‚½‚©”»’è—p
+Public gblnHaitaFlg           As Boolean    '”r‘¼”»’è—pƒtƒ‰ƒO
+Public gstrSysDate            As String     'ƒT[ƒo[ƒVƒXƒeƒ€“ú•t
+Public gblnNayoseFlg          As Boolean    '–¼Šñ‚¹ŒŸõ‰æ–Ê‹N“®ƒtƒ‰ƒO
+Public glngSPCount            As Long       '
+Public gstrKeyInfo1           As String     '”r‘¼—pƒL[î•ñ(ĞˆõƒR[ƒh‚P)
+Public gstrKeyInfo2           As String     '”r‘¼—pƒL[î•ñ(ĞˆõƒR[ƒh‚Q)
+Public glngSprRow             As Long       'ƒXƒvƒŒƒbƒh—ñ
+Public gstrMiseName           As String     '“X–¼Ì
+Public gstrSeisanYMD          As String     '¸Z”NŒ“ú
+Public gstrSyori              As String     'ˆ—–¼Ì
+Public gstrYuusiDat           As String     '—Z‘ƒf[ƒ^i‹æØ‚è•¶š“ü‚èj
+Public gstrBonusMD1           As String     'ƒ{[ƒiƒXx•¥“ú‚P
+Public gstrBonusMD2           As String     'ƒ{[ƒiƒXx•¥“ú‚Q
+Public glngSyosyoGendogaku    As Long       'Ø‘ŒÀ“xŠz
+
+'--SP—p•Ï”--
+Public gstrSyainCd1           As String     'ĞˆõƒR[ƒh‚P(1Œ…)
+Public gstrSyainCd2           As String     'ĞˆõƒR[ƒh‚Q(7Œ…)
+Public gstrSyainName          As String     'Ğˆõ–¼
+Public gstrYusiYMD            As String     '—Z‘“ú
+Public gstrGendogaku          As String     'ŒÀ“xŠz
+Public gstrSyubetu            As String     'í•Ê(—Z‘‹æ•ª)
+Public gstrRiritu             As String     '—˜—¦
+Public gstrHensaiTukisu       As String     '•ÔÏŒ”
+Public gstrKyuyoHensaiAll     As String     '‹‹—^•ÔÏ‘Šz
+Public gstrKyuyoHensai        As String     '‹‹—^•ÔÏŠz
+Public gstrSyoyoHensaiAll     As String     'Ü—^•ÔÏ‘Šz
+Public gstrSyoyoHensai        As String     'Ü—^•ÔÏŠz
+Public gstrKyuyoZandaka       As String     '‹‹—^c‚
+Public gstrSyoyoZandaka       As String     'Ü—^c‚
+Public gstrKojoChusiFlg       As String     'Tœ’†~ƒtƒ‰ƒO
+Public gstrKansaiYMD          As String     'Š®Ï“ú
+
+Public gstrSyoyoHensaigaku    As String     '‹‹—^ŒX•ÔÏŠz
+Public gstrKyuyoHensaigaku    As String     'Ü—^•ÔÏŠz
+
+'--•ÔÏ—\’è•\ŒvZ—p•Ï”--
+Type YoteiTbl
+   intPageKbn                 As Integer    'ƒy[ƒW‹æ•ª
+   intNenKBN                  As Integer    '”N‹æ•ª
+   strKbn                     As String     '‹æ•ª
+   strKijitu                  As String     '•ÔÏŠú“ú
+   strHensai                  As String     '•ÔÏ‹àŠz
+   strZandaka                 As String     'c‚
+   strKyuGan                  As String     '‹‹—^Œ³–{
+   strKyuRsk                  As String     '‹‹—^—˜‘§
+   strKyuZan                  As String     '‹‹—^c‚
+   strSyoGan                  As String     'Ü—^Œ³–{
+   strSyoRsk                  As String     'Ü—^—˜‘§
+   strSyoZan                  As String     'Ü—^c‚
+End Type
+
+Public gstrYoteihyouAry()  As YoteiTbl '—\’è•\—p”z—ñ
+Public gstrYoteihyouSort() As YoteiTbl '—\’è•\”z—ñƒ\[ƒg—p
+'******************************************************************************
+'*    ‹N“® MAIN
+'******************************************************************************
+Public Sub Main()
+ 
+ Dim strCmdLine As String
+        
+    '“®ìŠÂ‹«
+    If App.PrevInstance Then
+        MsgBox "Ğˆõ—Z‘‘ä’ ‚ÍŠù‚É‹N“®‚³‚ê‚Ä‚¢‚Ü‚·B" _
+            , vbExclamation Or vbOKOnly, cpubMyPrjName
+        Exit Sub
+    End If
+    
+    'ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆø”‚Ìæ“¾
+    strCmdLine = Command()
+
+    If strCmdLine = "" Then
+        MsgBox "‹N“®ƒpƒ‰ƒ[ƒ^‚ªİ’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñB" _
+                , vbExclamation Or vbOKOnly, cpubMyPrjName
+
+        Exit Sub
+    End If
+
+    'ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆø”‚ğ•ÒW‚·‚é
+    Call gsubGetCommandLine(strCmdLine)
+    
+    gblnHaitaFlg = False '”r‘¼”»’è—pÌ×¸Ş‰Šú‰»
+
+    frmQPAV_CEnt080.Show 1
+ 
+End Sub
+'******************************************************************************
+'*    ”r‘¼‰ğœ
+'******************************************************************************
+Public Sub gsubUnLock()
+ Dim strSQL As String
+ 
+On Error GoTo errgsubUnLock
+
+    odbDatabase.Parameters.Add "InstrSikibetu", "080", ORAPARM_INPUT                  '¯•ÊƒR[ƒh
+    odbDatabase.Parameters.Add "InstrComputerMei", gstrCommandLine(5), ORAPARM_INPUT  'ƒRƒ“ƒsƒ…[ƒ^[–¼
+
+    'SQL•¶ì¬
+             strSQL = "BEGIN QPAP_CEnt080PkG.QPAP_CEnt080UnLock("
+    strSQL = strSQL & " :InstrSikibetu"
+    strSQL = strSQL & ",:InstrComputerMei);END;"
+
+    'SPÀs
+    odbDatabase.DbexecuteSQL (strSQL)
+
+    'ƒIƒuƒWƒFƒNƒg‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+        
+    gblnHaitaFlg = False
+        
+    Exit Sub
+    
+errgsubUnLock:
+'ƒGƒ‰[ˆ—
+    
+    'ƒGƒ‰[ƒƒbƒZ[ƒW•\¦
+    Call gsubDBErrorMessage(gstrCommandLine(8), cpubMyPrjName, _
+                           gstrCommandLine(3), gstrCommandLine(5), gstrGetErrDateFormat)
+    'ƒIƒuƒWƒFƒNƒg‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+
+End Sub
+'******************************************************************************
+'*    ”r‘¼§Œä
+'******************************************************************************
+Public Function gblnHaita() As Boolean
+ Dim strSQL As String
+ 
+On Error GoTo errgblnHaita
+
+    gblnHaita = False
+    
+    odbDatabase.Parameters.Add "InstrSikibetu", "080", ORAPARM_INPUT                  '¯•ÊƒR[ƒh
+    odbDatabase.Parameters.Add "InstrProgramID", cpubMyPrjName, ORAPARM_INPUT         'ƒvƒƒOƒ‰ƒ€‚h‚c
+    odbDatabase.Parameters.Add "InstrKeyInfo1", gstrKeyInfo1, ORAPARM_INPUT           'ƒL[î•ñ(ĞˆõƒR[ƒh‚P)
+    odbDatabase.Parameters.Add "InstrKeyInfo2", gstrKeyInfo2, ORAPARM_INPUT           'ƒL[î•ñ(ĞˆõƒR[ƒh‚Q)
+    odbDatabase.Parameters.Add "InstrComputerMei", gstrCommandLine(5), ORAPARM_INPUT  'ƒRƒ“ƒsƒ…[ƒ^–¼
+    odbDatabase.Parameters.Add "InstrOperatorID", gstrCommandLine(1), ORAPARM_INPUT   'ƒIƒyƒŒ[ƒ^‚h‚c
+
+    'SQL•¶ì¬
+             strSQL = "BEGIN QPAP_CEnt080PkG.QPAP_CEnt080Lock("
+    strSQL = strSQL & " :InstrSikibetu"
+    strSQL = strSQL & ",:InstrProgramID"
+    strSQL = strSQL & ",:InstrKeyInfo1"
+    strSQL = strSQL & ",:InstrKeyInfo2"
+    strSQL = strSQL & ",:InstrComputerMei"
+    strSQL = strSQL & ",:InstrOperatorID);END;"
+
+    'SPÀs
+    odbDatabase.DbexecuteSQL (strSQL)
+
+    'ƒIƒuƒWƒFƒNƒg‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+    
+    gblnHaita = True
+    
+    Exit Function
+    
+errgblnHaita:
+'ƒGƒ‰[ˆ—
+    
+    '”r‘¼ˆ—’†ƒGƒ‰[ƒƒbƒZ[ƒW•\¦
+    If odbDatabase.LastServerErr >= 20000 Then   'Msg = ‘¼‚Ì’[––‚Åˆ—’†‚Å‚·BÄ“xÀs‚µ‚Ä‰º‚³‚¢
+'        frmQPAV_CEnt080!lblMsg.Caption = "WHOE11 " & gstrGetCodeMeisyo(odbDatabase, "E11", "WHO")  'yWin2000‘Î‰zDel by Yokoyama@NBC 2004/04/16
+        frmQPAV_CEnt080.lblMsg.Caption = "WHOE11 " & gstrGetCodeMeisyo(odbDatabase, "E11", "WHO")   'yWin2000‘Î‰zAdd by Yokoyama@NBC 2004/04/16
+        
+        odbDatabase.LastServerErrReset                      '´×°Ø¾¯Ä
+        
+        gblnHaitaFlg = True
+    Else
+        'ƒGƒ‰[ƒƒbƒZ[ƒW•\¦
+       Call gsubDBErrorMessage(gstrCommandLine(8), cpubMyPrjName, _
+                              gstrCommandLine(3), gstrCommandLine(5), gstrGetErrDateFormat)
+    End If
+                           
+    'ƒIƒuƒWƒFƒNƒg‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+
+End Function
+'******************************************************************************
+'*    ‰Šúˆ——pSP (ƒVƒXƒeƒ€“ú•t)
+'******************************************************************************
+Public Sub gsubSPInit()
+ Dim strSQL As String
+ 
+On Error GoTo errSPInit
+ 
+    'ƒVƒXƒeƒ€“ú•t
+    odbDatabase.Parameters.Add "OtStrSysDate", Space(8), ORAPARM_OUTPUT
+    odbDatabase.Parameters("OtStrSysDate").ServerType = ORATYPE_VARCHAR2
+    
+    'SQL•¶‚Ìì¬
+             strSQL = "BEGIN QPAP_CEnt080PkG.QPAP_CEnt080Init("
+    strSQL = strSQL & " :OtStrSysDate); END;"
+            
+    'SPÀs
+    odbDatabase.DbexecuteSQL (strSQL)
+            
+    gstrSysDate = odbDatabase.Parameters("OtStrSysDate")
+        
+    'ƒIƒuƒWƒFƒNƒg‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+    
+    Exit Sub
+            
+errSPInit:
+'ƒGƒ‰[ˆ—
+    
+    'ƒGƒ‰[ƒƒbƒZ[ƒW•\¦
+    Call gsubDBErrorMessage(gstrCommandLine(8), cpubMyPrjName, _
+                           gstrCommandLine(3), gstrCommandLine(5), gstrGetErrDateFormat)
+    'ƒIƒuƒWƒFƒNƒg‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+        
+End Sub
+'******************************************************************************
+'*    •ÔÏ—\’è•\–¾×ì¬ (‹Œˆ—@—Z‘“ú‚ª 2000/03/01 ˆÈ‘O‚Ìˆ—)
+'******************************************************************************
+Public Sub gSubMakeMeisaiKyuu()
+ Dim strYuusibi         As String  '—Z‘“ú
+ Dim dblRiritu          As Double  'Œ_–ñ—˜—¦
+ Dim intHensaiTuki      As Integer '•ÔÏŒ”
+ Dim lngKyuuyoHensaiAll As Long    '‹‹—^•ÔÏŠz(‘Šz)
+ Dim lngSyouyoHensaiAll As Long    'Ü—^•ÔÏŠz(‘Šz)
+ Dim strSyouyoDate1     As String  'Ü—^x•¥“ú‚P
+ Dim strSyouyoDate2     As String  'Ü—^x•¥“ú‚Q
+
+'--ƒ[ƒN---------------------
+ Dim i                       As Integer
+ Dim intKyuuyoCNT            As Integer  ' ‹‹—^‚ª‘æ‰½‰ñ–Ú‚©‚Ì”š
+ Dim intSyouyoCNT            As Integer  ' Ü—^‚ª‘æ‰½‰ñ–Ú‚©‚Ì”š
+ Dim intNenKBN               As Integer  '”N‹æ•ª
+ Dim intKBN                  As Integer  '‹æ•ª
+ Dim strHensaiKijitu         As String   '•ÔÏŠú“ú
+ Dim strSyouyoKijitu         As String   'Ü—^Šú“ú
+ Dim lngKyuuyoTeigaku        As Long     '‹‹—^’èŠz•ÔÏŠz_WORK
+ Dim lngKyuuyoZan_1          As Long     '‹‹—^‘æ1c‚_WORK
+ Dim lngKyuuyoHensaiZandaka  As Long     '‹‹—^•ÔÏc‚
+ Dim lngSyouyoTeigaku        As Long     'Ü—^’èŠz•ÔÏŠz_WORK
+ Dim lngSyouyoZan_1          As Long     'Ü—^‘æ1c‚_WORK
+ Dim lngSyouyoHensaiZandaka  As Long     'Ü—^•ÔÏc‚
+ Dim curTeigaku_0            As Currency '’èŠz_WORK0
+ Dim curTeigaku_1            As Currency '’èŠz_WORK1
+ Dim curTeigaku_2            As Currency '’èŠz_WORK2
+ Dim intSyouyoHensaiKaisuu   As Integer  'Ü—^•ÔÏ‰ñ”
+ Dim strSyouyoSiharaiTuki    As String   'Ü—^x•¥Œ
+ Dim strHensaiKijitu2        As String   '•ÔÏŠú“ú2
+ Dim intHensaiKikan          As Integer  '•ÔÏŠúŠÔ
+ Dim strZenkaiSyouyoHensaiBi As String   '‘O‰ñÜ—^•ÔÏ“ú
+ Dim intSyouyoHensaiKikan    As Integer  'Ü—^•ÔÏŠúŠÔ
+ Dim dblRisoku1              As Double   '—˜‘§
+ Dim dblRisoku2              As Double   '—˜‘§‚Q
+ Dim dblKeiyakuriritu        As Double   'Œ_–ñ—˜—¦WK
+
+ Dim Y As Integer
+    
+ Dim intNenKBN_WK           As Integer
+
+ 'ƒ\[ƒg‚Ég—p
+ Dim lngSortKey()       As Long
+
+On Error GoTo asd
+
+    '•Ï”‚ÉƒZƒbƒg
+    strYuusibi = Format$(Mid$(gstrYusiYMD, 1, 4) & "/" & Mid$(gstrYusiYMD, 5, 2) & "/" & Mid$(gstrYusiYMD, 7, 2), "YYYY/MM/DD") '—Z‘“ú
+    dblRiritu = CDbl(gstrRiritu) * 0.01            'Œ_–ñ—˜—¦
+    intHensaiTuki = CInt(gstrHensaiTukisu)               '•ÔÏŒ”
+    lngKyuuyoHensaiAll = CLng(gstrKyuyoHensaiAll)          '‹‹—^•ÔÏŠz(‘Šz)
+    lngSyouyoHensaiAll = CLng(gstrSyoyoHensaiAll)         'Ü—^•ÔÏŠz(‘Šz)
+''''    gstrBonusMD1 = Format$(Left$(gstrBonusMD1, 2) & Right$(gstrBonusMD1, 2), "MMDD")                  'Ü—^x•¥Œ“ú‚P
+''''    gstrBonusMD2 = Format$(Left$(gstrBonusMD2, 2) & Right$(gstrBonusMD2, 2), "MMDD")                  'Ü—^x•¥Œ“ú2
+''''    lngKyuuyoHensai = CLng(gfncstrDlm2(gstrYuusiDat, 9))             '–ˆŒ‹‹—^•ÔÏŠz
+''''    lngSyouyoHensai = CLng(gfncstrDlm2(gstrYuusiDat, 11))            '–ˆŒÜ—^•ÔÏŠz
+    
+''''''''2001/11/28
+''''    'Ü—^x•¥“ú”»’è
+''''''    If Format(Date, "MMDD") < gstrBonusMD1 Then
+''''    If Format(Date, "MMDD") <= gstrBonusMD1 Then
+''''        'Ü—^x•¥Œ“ú‚Q‚ğÜ—^x•¥Œ“ú‚P‚É
+''''''        strSyouyoDate1 = Format$(Date, "YYYY") & "/" & gstrBonusMD2
+''''''        strSyouyoDate2 = Format$(DateAdd("YYYY", -1, Date), "YYYY") & "/" & gstrBonusMD1
+''''        strSyouyoDate1 = Format$(Date, "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+''''        strSyouyoDate2 = Format$(DateAdd("YYYY", 0, Date), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+'''''    ElseIf Format(Date, "MMDD") > gstrBonusMD2 Then
+''''    ElseIf Format(Date, "MMDD") >= gstrBonusMD2 Then
+''''        'Ü—^x•¥Œ“ú‚Q‚ğÜ—^x•¥Œ“ú‚P‚É
+''''''        strSyouyoDate1 = Format$(Date, "YYYY") & "/" & gstrBonusMD2
+''''''        strSyouyoDate2 = Format$(DateAdd("YYYY", -1, Date), "YYYY") & "/" & gstrBonusMD1
+''''        strSyouyoDate1 = Format$(Date, "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+''''        strSyouyoDate2 = Format$(DateAdd("YYYY", 0, Date), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+''''    ElseIf Format(Date, "MMDD") > gstrBonusMD1 And Format(Date, "MMDD") < gstrBonusMD2 Then
+''''        strSyouyoDate1 = Format$(Date, "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+''''        strSyouyoDate2 = Format$(Date, "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+''''    End If
+    If Format(strYuusibi, "MMDD") >= gstrBonusMD1 Then
+        If Format(strYuusibi, "MMDD") >= gstrBonusMD2 Then
+            strSyouyoDate1 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+            strSyouyoDate2 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+        Else
+            If Format(strYuusibi, "MM") = Left(gstrBonusMD2, 2) Then '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+                strSyouyoDate1 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2) ''''2001/12/12’Ç‰Á'
+                strSyouyoDate2 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2) ''''2001/12/12’Ç‰Á
+            Else '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+                strSyouyoDate1 = Format$(DateAdd("yyyy", 0, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+                strSyouyoDate2 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+            End If '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+        End If
+    Else
+        If Format(strYuusibi, "MM") = Left(gstrBonusMD1, 2) Then '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+            strSyouyoDate1 = Format$(DateAdd("yyyy", 0, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2) ''''2001/12/12’Ç‰Á
+            strSyouyoDate2 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2) ''''2001/12/12’Ç‰Á
+        Else '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+            strSyouyoDate1 = Format$(DateAdd("yyyy", 0, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+            strSyouyoDate2 = Format$(DateAdd("yyyy", 0, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+        End If '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+    End If
+
+
+    intSyouyoHensaiKikan = DateDiff("M", strSyouyoDate1, strSyouyoDate2)
+    strZenkaiSyouyoHensaiBi = strYuusibi
+
+    intNenKBN = 1
+    intKyuuyoCNT = 1
+    intSyouyoCNT = 1
+    
+    If intHensaiTuki <= 0 Then
+        intHensaiTuki = 1
+    End If
+    
+    'Ü—^•ÔÏ‰ñ”
+    intSyouyoHensaiKaisuu = Fix(intHensaiTuki / 6)
+    For i = 1 To intHensaiTuki Mod 6
+        If DatePart("M", DateAdd("M", i, strYuusibi)) = DatePart("M", strSyouyoDate1) Or DatePart("M", DateAdd("M", i, strYuusibi)) = DatePart("M", strSyouyoDate2) Then
+            intSyouyoHensaiKaisuu = intSyouyoHensaiKaisuu + 1
+        End If
+    Next i
+    If intSyouyoHensaiKaisuu <= 0 Then
+        intSyouyoHensaiKaisuu = 1
+    End If
+  
+    strHensaiKijitu = DateAdd("M", 1, CVDate(Format$(strYuusibi, "YYYY/MM/25")))
+  
+    If DateDiff("Y", strYuusibi, DateAdd("Y", -1, CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate1, "MM") & "/01"))) >= 0 Then     'ˆêƒ–Œ‘O
+        strSyouyoKijitu = CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate1, "MM/dd"))
+    ElseIf DateDiff("Y", strYuusibi, DateAdd("Y", -1, CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate2, "MM") & "/01"))) >= 0 Then 'ˆêƒ–Œ‘O
+        strSyouyoKijitu = CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate2, "MM/dd"))
+    Else
+        strSyouyoKijitu = DateAdd("YYYY", 1, CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate1, "MM/dd")))
+    End If
+
+    lngKyuuyoHensaiZandaka = lngKyuuyoHensaiAll
+    lngSyouyoHensaiZandaka = lngSyouyoHensaiAll
+
+    '----------------------–ˆŒx•¥ŠzŒvZ---------------------------
+    If Val(Format(strYuusibi, "dd")) >= 11 Then
+        intHensaiKikan = 30
+    Else
+        intHensaiKikan = 45
+    End If
+    dblRisoku2 = (lngKyuuyoHensaiAll * dblRiritu * intHensaiKikan / 12 / 30)
+    dblRisoku1 = Int(dblRisoku2)
+    If intHensaiTuki <= 1 Then
+        lngKyuuyoTeigaku = dblRisoku1 + lngKyuuyoHensaiAll
+    Else
+        curTeigaku_0 = 0
+        curTeigaku_1 = Abs(-Pmt(dblRiritu / 12, intHensaiTuki - 1, lngKyuuyoHensaiAll, 0, 0))
+        curTeigaku_2 = Abs(-Pmt(dblRiritu / 12, intHensaiTuki - 1, lngKyuuyoHensaiAll - curTeigaku_1 + dblRisoku2, 0, 0))
+        While Abs(curTeigaku_1 - curTeigaku_2) > 0.001 Or Abs(curTeigaku_0 - curTeigaku_2) > 0.001
+            curTeigaku_0 = curTeigaku_1: curTeigaku_1 = curTeigaku_2
+            curTeigaku_2 = Abs(-Pmt(dblRiritu / 12, intHensaiTuki - 1, lngKyuuyoHensaiAll - (((curTeigaku_0) + (curTeigaku_1)) / 2) + dblRisoku2, 0, 0))
+        Wend
+        lngKyuuyoTeigaku = Fix(Abs(((curTeigaku_0) + (curTeigaku_1) + (curTeigaku_2)) / 3))
+    End If
+
+    If intSyouyoHensaiKikan = 6 Then
+        If Month(DateAdd("Y", 1, strSyouyoKijitu)) <> Month(strSyouyoKijitu) Then
+            dblRisoku2 = (lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21)) / 2 / 180)
+        Else
+            dblRisoku2 = (lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21) + (Day(strSyouyoKijitu) - 1 - 30)) / 2 / 180)
+        End If
+        dblRisoku1 = Int(dblRisoku2)
+    Else
+        dblRisoku2 = (lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21) + ((10) - 1 - 30)) / 2 / 180)
+        dblRisoku1 = Int(dblRisoku2)
+    End If
+
+    If intSyouyoHensaiKaisuu <= 1 Then
+        lngSyouyoTeigaku = dblRisoku1 + lngSyouyoHensaiAll
+    Else
+        curTeigaku_0 = 0
+        curTeigaku_1 = Abs(-Pmt(dblRiritu / 2, intSyouyoHensaiKaisuu - 1, lngSyouyoHensaiAll, 0, 0))
+        curTeigaku_2 = Abs(-Pmt(dblRiritu / 2, intSyouyoHensaiKaisuu - 1, lngSyouyoHensaiAll - curTeigaku_1 + dblRisoku2, 0, 0))
+        While Abs(curTeigaku_1 - curTeigaku_2) > 0.001 Or Abs(curTeigaku_0 - curTeigaku_2) > 0.001
+            curTeigaku_0 = curTeigaku_1: curTeigaku_1 = curTeigaku_2
+            curTeigaku_2 = Abs(-Pmt(dblRiritu / 2, intSyouyoHensaiKaisuu - 1, lngSyouyoHensaiAll - (((curTeigaku_0) + (curTeigaku_1)) / 2) + dblRisoku2, 0, 0))
+        Wend
+        lngSyouyoTeigaku = Fix(Abs(((curTeigaku_0) + (curTeigaku_1) + (curTeigaku_2)) / 3))
+        If intSyouyoHensaiKikan <> 6 Then
+            lngSyouyoTeigaku = gfnclngSyouyoHensai(CDbl(CDate(strYuusibi)), dblRiritu, strSyouyoDate1, strSyouyoDate2, intSyouyoHensaiKaisuu, lngSyouyoHensaiAll, dblRisoku1, lngSyouyoTeigaku)
+        End If
+    End If
+    '-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    
+    'Ÿƒ[ƒNƒe[ƒuƒ‹“o˜^—pƒf[ƒ^ì¬
+    i = 1
+    
+    '* ‚P‰ñ–Ú‚Ì‹‹—^•ÔÏ—p‚Ìƒf[ƒ^‚ğ’Ç‰Á‚·‚é
+    If lngKyuuyoHensaiZandaka > 0 Then
+        ReDim Preserve gstrYoteihyouAry(i)
+        With gstrYoteihyouAry(i)
+            .intPageKbn = Fix((intNenKBN + 2) / 3) ''''''''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+            .intNenKBN = intNenKBN ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''”N‹æ•ª
+            .strKbn = "‹‹—^" & Space$(3 - Len(Format$(1, "###"))) & Format$(1, "###") '''''''''''''''‹æ•ª
+            
+            
+            .strKijitu = gvarCnvDate(1, strHensaiKijitu) ''''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+            If strYuusibi < "2000/03/01" Then
+                If Mid$(.strKijitu, 1, 2) > "11" Then
+                    If Mid$(.strKijitu, 4, 5) = " 4.30" Then
+                        .strKijitu = Mid$(.strKijitu, 1, 2) & ". 6.15"                                      '04 •ÔÏŠú“ú
+                    ElseIf Mid$(.strKijitu, 4, 5) = "10.31" Then
+                        .strKijitu = Mid$(.strKijitu, 1, 2) & ".12. 1"        '04 •ÔÏŠú“ú
+                    End If
+                End If
+            End If
+            
+            .strHensai = lngKyuuyoTeigaku 'ŒÅ’è '''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+            If Val(Format(strYuusibi, "dd")) >= 11 Then
+                intHensaiKikan = 30
+            Else
+                intHensaiKikan = 45
+            End If
+            dblKeiyakuriritu = dblRiritu * 100
+            .strKyuRsk = Fix(lngKyuuyoHensaiAll * dblKeiyakuriritu * intHensaiKikan / 12 / 3000)
+            .strKyuGan = .strHensai - .strKyuRsk
+            If intHensaiTuki = 1 Then
+                .strKyuGan = lngKyuuyoHensaiZandaka '''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+                .strHensai = lngKyuuyoHensaiZandaka + .strKyuRsk ''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+            End If
+            lngKyuuyoHensaiZandaka = lngKyuuyoHensaiZandaka - .strKyuGan '‹‹—^•ÔÏc‚ ŒvZ
+            .strKyuZan = lngKyuuyoHensaiZandaka '''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^c‚
+            lngKyuuyoZan_1 = .strKyuZan
+            .strZandaka = " "   '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''c‚
+            .strSyoGan = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+            .strSyoRsk = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+            .strSyoZan = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^c‚
+            intKyuuyoCNT = intKyuuyoCNT + 1
+            i = i + 1
+        End With
+    End If
+    
+    '* ‚P‰ñ–Ú‚Ì‹‹—^•ÔÏŒ‚ÆÜ—^•ÔÏŒ‚ªˆê’v‚·‚éê‡A‚P‰ñ–Ú‚ÌÜ—^•ÔÏ—p‚Ìƒf[ƒ^‚ğ’Ç‰Á‚·‚é
+    If (DatePart("M", strHensaiKijitu) = DatePart("M", strSyouyoDate1) Or DatePart("M", strHensaiKijitu) = DatePart("M", strSyouyoDate2)) And lngSyouyoHensaiZandaka > 0 Then
+        ReDim Preserve gstrYoteihyouAry(i)
+        With gstrYoteihyouAry(i)
+            If lngKyuuyoTeigaku > 0 Then
+                .intPageKbn = Fix((intNenKBN + 2) / 3)
+            Else
+                .intPageKbn = 1 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+            End If
+            .intNenKBN = intNenKBN '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''”N‹æ•ª
+            .strKbn = "Ü—^" & String$(3 - Len(Format$(intSyouyoCNT, "###")), "*") & Format$(intSyouyoCNT, "###") ''''''''''''‹æ•ª
+            
+            .strKijitu = gvarCnvDate(1, strSyouyoKijitu) '''''''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+            If strYuusibi < "2000/03/01" Then
+                If Mid$(.strKijitu, 1, 2) > "11" Then
+                    If Mid$(.strKijitu, 4, 5) = " 4.30" Then
+                        .strKijitu = Mid$(.strKijitu, 1, 2) & ". 6.15"                                      '04 •ÔÏŠú“ú
+                    ElseIf Mid$(.strKijitu, 4, 5) = "10.31" Then
+                        .strKijitu = Mid$(.strKijitu, 1, 2) & ".12. 1"        '04 •ÔÏŠú“ú
+                    End If
+                End If
+            End If
+            
+            .strHensai = lngSyouyoTeigaku 'ŒÅ’èiÜ—^j'''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+            If intSyouyoHensaiKikan = 6 Then
+                If Month(DateAdd("Y", 1, strSyouyoKijitu)) <> Month(strSyouyoKijitu) Then
+                    dblRisoku2 = lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21)) / 2 / 180
+                    .strSyoRsk = Int(dblRisoku2) '''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                Else
+                    dblRisoku2 = lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21) + (Day(strSyouyoKijitu) - 1 - 30)) / 2 / 180
+                    .strSyoRsk = Int(dblRisoku2) '''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                End If
+            Else
+                dblRisoku2 = lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21) + ((10) - 1 - 30)) / 2 / 180
+                .strSyoRsk = Int(dblRisoku2) '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+            End If
+            .strSyoGan = .strHensai - .strSyoRsk '''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+            If intSyouyoHensaiKaisuu = 1 Then
+                .strSyoGan = lngSyouyoHensaiZandaka ''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+                .strHensai = lngSyouyoHensaiZandaka + .strSyoRsk '''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+            End If
+            lngSyouyoHensaiZandaka = lngSyouyoHensaiZandaka - .strSyoGan 'Ü—^•ÔÏc‚ ŒvZ
+            .strSyoZan = lngSyouyoHensaiZandaka ''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^c‚
+            lngSyouyoZan_1 = .strSyoZan
+            .strZandaka = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''c‚
+            .strKyuGan = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+            .strKyuRsk = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^—˜‘§
+            .strKyuZan = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^c‚
+            strZenkaiSyouyoHensaiBi = strSyouyoKijitu
+            intSyouyoCNT = intSyouyoCNT + 1
+            i = i + 1
+        End With
+    End If
+    
+    
+    strHensaiKijitu2 = strHensaiKijitu
+    strHensaiKijitu = DateAdd("M", 1, strHensaiKijitu)
+
+    ' ŸŸ‚Q‰ñ–ÚˆÈ~‚Ìƒf[ƒ^’Ç‰Á
+    intNenKBN_WK = 2
+    'While (I <= intHensaiTuki Or intSyouyoCNT <= intSyouyoHensaiKaisuu) And (lngKyuuyoHensaiZandaka > 0 Or lngSyouyoHensaiZandaka > 0)
+    While (intKyuuyoCNT <= intHensaiTuki Or intSyouyoCNT <= intSyouyoHensaiKaisuu) And (lngKyuuyoHensaiZandaka > 0 Or lngSyouyoHensaiZandaka > 0)
+        '* ‹‹—^‚Ìƒf[ƒ^’Ç‰Á
+        If lngKyuuyoHensaiZandaka > 0 Then
+            ReDim Preserve gstrYoteihyouAry(i)
+            With gstrYoteihyouAry(i)
+            
+                .intPageKbn = Fix((intNenKBN + 2) / 3) '''''''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+                .intNenKBN = intNenKBN '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''”N‹æ•ª
+                .strKbn = "‹‹—^" & Space$(3 - Len(Format$(intKyuuyoCNT, "###"))) & Format$(intKyuuyoCNT, "###") ''''''''''''''‹æ•ª
+                
+                .strKijitu = gvarCnvDate(1, strHensaiKijitu) '''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+                If strYuusibi < "2000/03/01" Then
+                    If Mid$(.strKijitu, 1, 2) > "11" Then
+                        If Mid$(.strKijitu, 4, 5) = " 4.30" Then
+                            .strKijitu = Mid$(.strKijitu, 1, 2) & ". 6.15"                                      '04 •ÔÏŠú“ú
+                        ElseIf Mid$(.strKijitu, 4, 5) = "10.31" Then
+                            .strKijitu = Mid$(.strKijitu, 1, 2) & ".12. 1"        '04 •ÔÏŠú“ú
+                        End If
+                    End If
+                End If
+                
+                .strHensai = lngKyuuyoTeigaku 'ŒÅ’è ''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                .strKyuRsk = Fix(lngKyuuyoHensaiZandaka * dblRiritu / 12) ''''''''''''''''''''''''''''''‹‹—^—˜‘§
+                .strKyuGan = .strHensai - .strKyuRsk '''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+                ' ÅI‰ñ‚Ìê‡
+                If intHensaiTuki = intKyuuyoCNT Then
+                    .strKyuGan = lngKyuuyoHensaiZandaka ''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+                    .strHensai = lngKyuuyoHensaiZandaka + .strKyuRsk '''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                End If
+                lngKyuuyoHensaiZandaka = lngKyuuyoHensaiZandaka - .strKyuGan '‹‹—^•ÔÏc‚ ŒvZ
+                .strKyuZan = lngKyuuyoHensaiZandaka ''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^c‚
+                .strZandaka = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏc‚
+                .strSyoGan = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+                .strSyoRsk = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                .strSyoZan = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^c‚
+                intKyuuyoCNT = intKyuuyoCNT + 1
+                i = i + 1
+            End With
+        End If
+        
+        '* “–ŠYŒ‚ÆÜ—^•ÔÏŒ‚ªˆê’v‚·‚éê‡AÜ—^•ÔÏ—p‚Ìƒf[ƒ^‚à’Ç‰Á‚·‚é
+        If (DatePart("M", strHensaiKijitu) = DatePart("M", strSyouyoDate1) Or DatePart("M", strHensaiKijitu) = DatePart("M", strSyouyoDate2)) And lngSyouyoHensaiZandaka > 0 Then
+            ReDim Preserve gstrYoteihyouAry(i)
+            With gstrYoteihyouAry(i)
+                
+                If lngKyuuyoTeigaku > 0 Then
+                    .intPageKbn = Fix((intNenKBN + 2) / 3) '''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+                Else
+                    .intPageKbn = 1 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+                End If
+                .intNenKBN = intNenKBN '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''”N‹æ•ª
+                .strKbn = "Ü—^" & String$(3 - Len(Format$(intSyouyoCNT, "###")), "*") & Format$(intSyouyoCNT, "###") ''''''''‹æ•ª
+                '* ¡‰ñ‚ÌÜ—^•ÔÏ“ú‚ÌZo
+                If Month(strHensaiKijitu) = Month(strSyouyoDate1) Then
+                    strSyouyoKijitu = CVDate(Format$(strHensaiKijitu, "YYYY/") & Format$(strSyouyoDate1, "MM/dd"))
+                Else
+                    strSyouyoKijitu = CVDate(Format$(strHensaiKijitu, "YYYY/") & Format$(strSyouyoDate2, "MM/dd"))
+               End If
+                .strKijitu = gvarCnvDate(1, strSyouyoKijitu) '''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+                
+                .strKijitu = gvarCnvDate(1, strSyouyoKijitu) '''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+                If strYuusibi < "2000/03/01" Then
+                    If Mid$(.strKijitu, 1, 2) > "11" Then
+                        If Mid$(.strKijitu, 4, 5) = " 4.30" Then
+                            .strKijitu = Mid$(.strKijitu, 1, 2) & ". 6.15"                                      '04 •ÔÏŠú“ú
+                        ElseIf Mid$(.strKijitu, 4, 5) = "10.31" Then
+                            .strKijitu = Mid$(.strKijitu, 1, 2) & ".12. 1"        '04 •ÔÏŠú“ú
+                        End If
+                    End If
+                End If
+                
+                .strHensai = lngSyouyoTeigaku 'ŒÅ’èiÜ—^j'''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                If intSyouyoHensaiKikan = 6 Then
+                    If intSyouyoCNT = 1 Then
+                        If Month(DateAdd("Y", 1, strSyouyoKijitu)) <> Month(strSyouyoKijitu) Then
+                            dblRisoku2 = lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21)) / 2 / 180        '‰‰ñ—˜‘§
+                            .strSyoRsk = Int(dblRisoku2) '''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                        Else
+                            dblRisoku2 = lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21) + (Day(strSyouyoKijitu) - 1 - 30)) / 2 / 180 '‰‰ñ—˜‘§
+                            .strSyoRsk = Int(dblRisoku2) '''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                        End If
+                    Else
+                        dblRisoku2 = lngSyouyoHensaiZandaka * dblRiritu / 2
+                        .strSyoRsk = Int(dblRisoku2) '''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                    End If
+                Else
+                    If intSyouyoCNT = 1 Then
+                        dblRisoku2 = lngSyouyoHensaiAll * dblRiritu * (DateDiff("M", strYuusibi, strSyouyoKijitu) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21) + ((10) - 1 - 30)) / 2 / 180 '‰‰ñ—˜‘§
+                        .strSyoRsk = Int(dblRisoku2) '''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                    Else
+                        dblRisoku2 = lngSyouyoHensaiZandaka * dblRiritu * DateDiff("M", strZenkaiSyouyoHensaiBi, strSyouyoKijitu) / 12
+                        .strSyoRsk = Int(dblRisoku2) '''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                    End If
+                End If
+                .strSyoGan = .strHensai - .strSyoRsk '''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ´–{
+                If intSyouyoHensaiKaisuu = intSyouyoCNT Then
+                    .strSyoGan = lngSyouyoHensaiZandaka ''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+                    .strHensai = lngSyouyoHensaiZandaka + .strSyoRsk '''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                End If
+                lngSyouyoHensaiZandaka = lngSyouyoHensaiZandaka - .strSyoGan 'Ü—^•ÔÏc‚ ŒvZ
+                .strSyoZan = lngSyouyoHensaiZandaka ''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^c‚
+                If intSyouyoCNT = 1 Then
+                    lngKyuuyoZan_1 = .strSyoZan
+                End If
+                .strZandaka = " " 'c‚
+                .strKyuGan = " " '‹‹—^Œ³–{
+                .strKyuRsk = " " '‹‹—^—˜‘§
+                .strKyuZan = " " '‹‹—^c‚
+                strZenkaiSyouyoHensaiBi = strSyouyoKijitu
+                intSyouyoCNT = intSyouyoCNT + 1
+                i = i + 1
+            End With
+        End If
+        
+        strHensaiKijitu2 = strHensaiKijitu
+        strHensaiKijitu = DateAdd("M", 1, strHensaiKijitu)
+        
+        
+''''2001/12/07  •s—vi•\¦‚Ì‚İVÜ—^“úAŒvZ‚Í‹ŒÜ—^“ú‚Ås‚¤
+''''        '«««2001/11/28 Ü—^“ú‚Í2000/03‚ğ‹«‚É•Ï‚í‚é«««
+''''        If strYuusibi < "2000/03/01" Then
+''''            If strHensaiKijitu > "2000/03/01" Then
+''''                If strSyouyoDate1 > strSyouyoDate2 Then
+''''                    strSyouyoDate1 = Mid$(strSyouyoDate1, 1, 5) & "12/01"
+''''                    strSyouyoDate2 = Mid$(strSyouyoDate2, 1, 5) & "06/15"
+''''                Else
+''''                    strSyouyoDate1 = Mid$(strSyouyoDate1, 1, 5) & "06/15"
+''''                    strSyouyoDate2 = Mid$(strSyouyoDate2, 1, 5) & "12/01"
+''''                End If
+''''            End If
+''''        End If
+''''        'ªªª2001/11/28 Ü—^“ú‚Í2000/03‚ğ‹«‚É•Ï‚í‚éªªª
+''''2001/12/07  •s—vi•\¦‚Ì‚İVÜ—^“úAŒvZ‚Í‹ŒÜ—^“ú‚Ås‚¤
+        
+        
+        ' ‚P‚Q‰ñiŸ‚ªÜ—^‚Ì‚ÍAŸ‚ÌÜ—^‚Ü‚ÅŠÜ‚Ü‚ê‚éj–ˆ‚ÉA
+        ' •ÔÏ—\’è•\‚ÉŒrü‚ğo—Í‚³‚¹‚é‚½‚ß‚Ì‹æ•ª‚ÌƒJƒEƒ“ƒgƒAƒbƒv
+        If ((intNenKBN_WK) Mod 12) = 0 Then
+            intNenKBN = intNenKBN + 1
+        End If
+        intNenKBN_WK = intNenKBN_WK + 1
+    
+    Wend
+    
+    '¡gstrYoteihyouAry”z—ñƒ\[ƒg...Ü—^ƒf[ƒ^‚ª‚¸‚ê‚Ä‚¢‚é‚½‚ß¡
+    For Y = 1 To UBound(gstrYoteihyouAry)
+        With gstrYoteihyouAry(Y)
+            ReDim Preserve lngSortKey(Y)
+            ReDim Preserve gstrYoteihyouSort(Y)
+            lngSortKey(Y) = CLng(Format(Mid$(.strKijitu, 1, 2), "00") & Format(Mid$(.strKijitu, 4, 2), "00") & Format(Mid$(.strKijitu, 7, 2), "00"))
+            gstrYoteihyouSort(Y).intNenKBN = gstrYoteihyouAry(Y).intNenKBN
+            gstrYoteihyouSort(Y).intPageKbn = gstrYoteihyouAry(Y).intPageKbn
+            gstrYoteihyouSort(Y).strHensai = gstrYoteihyouAry(Y).strHensai
+            gstrYoteihyouSort(Y).strKbn = gstrYoteihyouAry(Y).strKbn
+            gstrYoteihyouSort(Y).strKijitu = gstrYoteihyouAry(Y).strKijitu
+            gstrYoteihyouSort(Y).strKyuGan = gstrYoteihyouAry(Y).strKyuGan
+            gstrYoteihyouSort(Y).strKyuRsk = gstrYoteihyouAry(Y).strKyuRsk
+            gstrYoteihyouSort(Y).strKyuZan = gstrYoteihyouAry(Y).strKyuZan
+            gstrYoteihyouSort(Y).strSyoGan = gstrYoteihyouAry(Y).strSyoGan
+            gstrYoteihyouSort(Y).strSyoRsk = gstrYoteihyouAry(Y).strSyoRsk
+            gstrYoteihyouSort(Y).strSyoZan = gstrYoteihyouAry(Y).strSyoZan
+            gstrYoteihyouSort(Y).strZandaka = gstrYoteihyouAry(Y).strZandaka
+        End With
+    Next Y
+    
+    For Y = 1 To UBound(gstrYoteihyouAry)
+        If Y <> 1 Then
+            If lngSortKey(Y) < lngSortKey(Y - 1) Then
+                gstrYoteihyouAry(Y).intNenKBN = gstrYoteihyouSort(Y - 1).intNenKBN
+                If gstrYoteihyouSort(Y).intNenKBN > gstrYoteihyouSort(Y - 1).intNenKBN Then
+                    gstrYoteihyouAry(Y).intNenKBN = gstrYoteihyouAry(Y).intNenKBN + 1
+                End If
+                
+                
+                gstrYoteihyouAry(Y).intPageKbn = gstrYoteihyouSort(Y - 1).intPageKbn
+                If gstrYoteihyouSort(Y).intPageKbn > gstrYoteihyouSort(Y - 1).intPageKbn Then
+                    gstrYoteihyouAry(Y).intPageKbn = gstrYoteihyouAry(Y).intPageKbn + 1
+                End If
+                               
+                gstrYoteihyouAry(Y).strHensai = gstrYoteihyouSort(Y - 1).strHensai
+                gstrYoteihyouAry(Y).strKbn = gstrYoteihyouSort(Y - 1).strKbn
+                gstrYoteihyouAry(Y).strKijitu = gstrYoteihyouSort(Y - 1).strKijitu
+                gstrYoteihyouAry(Y).strKyuGan = gstrYoteihyouSort(Y - 1).strKyuGan
+                gstrYoteihyouAry(Y).strKyuRsk = gstrYoteihyouSort(Y - 1).strKyuRsk
+                gstrYoteihyouAry(Y).strKyuZan = gstrYoteihyouSort(Y - 1).strKyuZan
+                gstrYoteihyouAry(Y).strSyoGan = gstrYoteihyouSort(Y - 1).strSyoGan
+                gstrYoteihyouAry(Y).strSyoRsk = gstrYoteihyouSort(Y - 1).strSyoRsk
+                gstrYoteihyouAry(Y).strSyoZan = gstrYoteihyouSort(Y - 1).strSyoZan
+                gstrYoteihyouAry(Y).strZandaka = gstrYoteihyouSort(Y - 1).strZandaka
+            
+                gstrYoteihyouAry(Y - 1).intNenKBN = gstrYoteihyouSort(Y).intNenKBN
+                gstrYoteihyouAry(Y - 1).intPageKbn = gstrYoteihyouSort(Y).intPageKbn
+                gstrYoteihyouAry(Y - 1).strHensai = gstrYoteihyouSort(Y).strHensai
+                gstrYoteihyouAry(Y - 1).strKbn = gstrYoteihyouSort(Y).strKbn
+                gstrYoteihyouAry(Y - 1).strKijitu = gstrYoteihyouSort(Y).strKijitu
+                gstrYoteihyouAry(Y - 1).strKyuGan = gstrYoteihyouSort(Y).strKyuGan
+                gstrYoteihyouAry(Y - 1).strKyuRsk = gstrYoteihyouSort(Y).strKyuRsk
+                gstrYoteihyouAry(Y - 1).strKyuZan = gstrYoteihyouSort(Y).strKyuZan
+                gstrYoteihyouAry(Y - 1).strSyoGan = gstrYoteihyouSort(Y).strSyoGan
+                gstrYoteihyouAry(Y - 1).strSyoRsk = gstrYoteihyouSort(Y).strSyoRsk
+                gstrYoteihyouAry(Y - 1).strSyoZan = gstrYoteihyouSort(Y).strSyoZan
+                gstrYoteihyouAry(Y - 1).strZandaka = gstrYoteihyouSort(Y).strZandaka
+            End If
+        End If
+    Next Y
+
+    '¡c‚Zo¡
+    lngKyuuyoHensaiZandaka = lngKyuuyoHensaiAll
+    lngSyouyoHensaiZandaka = lngSyouyoHensaiAll
+
+    For Y = 1 To UBound(gstrYoteihyouAry)
+        With gstrYoteihyouAry(Y)
+            If Trim$(.strKyuZan) <> "" Then
+                lngKyuuyoHensaiZandaka = .strKyuZan
+            End If
+            If Trim$(.strSyoZan) <> "" Then
+                lngSyouyoHensaiZandaka = .strSyoZan
+            End If
+            .strZandaka = lngKyuuyoHensaiZandaka + lngSyouyoHensaiZandaka 'c‚
+        End With
+    Next Y
+
+    Exit Sub
+
+asd:
+Exit Sub
+
+End Sub
+'******************************************************************************
+'*    •ÔÏ—\’è•\–¾×ì¬_V (—Z‘“ú‚ª2000/03/01ˆÈ~‚ÌŒvZ)
+'******************************************************************************
+Public Sub gSubMakeMeisai()
+ Dim strYuusibi         As String  '—Z‘“ú
+ Dim dblRiritu          As Double  'Œ_–ñ—˜—¦
+ Dim intHensaiTuki      As Integer '•ÔÏŒ”
+ Dim lngKyuuyoHensaiAll      As Long    '‹‹—^•ÔÏŠz(‘Šz)
+ Dim lngSyouyoHensaiAll      As Long    'Ü—^•ÔÏŠz(‘Šz)
+ Dim strSyouyoDate1          As String  'Ü—^x•¥“ú‚P
+ Dim strSyouyoDate2          As String  'Ü—^x•¥“ú‚Q
+ Dim lngKyuuyoHensai         As Long    '–ˆŒ‹‹—^•ÔÏŠz
+ Dim lngSyouyoHensai         As Long    '–ˆŒÜ—^•ÔÏŠz
+     
+'--ƒ[ƒN---------------------
+ Dim i                       As Integer
+ Dim intKyuuyoCNT            As Integer '‹‹—^‚ª‘æ‰½‰ñ–Ú‚©‚Ì”š
+ Dim intSyouyoCNT            As Integer 'Ü—^‚ª‘æ‰½‰ñ–Ú‚©‚Ì”š
+ Dim intNenKBN               As Integer '”N‹æ•ª
+ Dim intKBN                  As Integer '‹æ•ª
+ Dim strHensaiKijitu         As String  '•ÔÏŠú“ú
+ Dim strSyouyoKijitu         As String  'Ü—^Šú“ú
+ Dim lngKyuuyoHensaiZandaka  As Long    '‹‹—^•ÔÏc‚
+ Dim lngSyouyoHensaiZandaka  As Long    'Ü—^•ÔÏc‚
+ Dim intSyouyoHensaiKaisuu   As Integer 'Ü—^•ÔÏ‰ñ”
+ Dim strSyouyoSiharaiTuki    As String  'Ü—^x•¥Œ
+ Dim strZenkaiHensaiKijitu   As String  '‘O‰ñ•ÔÏŠú“ú
+ Dim intHensaiKikan          As Integer '•ÔÏŠúŠÔ
+ Dim strZenkaiSyouyoHensaiBi As String  '‘O‰ñÜ—^•ÔÏ“ú
+ Dim dblRisoku1              As Double  '—˜‘§
+ Dim dblRisoku2              As Double  '—˜‘§‚Q
+ Dim dblKeiyakuriritu        As Double  'Œ_–ñ—˜—¦
+    
+ Dim Y As Integer
+
+ Dim intNenKBN_WK            As Integer
+
+ Dim StrWork_20011110_1 As String
+ Dim StrWork_20011110_2 As String
+
+ 'ƒ\[ƒg‚Ég—p
+ Dim lngSortKey()       As Long
+
+On Error GoTo asd
+
+    '•Ï”‚ÉƒZƒbƒg
+    strYuusibi = Format$(Mid(gstrYusiYMD, 1, 4) & "/" & Mid$(gstrYusiYMD, 5, 2) & "/" & Mid$(gstrYusiYMD, 7, 2), "YYYY/MM/DD") '—Z‘“ú
+    dblRiritu = CDbl(gstrRiritu) * 0.01            'Œ_–ñ—˜—¦
+    intHensaiTuki = CInt(gstrHensaiTukisu)               '•ÔÏŒ”
+    lngKyuuyoHensaiAll = CLng(gstrKyuyoHensaiAll)          '‹‹—^•ÔÏŠz(‘Šz)
+    lngSyouyoHensaiAll = CLng(gstrSyoyoHensaiAll)         'Ü—^•ÔÏŠz(‘Šz)
+''''    gstrBonusMD1 = Format$(Left$(gstrBonusMD1, 2) & Right$(gstrBonusMD1, 2), "MMDD")                  'Ü—^x•¥Œ“ú‚P
+''''    gstrBonusMD2 = Format$(Left$(gstrBonusMD2, 2) & Right$(gstrBonusMD2, 2), "MMDD")                  'Ü—^x•¥Œ“ú2
+    lngKyuuyoHensai = CLng(gstrKyuyoHensaigaku)             '–ˆŒ‹‹—^•ÔÏŠz
+    lngSyouyoHensai = CLng(gstrSyoyoHensaigaku)            '–ˆŒÜ—^•ÔÏŠz
+    
+    '—Z‘“ú‚ª 2000/11/09 2000/11/10 ‚Ìê‡‚Í ’¼‹ß‚Ìƒ{[ƒiƒX“ú‚ğ‚UŒ‚P‚T‚É‚·‚é(’¼‹à‚Ì‚P‚QŒ‚P“ú‚Ìƒ{[ƒiƒX“ú‚ğ–³‹‚·‚é )
+    If strYuusibi = "2000/11/09" Or strYuusibi = "2000/11/10" Then
+        'gstrBonusMD1,gstrBonusMD1‚ğ‹t“]‚³‚¹‚é
+        strSyouyoDate1 = "2001/06/15"
+        strSyouyoDate2 = "2001/12/01"
+    Else
+''''''        'Ü—^x•¥“ú”»’è
+''''''''        If Format(Date, "MMDD") < gstrBonusMD1 Then
+''''''        If Format(Date, "MMDD") <= gstrBonusMD1 Then
+''''''            'Ü—^x•¥Œ“ú‚Q‚ğÜ—^x•¥Œ“ú‚P‚É
+''''''''            strSyouyoDate1 = Format$(Date, "YYYY") & "/" & gstrBonusMD2
+''''''''            strSyouyoDate2 = Format$(DateAdd("YYYY", -1, Date), "YYYY") & "/" & gstrBonusMD1
+''''''            strSyouyoDate1 = Format$(Date, "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+''''''            strSyouyoDate2 = Format$(DateAdd("YYYY", -1, Date), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+''''''''        ElseIf Format(Date, "MMDD") > gstrBonusMD2 Then
+''''''        ElseIf Format(Date, "MMDD") >= gstrBonusMD2 Then
+''''''            'Ü—^x•¥Œ“ú‚Q‚ğÜ—^x•¥Œ“ú‚P‚É
+''''''''            strSyouyoDate1 = Format$(Date, "YYYY") & "/" & gstrBonusMD2
+''''''''            strSyouyoDate2 = Format$(DateAdd("YYYY", -1, Date), "YYYY") & "/" & gstrBonusMD1
+''''''            strSyouyoDate1 = Format$(Date, "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+''''''            strSyouyoDate2 = Format$(DateAdd("YYYY", -1, Date), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+''''''        ElseIf Format(Date, "MMDD") > gstrBonusMD1 And Format(Date, "MMDD") < gstrBonusMD2 Then
+''''''            strSyouyoDate1 = Format$(Date, "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+''''''            strSyouyoDate2 = Format$(Date, "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+''''''        End If
+        If Format(strYuusibi, "MMDD") >= gstrBonusMD1 Then
+            If Format(strYuusibi, "MMDD") >= gstrBonusMD2 Then
+                strSyouyoDate1 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+                strSyouyoDate2 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+            Else
+                If Format(strYuusibi, "MM") = Left(gstrBonusMD2, 2) Then '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+                    strSyouyoDate1 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2) ''''2001/12/12’Ç‰Á'
+                    strSyouyoDate2 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2) ''''2001/12/12’Ç‰Á
+                Else '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+                    strSyouyoDate1 = Format$(DateAdd("yyyy", 0, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+                    strSyouyoDate2 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+                End If '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+            End If
+        Else
+            If Format(strYuusibi, "MM") = Left(gstrBonusMD1, 2) Then '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+                strSyouyoDate1 = Format$(DateAdd("yyyy", 0, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2) ''''2001/12/12’Ç‰Á '2002/04/22
+                strSyouyoDate2 = Format$(DateAdd("yyyy", 1, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2) ''''2001/12/12’Ç‰Á
+            Else '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+                strSyouyoDate1 = Format$(DateAdd("yyyy", 0, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD1, 2) & "/" & Right$(gstrBonusMD1, 2)
+                strSyouyoDate2 = Format$(DateAdd("yyyy", 0, strYuusibi), "YYYY") & "/" & Left$(gstrBonusMD2, 2) & "/" & Right$(gstrBonusMD2, 2)
+            End If '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''2001/12/12’Ç‰Á
+        End If
+    End If
+    
+    ' ‚P‰ñ–Ú‚ÌÜ—^•ÔÏ“ú‚Ü‚Å‚ÌŠúŠÔZo‚Ì‚½‚ß‚ÌŠJn“ú
+    strZenkaiSyouyoHensaiBi = DateAdd("Y", -1, CVDate(strYuusibi))
+
+    '”N‹æ•ªAÜ—^‚ª‘æ‰½‰ñ–Ú‚©‚Ì”š@‚Ì‰Šú‰»
+    intNenKBN = 1
+    intKyuuyoCNT = 1
+    intSyouyoCNT = 1
+    
+    ' Ü—^‚Ì•ÔÏ‰ñ”‚ğ‹‚ß‚é
+    If intHensaiTuki <= 0 Then intHensaiTuki = 1
+    intSyouyoHensaiKaisuu = Fix(intHensaiTuki / 6)
+    
+    '”¼’[‚È(‚P‚T‰ñ‚È‚Ç‚Ì‚U‚ÅŠ„‚èØ‚ê‚È‚¢)Œ”‚Å‚Ì•ÔÏ‚Ìê‡A”¼’[‚ÈŒ”‚Ì’†‚ÉÜ—^“ú‚ª‚ ‚ê‚ÎA‚»‚Ì‰ñ”‚ğ‰ÁZ‚·‚é
+    For i = 1 To intHensaiTuki Mod 6
+        If DatePart("M", DateAdd("M", i, strYuusibi)) = DatePart("M", strSyouyoDate1) _
+        Or DatePart("M", DateAdd("M", i, strYuusibi)) = DatePart("M", strSyouyoDate2) Then
+            intSyouyoHensaiKaisuu = intSyouyoHensaiKaisuu + 1
+        End If
+    Next i
+    If intSyouyoHensaiKaisuu <= 0 Then
+        intSyouyoHensaiKaisuu = 1
+    End If
+    
+    ' ‚P‰ñ–Ú‚Ì‹‹—^•ÔÏ“ú‚ğ‹‚ß‚éi—Z‘“ú‚Ì—‚Œ‚Ì‚Q‚T“ú‚©‚çj
+    strHensaiKijitu = DateAdd("M", 1, CVDate(Format$(strYuusibi, "YYYY/MM/25")))
+  
+    ' ‚P‰ñ–Ú‚ÌÜ—^•ÔÏ“ú‚ğ‹‚ß‚éi—Z‘“ú‚Ì—‚ŒˆÈ~j
+    '—Z‘“ú‚ª 2000/11/09  2000/11/10 ‚Ìê‡‚Í ’¼‹ß‚Ìƒ{[ƒiƒX“ú‚ğ‚UŒ‚P‚T‚É‚·‚é(’¼‹à‚Ì‚P‚QŒ‚P“ú‚Ìƒ{[ƒiƒX“ú‚ğ–³‹‚·‚é )
+    If strYuusibi = "2000/11/09" Or strYuusibi = "2000/11/10" Then
+        strSyouyoKijitu = "2001/06/15"
+    Else
+        If DateDiff("Y", strYuusibi, DateAdd("Y", -1, CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate1, "MM") & "/01"))) >= 0 Then       'ˆêƒ–Œ‘O
+            strSyouyoKijitu = CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate1, "MM/dd"))
+        ElseIf DateDiff("Y", strYuusibi, DateAdd("Y", -1, CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate2, "MM") & "/01"))) >= 0 Then   'ˆêƒ–Œ‘O
+            strSyouyoKijitu = CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate2, "MM/dd"))
+        Else
+            strSyouyoKijitu = DateAdd("YYYY", 1, CVDate(Format$(strYuusibi, "YYYY/") & Format$(strSyouyoDate1, "MM/dd")))
+        End If
+    End If
+
+    lngKyuuyoHensaiZandaka = lngKyuuyoHensaiAll
+    lngSyouyoHensaiZandaka = lngSyouyoHensaiAll
+    
+    i = 1
+    
+    'Ÿƒ[ƒNƒe[ƒuƒ‹“o˜^—pƒf[ƒ^ì¬
+    '* ‚P‰ñ–Ú‚Ì‹‹—^•ÔÏ—p‚Ìƒf[ƒ^‚ğ’Ç‰Á‚·‚é
+    If lngKyuuyoHensaiZandaka > 0 Then
+        ReDim Preserve gstrYoteihyouAry(i)
+        With gstrYoteihyouAry(i)
+            .intPageKbn = Fix((intNenKBN + 2) / 3) ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+            .intNenKBN = intNenKBN  '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''”N‹æ•ª
+            .strKbn = "‹‹—^" & Space$(3 - Len(Format$(1, "###"))) & Format$(1, "###") '''''''''''''''''''''''''''‹æ•ª
+            .strKijitu = gvarCnvDate(1, strHensaiKijitu) ''''''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+            .strHensai = CStr(lngKyuuyoHensai) ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+            ' ‚P‰ñ–Ú‚Ì—˜‘§ŒvZ—pŠúŠÔi—Z‘“ú‚©‚ç‚P‰ñ–Ú‚Ü‚Å‚ÌŠúŠÔj
+            intHensaiKikan = DateDiff("Y", CVDate(DateAdd("Y", -1, CVDate(strYuusibi))), CVDate(strHensaiKijitu))
+            '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+            If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                .strKyuRsk = Fix(lngKyuuyoHensaiAll * dblKeiyakuriritu * CVar(intHensaiKikan))  ''''''''''''''''''''‹‹—^—˜‘§''''2002/02/19 upd CVar(intHensaiKikan)
+            Else
+                dblKeiyakuriritu = dblRiritu * 100
+                .strKyuRsk = Fix(lngKyuuyoHensaiAll * dblKeiyakuriritu * CVar(intHensaiKikan) / 36500) ''''''''''''''''''''‹‹—^—˜‘§''''2002/02/19 upd CVar(intHensaiKikan)
+            End If
+            .strKyuGan = .strHensai - .strKyuRsk ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+            If intHensaiTuki = 1 Then
+                .strKyuGan = lngKyuuyoHensaiZandaka '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+                .strHensai = lngKyuuyoHensaiZandaka + .strKyuRsk ''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+            End If
+            lngKyuuyoHensaiZandaka = lngKyuuyoHensaiZandaka - .strKyuGan
+            .strKyuZan = lngKyuuyoHensaiZandaka '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^•ÔÏc‚
+            .strZandaka = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''c‚
+            .strSyoGan = " "   ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+            .strSyoRsk = " "   ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+            .strSyoZan = " "   ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^c‚
+            intKyuuyoCNT = intKyuuyoCNT + 1
+            i = i + 1
+        End With
+    End If
+    
+    If strYuusibi <> "2000/11/10" Then    '—Z‘“ú‚ª 2000/11/10 ‚Ìê‡‚Í ’¼‹ß‚Ìƒ{[ƒiƒX“ú‚ğ‚UŒ‚P‚T‚É‚·‚é(’¼‹à‚Ì‚P‚QŒ‚P“ú‚Ìƒ{[ƒiƒX“ú‚ğ–³‹‚·‚é )
+        If strYuusibi <> "2000/11/09" Then    '—Z‘“ú‚ª 2000/11/10 ‚Ìê‡‚Í ’¼‹ß‚Ìƒ{[ƒiƒX“ú‚ğ‚UŒ‚P‚T‚É‚·‚é(’¼‹à‚Ì‚P‚QŒ‚P“ú‚Ìƒ{[ƒiƒX“ú‚ğ–³‹‚·‚é )
+            '* ‚P‰ñ–Ú‚Ì‹‹—^•ÔÏŒ‚ÆÜ—^•ÔÏŒ‚ªˆê’v‚·‚éê‡A‚P‰ñ–Ú‚ÌÜ—^•ÔÏ—p‚Ìƒf[ƒ^‚ğ’Ç‰Á‚·‚é
+            If (DatePart("M", strHensaiKijitu) = DatePart("M", strSyouyoDate1) Or DatePart("M", strHensaiKijitu) = DatePart("M", strSyouyoDate2)) And lngSyouyoHensaiZandaka > 0 Then
+                ReDim Preserve gstrYoteihyouAry(i)
+                With gstrYoteihyouAry(i)
+                
+                    If lngKyuuyoHensai > 0 Then
+                      .intPageKbn = Fix((intNenKBN + 2) / 3)
+                    Else
+                      .intPageKbn = 1 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+                    End If
+                    .intNenKBN = intNenKBN ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''”N‹æ•ª
+                    .strKbn = "Ü—^" & String$(3 - Len(Format$(intSyouyoCNT, "###")), "*") & Format$(intSyouyoCNT, "###") ''‹æ•ª
+                    .strKijitu = gvarCnvDate(1, strSyouyoKijitu) ''''''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+                    .strHensai = CStr(lngSyouyoHensai) ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                    ' ‚P‰ñ–Ú‚Ì—˜‘§ŒvZ—pŠúŠÔi—Z‘“ú‚©‚ç‚P‰ñ–Ú‚Ü‚Å‚ÌŠúŠÔj
+                    intHensaiKikan = DateDiff("Y", CVDate(strZenkaiSyouyoHensaiBi), CVDate(strSyouyoKijitu))
+                    '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                    If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                        dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                        .strSyoRsk = Fix(lngSyouyoHensaiAll * dblKeiyakuriritu * CVar(intHensaiKikan))  ''''''''''''''''''''Ü—^—˜‘§''''2002/02/19 upd CVar(intHensaiKikan)
+                    Else
+                        dblRisoku2 = lngSyouyoHensaiAll * dblRiritu * CVar(intHensaiKikan) / 365 ''''2002/02/19 upd CVar(intHensaiKikan)
+                        .strSyoRsk = Int(dblRisoku2) ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                    End If
+                    .strSyoGan = .strHensai - .strSyoRsk ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+                    If intSyouyoHensaiKaisuu = 1 Then
+                        .strSyoGan = lngSyouyoHensaiZandaka '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+                        .strHensai = lngSyouyoHensaiZandaka + .strSyoRsk ''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                    End If
+                    lngSyouyoHensaiZandaka = lngSyouyoHensaiZandaka - .strSyoGan 'Ü—^•ÔÏc‚ ŒvZ
+                    .strSyoZan = lngSyouyoHensaiZandaka '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^c‚
+                    .strZandaka = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''c‚
+                    .strKyuGan = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+                    .strKyuRsk = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^—˜‘§
+                    .strKyuZan = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^•ÔÏc‚
+                    strZenkaiSyouyoHensaiBi = strSyouyoKijitu
+                    intSyouyoCNT = intSyouyoCNT + 1
+                    i = i + 1
+                End With
+            End If
+        End If
+    End If
+
+    strZenkaiHensaiKijitu = strHensaiKijitu
+    strHensaiKijitu = DateAdd("M", 1, strHensaiKijitu)
+  
+    ' ŸŸ‚Q‰ñ–ÚˆÈ~‚Ìƒf[ƒ^’Ç‰Á
+    intNenKBN_WK = 2
+    'While (I <= intHensaiTuki Or intSyouyoCNT <= intSyouyoHensaiKaisuu) And (lngKyuuyoHensaiZandaka > 0 Or lngSyouyoHensaiZandaka > 0)
+    While (intKyuuyoCNT <= intHensaiTuki Or intSyouyoCNT <= intSyouyoHensaiKaisuu) And (lngKyuuyoHensaiZandaka > 0 Or lngSyouyoHensaiZandaka > 0)
+        '* ‹‹—^‚Ìƒf[ƒ^’Ç‰Á
+        If lngKyuuyoHensaiZandaka > 0 Then
+            ReDim Preserve gstrYoteihyouAry(i)
+            With gstrYoteihyouAry(i)
+                .intPageKbn = Fix((intNenKBN + 2) / 3) ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+                .intNenKBN = intNenKBN ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''”N‹æ•ª
+                .strKbn = "‹‹—^" & Space$(3 - Len(Format$(intKyuuyoCNT, "###"))) & Format$(intKyuuyoCNT, "###") '‹æ•ª
+                .strKijitu = gvarCnvDate(1, strHensaiKijitu) ''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+                .strHensai = lngKyuuyoHensai ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                ' ‘O‰ñ‚©‚ç¡‰ñ‚Ì—˜‘§ŒvZ—pŠúŠÔ
+                intHensaiKikan = DateDiff("Y", CVDate(strZenkaiHensaiKijitu), CVDate(strHensaiKijitu))
+                '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                    dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                    .strKyuRsk = Fix(lngKyuuyoHensaiZandaka * dblKeiyakuriritu * CVar(intHensaiKikan))  ''''''''''''''''''''‹‹—^—˜‘§  2002/_02_19 Upd CVar(intHensaiKikan)
+                Else
+                    .strKyuRsk = Fix(lngKyuuyoHensaiZandaka * dblRiritu * CVar(intHensaiKikan) / 365) '''''''''''''''''''''‹‹—^—˜‘§  2002/_02_19 Upd CVar(intHensaiKikan)
+                End If
+                .strKyuGan = .strHensai - .strKyuRsk ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+                ' ÅI‰ñ‚Ìê‡
+                If intHensaiTuki = intKyuuyoCNT Then
+                    .strKyuGan = lngKyuuyoHensaiZandaka '''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+                    .strHensai = lngKyuuyoHensaiZandaka + .strKyuRsk ''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                End If
+                lngKyuuyoHensaiZandaka = lngKyuuyoHensaiZandaka - .strKyuGan '‹‹—^•ÔÏc‚ ŒvZ
+                .strKyuZan = lngKyuuyoHensaiZandaka '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^c‚
+                .strZandaka = " "
+                .strSyoGan = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+                .strSyoRsk = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                .strSyoZan = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^c‚
+                intKyuuyoCNT = intKyuuyoCNT + 1
+                i = i + 1
+            End With
+        End If
+        
+        '* “–ŠYŒ‚ÆÜ—^•ÔÏŒ‚ªˆê’v‚·‚éê‡AÜ—^•ÔÏ—p‚Ìƒf[ƒ^‚à’Ç‰Á‚·‚é
+        If (DatePart("M", strHensaiKijitu) = DatePart("M", strSyouyoDate1) Or DatePart("M", strHensaiKijitu) = DatePart("M", strSyouyoDate2)) And lngSyouyoHensaiZandaka > 0 Then
+            ReDim Preserve gstrYoteihyouAry(i)
+            With gstrYoteihyouAry(i)
+                
+                If lngKyuuyoHensai > 0 Then
+                    .intPageKbn = Fix((intNenKBN + 2) / 3)
+                Else
+                    .intPageKbn = 1 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''ƒy[ƒW‹æ•ª
+                End If
+                .intNenKBN = intNenKBN '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''”N‹æ•ª
+                .strKbn = "Ü—^" & String$(3 - Len(Format$(intSyouyoCNT, "###")), "*") & Format$(intSyouyoCNT, "###") ''‹æ•ª
+                '* ¡‰ñ‚ÌÜ—^•ÔÏ“ú‚ÌZo
+                If Month(strHensaiKijitu) = Month(strSyouyoDate1) Then
+                    strSyouyoKijitu = CVDate(Format$(strHensaiKijitu, "YYYY/") & Format$(strSyouyoDate1, "MM/dd"))
+                Else
+                    strSyouyoKijitu = CVDate(Format$(strHensaiKijitu, "YYYY/") & Format$(strSyouyoDate2, "MM/dd"))
+                End If
+                .strKijitu = gvarCnvDate(1, strSyouyoKijitu) '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏŠú“ú
+                .strHensai = lngSyouyoHensai '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                ' —˜‘§ŒvZ—pŠúŠÔ
+                intHensaiKikan = DateDiff("Y", CVDate(strZenkaiSyouyoHensaiBi), CVDate(strSyouyoKijitu))
+                '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                    dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                    .strSyoRsk = Fix(lngSyouyoHensaiZandaka * dblKeiyakuriritu * CVar(intHensaiKikan))  ''''''''''''''''''''Ü—^—˜‘§'''2002/_02_19 Upd CVar(intHensaiKikan)
+                Else
+                    dblRisoku2 = lngSyouyoHensaiZandaka * dblRiritu * CVar(intHensaiKikan) / 365 '''2002/_02_19 Upd CVar(intHensaiKikan)
+                    .strSyoRsk = Int(dblRisoku2) ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^—˜‘§
+                End If
+                .strSyoGan = .strHensai - .strSyoRsk '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+                ' ÅI‰ñ‚Ìê‡
+                If intSyouyoHensaiKaisuu = intSyouyoCNT Then
+                    .strSyoGan = lngSyouyoHensaiZandaka ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Ü—^Œ³–{
+                    .strHensai = lngSyouyoHensaiZandaka + .strSyoRsk '''''''''''''''''''''''''''''''''''''''''''''''''''•ÔÏ‹àŠz
+                End If
+                lngSyouyoHensaiZandaka = lngSyouyoHensaiZandaka - .strSyoGan 'Ü—^•ÔÏc‚ ŒvZ
+                .strSyoZan = lngSyouyoHensaiZandaka
+                .strZandaka = " " ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''c‚
+                .strKyuGan = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^Œ³–{
+                .strKyuRsk = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^—˜‘§
+                .strKyuZan = " " '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''‹‹—^•ÔÏc‚
+                strZenkaiSyouyoHensaiBi = strSyouyoKijitu
+                intSyouyoCNT = intSyouyoCNT + 1
+                i = i + 1
+            End With
+        End If
+        
+        strZenkaiHensaiKijitu = strHensaiKijitu
+        strHensaiKijitu = DateAdd("M", 1, strHensaiKijitu)
+        
+        ' ‚P‚Q‰ñiŸ‚ªÜ—^‚Ì‚ÍAŸ‚ÌÜ—^‚Ü‚ÅŠÜ‚Ü‚ê‚éj–ˆ‚ÉA
+        ' •ÔÏ—\’è•\‚ÉŒrü‚ğo—Í‚³‚¹‚é‚½‚ß‚Ì‹æ•ª‚ÌƒJƒEƒ“ƒgƒAƒbƒv
+        If ((intNenKBN_WK) Mod 12) = 0 Then
+            intNenKBN = intNenKBN + 1
+        End If
+        intNenKBN_WK = intNenKBN_WK + 1
+        
+    Wend
+
+    '¡gstrYoteihyouAry”z—ñƒ\[ƒg...Ü—^ƒf[ƒ^‚ª‚¸‚ê‚Ä‚¢‚é‚½‚ß¡
+    For Y = 1 To UBound(gstrYoteihyouAry)
+        With gstrYoteihyouAry(Y)
+            ReDim Preserve lngSortKey(Y)
+            ReDim Preserve gstrYoteihyouSort(Y)
+            lngSortKey(Y) = CLng(Format(Mid$(.strKijitu, 1, 2), "00") & Format(Mid$(.strKijitu, 4, 2), "00") & Format(Mid$(.strKijitu, 7, 2), "00"))
+            gstrYoteihyouSort(Y).intNenKBN = gstrYoteihyouAry(Y).intNenKBN
+            gstrYoteihyouSort(Y).intPageKbn = gstrYoteihyouAry(Y).intPageKbn
+            gstrYoteihyouSort(Y).strHensai = gstrYoteihyouAry(Y).strHensai
+            gstrYoteihyouSort(Y).strKbn = gstrYoteihyouAry(Y).strKbn
+            gstrYoteihyouSort(Y).strKijitu = gstrYoteihyouAry(Y).strKijitu
+            gstrYoteihyouSort(Y).strKyuGan = gstrYoteihyouAry(Y).strKyuGan
+            gstrYoteihyouSort(Y).strKyuRsk = gstrYoteihyouAry(Y).strKyuRsk
+            gstrYoteihyouSort(Y).strKyuZan = gstrYoteihyouAry(Y).strKyuZan
+            gstrYoteihyouSort(Y).strSyoGan = gstrYoteihyouAry(Y).strSyoGan
+            gstrYoteihyouSort(Y).strSyoRsk = gstrYoteihyouAry(Y).strSyoRsk
+            gstrYoteihyouSort(Y).strSyoZan = gstrYoteihyouAry(Y).strSyoZan
+            gstrYoteihyouSort(Y).strZandaka = gstrYoteihyouAry(Y).strZandaka
+        End With
+    Next Y
+    
+    For Y = 1 To UBound(gstrYoteihyouAry)
+        If Y <> 1 Then
+            If lngSortKey(Y) < lngSortKey(Y - 1) Then
+                gstrYoteihyouAry(Y).intNenKBN = gstrYoteihyouSort(Y - 1).intNenKBN
+                gstrYoteihyouAry(Y).intPageKbn = gstrYoteihyouSort(Y - 1).intPageKbn
+                gstrYoteihyouAry(Y).strHensai = gstrYoteihyouSort(Y - 1).strHensai
+                gstrYoteihyouAry(Y).strKbn = gstrYoteihyouSort(Y - 1).strKbn
+                gstrYoteihyouAry(Y).strKijitu = gstrYoteihyouSort(Y - 1).strKijitu
+                gstrYoteihyouAry(Y).strKyuGan = gstrYoteihyouSort(Y - 1).strKyuGan
+                gstrYoteihyouAry(Y).strKyuRsk = gstrYoteihyouSort(Y - 1).strKyuRsk
+                gstrYoteihyouAry(Y).strKyuZan = gstrYoteihyouSort(Y - 1).strKyuZan
+                gstrYoteihyouAry(Y).strSyoGan = gstrYoteihyouSort(Y - 1).strSyoGan
+                gstrYoteihyouAry(Y).strSyoRsk = gstrYoteihyouSort(Y - 1).strSyoRsk
+                gstrYoteihyouAry(Y).strSyoZan = gstrYoteihyouSort(Y - 1).strSyoZan
+                gstrYoteihyouAry(Y).strZandaka = gstrYoteihyouSort(Y - 1).strZandaka
+            
+                gstrYoteihyouAry(Y - 1).intNenKBN = gstrYoteihyouSort(Y).intNenKBN
+                gstrYoteihyouAry(Y - 1).intPageKbn = gstrYoteihyouSort(Y).intPageKbn
+                gstrYoteihyouAry(Y - 1).strHensai = gstrYoteihyouSort(Y).strHensai
+                gstrYoteihyouAry(Y - 1).strKbn = gstrYoteihyouSort(Y).strKbn
+                gstrYoteihyouAry(Y - 1).strKijitu = gstrYoteihyouSort(Y).strKijitu
+                gstrYoteihyouAry(Y - 1).strKyuGan = gstrYoteihyouSort(Y).strKyuGan
+                gstrYoteihyouAry(Y - 1).strKyuRsk = gstrYoteihyouSort(Y).strKyuRsk
+                gstrYoteihyouAry(Y - 1).strKyuZan = gstrYoteihyouSort(Y).strKyuZan
+                gstrYoteihyouAry(Y - 1).strSyoGan = gstrYoteihyouSort(Y).strSyoGan
+                gstrYoteihyouAry(Y - 1).strSyoRsk = gstrYoteihyouSort(Y).strSyoRsk
+                gstrYoteihyouAry(Y - 1).strSyoZan = gstrYoteihyouSort(Y).strSyoZan
+                gstrYoteihyouAry(Y - 1).strZandaka = gstrYoteihyouSort(Y).strZandaka
+            End If
+        End If
+    Next Y
+
+
+
+    '¡c‚Zo¡
+    lngKyuuyoHensaiZandaka = lngKyuuyoHensaiAll
+    lngSyouyoHensaiZandaka = lngSyouyoHensaiAll
+
+    For Y = 1 To UBound(gstrYoteihyouAry)
+        With gstrYoteihyouAry(Y)
+            If Trim$(.strKyuZan) <> "" Then
+                lngKyuuyoHensaiZandaka = .strKyuZan
+            End If
+            If Trim$(.strSyoZan) <> "" Then
+                lngSyouyoHensaiZandaka = .strSyoZan
+            End If
+            .strZandaka = lngKyuuyoHensaiZandaka + lngSyouyoHensaiZandaka 'c‚
+        End With
+    Next Y
+
+asd:
+Exit Sub
+
+End Sub
+'******************************************************************************
+'*    ’ •[—pƒf[ƒ^ì¬
+'******************************************************************************
+Public Function gfncblnMakPrintDat() As Boolean
+ Dim strSQL            As String
+ Dim i                 As Long
+ Dim j                 As Long
+ Const cnsMaxRec       As Long = 100  'ˆê‰ñ‚Åo—Í‚·‚éÅ‘ås” '''''
+ Const cnslngAryCnt    As Long = 100   '”z—ñ‚ÌŒ”  ‹y‚ÑA‚P‰ñ‚Åæ“¾‚·‚é‚l‚`‚w‚ÌŒ”
+ Dim OraPArray_01      As Object       '01 ƒy[ƒW‹æ•ª
+ Dim OraPArray_02      As Object       '02 ”N‹æ•ª
+ Dim OraPArray_03      As Object       '03 ‹æ•ª
+ Dim OraPArray_04      As Object       '04 •ÔÏŠú“ú
+ Dim OraPArray_05      As Object       '05 •ÔÏ‹àŠz
+ Dim OraPArray_06      As Object       '06 c‚
+ Dim OraPArray_07      As Object       '07 ‹‹—^Œ³–{
+ Dim OraPArray_08      As Object       '08 ‹‹—^—˜‘§
+ Dim OraPArray_09      As Object       '09 ‹‹—^c‚
+ Dim OraPArray_10      As Object       '10 Ü—^Œ³–{
+ Dim OraPArray_11      As Object       '11 Ü—^—˜‘§
+ Dim OraPArray_12      As Object       '12 Ü—^c‚
+ 
+ Dim StrYuusiYMDWK     As String
+
+On Error GoTo ErrgfncblnMakPrintDat
+
+    gfncblnMakPrintDat = False
+    
+    'SP—pƒpƒ‰ƒ[ƒ^[ƒZƒbƒg
+    'ĞˆõƒR[ƒh‚P
+    odbDatabase.Parameters.Add "InStrSyainCD1", gstrSyainCd1, ORAPARM_INPUT
+        odbDatabase.Parameters("InStrSyainCD1").ServerType = ORATYPE_CHAR
+    'ĞˆõƒR[ƒh‚Q
+    odbDatabase.Parameters.Add "InStrSyainCD2", gstrSyainCd2, ORAPARM_INPUT
+        odbDatabase.Parameters("InStrSyainCD2").ServerType = ORATYPE_CHAR
+    'Ğˆõ–¼
+    odbDatabase.Parameters.Add "InStrSimei", frmQPAV_CEnt080.lblShimeiKanji.Caption, ORAPARM_INPUT
+        odbDatabase.Parameters("InStrSimei").ServerType = ORATYPE_VARCHAR2
+    '“X–¼Ì
+    odbDatabase.Parameters.Add "InStrMiseNm", frmQPAV_CEnt080.lblMiseName.Caption, ORAPARM_INPUT
+        odbDatabase.Parameters("InStrMiseNm").ServerType = ORATYPE_VARCHAR2
+    '—Z‘”NŒ“ú
+    If gstrSyori = "“o ˜^" Then
+        StrYuusiYMDWK = frmQPAV_CEnt081.txtYuusibiY.Text & "/" & frmQPAV_CEnt081.txtYuusibiM.Text & "/" & frmQPAV_CEnt081.txtYuusibiD.Text
+        StrYuusiYMDWK = gvarCnvDate(1, StrYuusiYMDWK)
+    Else
+        StrYuusiYMDWK = frmQPAV_CEnt081.lblYuusibiY.Caption & "/" & frmQPAV_CEnt081.lblYuusibiM.Caption & "/" & frmQPAV_CEnt081.lblYuusibiD.Caption
+        StrYuusiYMDWK = gvarCnvDate(1, StrYuusiYMDWK)
+    End If
+    odbDatabase.Parameters.Add "InStrYusiYMD", StrYuusiYMDWK, ORAPARM_INPUT
+        odbDatabase.Parameters("InStrYusiYMD").ServerType = ORATYPE_VARCHAR2
+    '—˜—¦
+    odbDatabase.Parameters.Add "InStrRiritu", frmQPAV_CEnt081.lblPer.Caption, ORAPARM_INPUT
+        odbDatabase.Parameters("InStrRiritu").ServerType = ORATYPE_VARCHAR2
+    '—Z‘‹àŠz
+    odbDatabase.Parameters.Add "InNumYusiKng", CLng(frmQPAV_CEnt081.lblYuusiKei.Caption), ORAPARM_INPUT
+        odbDatabase.Parameters("InNumYusiKng").ServerType = ORATYPE_NUMBER
+    '‹‹—^•ÔÏŠz
+    odbDatabase.Parameters.Add "InNumKyuHensai", CLng(frmQPAV_CEnt081.txtYuusiKyuuyo.Text), ORAPARM_INPUT
+        odbDatabase.Parameters("InNumKyuHensai").ServerType = ORATYPE_NUMBER
+    'Ü—^•ÔÏŠz
+    odbDatabase.Parameters.Add "InNumSyoHensai", CLng(frmQPAV_CEnt081.txtYuusiBonus.Text), ORAPARM_INPUT
+        odbDatabase.Parameters("InNumSyoHensai").ServerType = ORATYPE_NUMBER
+    '”z—ñŒ”
+    odbDatabase.Parameters.Add "InNumAryCount", UBound(gstrYoteihyouAry), ORAPARM_INPUT
+        odbDatabase.Parameters("InNumAryCount").ServerType = ORATYPE_NUMBER
+    
+    '01 ƒy[ƒW‹æ•ª”z—ñ
+              odbDatabase.Parameters.AddTable "InNumPageKBNAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 2
+    Set OraPArray_01 = odbDatabase.Parameters("InNumPageKBNAry")
+    '02 ”N‹æ•ª”z—ñ
+              odbDatabase.Parameters.AddTable "InNumNenKBNAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 2
+    Set OraPArray_02 = odbDatabase.Parameters("InNumNenKBNAry")
+    '03 ‹æ•ª”z—ñ
+              odbDatabase.Parameters.AddTable "InStrKBNAry", ORAPARM_INPUT, ORATYPE_VARCHAR2, cnsMaxRec, 10
+    Set OraPArray_03 = odbDatabase.Parameters("InStrKBNAry")
+    '04 •ÔÏŠú“ú”z—ñ
+              odbDatabase.Parameters.AddTable "InStrKijituAry", ORAPARM_INPUT, ORATYPE_VARCHAR2, cnsMaxRec, 20
+    Set OraPArray_04 = odbDatabase.Parameters("InStrKijituAry")
+    '05 •ÔÏ‹àŠz”z—ñ
+              odbDatabase.Parameters.AddTable "InNumHensaiAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 7
+    Set OraPArray_05 = odbDatabase.Parameters("InNumHensaiAry")
+    '06 c‚”z—ñ
+              odbDatabase.Parameters.AddTable "InNumZandakaAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 7
+    Set OraPArray_06 = odbDatabase.Parameters("InNumZandakaAry")
+    '07 ‹‹—^Œ³–{”z—ñ
+              odbDatabase.Parameters.AddTable "InNumKyuGanAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 7
+    Set OraPArray_07 = odbDatabase.Parameters("InNumKyuGanAry")
+    '08 ‹‹—^—˜‘§”z—ñ
+              odbDatabase.Parameters.AddTable "InNumKyuRskAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 7
+    Set OraPArray_08 = odbDatabase.Parameters("InNumKyuRskAry")
+    '09 ‹‹—^c‚”z—ñ
+              odbDatabase.Parameters.AddTable "InNumKyuZanAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 7
+    Set OraPArray_09 = odbDatabase.Parameters("InNumKyuZanAry")
+    '10 Ü—^Œ³–{”z—ñ
+              odbDatabase.Parameters.AddTable "InNumSyoGanAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 7
+    Set OraPArray_10 = odbDatabase.Parameters("InNumSyoGanAry")
+    '11 Ü—^—˜‘§”z—ñ
+              odbDatabase.Parameters.AddTable "InNumSyoRskAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 7
+    Set OraPArray_11 = odbDatabase.Parameters("InNumSyoRskAry")
+    '12 Ü—^c‚”z—ñ
+              odbDatabase.Parameters.AddTable "InNumSyoZanAry", ORAPARM_INPUT, ORATYPE_NUMBER, cnsMaxRec, 7
+    Set OraPArray_12 = odbDatabase.Parameters("InNumSyoZanAry")
+    
+    'ƒRƒ“ƒsƒ…[ƒ^[–¼
+    odbDatabase.Parameters.Add "InStrCOMPUTERMEI", gstrCommandLine(5), ORAPARM_INPUT
+        odbDatabase.Parameters("InStrCOMPUTERMEI").ServerType = ORATYPE_VARCHAR2
+    
+    'SQL•¶ì¬
+             strSQL = "BEGIN QPAP_CEnt080PkG.QPAP_CEnt080PrintAdd("
+    strSQL = strSQL & " :InStrSyainCD1"           'ĞˆõƒR[ƒh‚P
+    strSQL = strSQL & ",:InStrSyainCD2"           'ĞˆõƒR[ƒh‚Q
+    strSQL = strSQL & ",:InStrSimei"              'Ğˆõ–¼
+    strSQL = strSQL & ",:InStrMiseNm"             '“X–¼Ÿ
+    strSQL = strSQL & ",:InStrYusiYMD"            '—Z‘”NŒ“ú
+    strSQL = strSQL & ",:InStrRiritu"             '—˜—¦
+    strSQL = strSQL & ",:InNumYusiKng"            '—Z‘‹àŠz
+    strSQL = strSQL & ",:InNumKyuHensai"          '‹‹—^•ÔÏŠz
+    strSQL = strSQL & ",:InNumSyoHensai"          'Ü—^•ÔÏŠz
+    strSQL = strSQL & ",:InNumAryCount"           '”z—ñŒ”
+    strSQL = strSQL & ",:InNumPageKBNAry"         'ƒy[ƒW‹æ•ª”z—ñ
+    strSQL = strSQL & ",:InNumNenKBNAry"          '”N‹æ•ª”z—ñ
+    strSQL = strSQL & ",:InStrKBNAry"             '‹æ•ª”z—ñ
+    strSQL = strSQL & ",:InStrKijituAry"          '•ÔÏŠú“ú”z—ñ
+    strSQL = strSQL & ",:InNumHensaiAry"          '•ÔÏ‹àŠz”z—ñ
+    strSQL = strSQL & ",:InNumZandakaAry"         'c‚”z—ñ
+    strSQL = strSQL & ",:InNumKyuGanAry"          '‹‹—^Œ³–{”z—ñ
+    strSQL = strSQL & ",:InNumKyuRskAry"          '‹‹—^—˜‘§”z—ñ
+    strSQL = strSQL & ",:InNumKyuZanAry"          '‹‹—^c‚”z—ñ
+    strSQL = strSQL & ",:InNumSyoGanAry"          'Ü—^Œ³–{”z—ñ
+    strSQL = strSQL & ",:InNumSyoRskAry"          'Ü—^—˜‘§”z—ñ
+    strSQL = strSQL & ",:InNumSyoZanAry"          'Ü—^c‚”z—ñ
+    strSQL = strSQL & ",:InStrCOMPUTERMEI); END;" 'ƒRƒ“ƒsƒ…[ƒ^–¼
+ 
+    i = 1
+    
+    Do Until i > UBound(gstrYoteihyouAry)
+        For j = 1 To cnsMaxRec '
+            If i > UBound(gstrYoteihyouAry) Then
+                Exit For
+            End If
+            With gstrYoteihyouAry(i)
+                OraPArray_01.Put_value CLng(.intPageKbn), (j - 1) '01 ƒy[ƒW‹æ•ª
+                OraPArray_02.Put_value CLng(.intNenKBN), (j - 1)  '02 ”N‹æ•ª
+                OraPArray_03.Put_value .strKbn, (j - 1)           '03 ‹æ•ª
+                
+                
+                If Trim$(frmQPAV_CEnt081.txtYuusibiY.Text) & Trim$(frmQPAV_CEnt081.txtYuusibiM.Text) & Trim$(frmQPAV_CEnt081.txtYuusibiD.Text) < "20000301" Then
+                    If Mid$(.strKijitu, 1, 2) > "11" Then
+                        If Mid$(.strKijitu, 4, 5) = " 4.30" Then
+                            OraPArray_04.Put_value Mid$(.strKijitu, 1, 2) & ". 6.15", (j - 1)                                            '04 •ÔÏŠú“ú
+                        ElseIf Mid$(.strKijitu, 4, 5) = "10.31" Then
+                            OraPArray_04.Put_value Mid$(.strKijitu, 1, 2) & ".12. 1", (j - 1)       '04 •ÔÏŠú“ú
+                        Else
+                            OraPArray_04.Put_value .strKijitu, (j - 1)        '04 •ÔÏŠú“ú
+                        End If
+                    Else
+                        OraPArray_04.Put_value .strKijitu, (j - 1)        '04 •ÔÏŠú“ú
+                    End If
+                Else
+                    OraPArray_04.Put_value .strKijitu, (j - 1)        '04 •ÔÏŠú“ú
+                End If
+                
+                OraPArray_05.Put_value CLng(.strHensai), (j - 1)  '05 •ÔÏ‹àŠz
+                
+                
+                If .strZandaka = " " Then
+                    OraPArray_06.Put_value Null, (j - 1)
+                Else
+                    OraPArray_06.Put_value CLng(.strZandaka), (j - 1) '06 c‚
+                End If
+                
+                
+                If .strKyuGan = " " Then                          '07 ‹‹—^Œ³–{
+                    OraPArray_07.Put_value Null, (j - 1)
+                Else
+                    OraPArray_07.Put_value CLng(.strKyuGan), (j - 1)
+                End If
+                If .strKyuRsk = " " Then                          '08 ‹‹—^—˜‘§
+                    OraPArray_08.Put_value Null, (j - 1)
+                Else
+                    OraPArray_08.Put_value CLng(.strKyuRsk), (j - 1)
+                End If
+                If .strKyuZan = " " Then                          '09 ‹‹—^c‚
+                    OraPArray_09.Put_value Null, (j - 1)
+                Else
+                    OraPArray_09.Put_value CLng(.strKyuZan), (j - 1)
+                End If
+
+                If .strSyoGan = " " Then                          '10 Ü—^Œ³–{
+                    OraPArray_10.Put_value Null, (j - 1)
+                Else
+                    OraPArray_10.Put_value CLng(.strSyoGan), (j - 1)
+                End If
+
+                If .strSyoRsk = " " Then                          '11 Ü—^—˜‘§
+                    OraPArray_11.Put_value Null, (j - 1)
+                Else
+                    OraPArray_11.Put_value CLng(.strSyoRsk), (j - 1)
+                End If
+
+                If .strSyoZan = " " Then                          '12 Ü—^c‚
+                    OraPArray_12.Put_value Null, (j - 1)
+                Else
+                    OraPArray_12.Put_value CLng(.strSyoZan), (j - 1)
+                End If
+                
+            End With
+            i = i + 1
+        Next j
+        
+        '”z—ñŒ”‚Ì’lƒZƒbƒg
+        odbDatabase.Parameters("InNumAryCount").Value = j - 1
+        
+        'SPÀs
+        odbDatabase.DbexecuteSQL (strSQL)
+    
+    Loop
+ 
+    'ƒIƒuƒWƒFƒNƒg‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+
+    gfncblnMakPrintDat = True
+
+    Exit Function
+
+ErrgfncblnMakPrintDat:
+'´×°ˆ—
+    
+    '´×°Ò¯¾°¼Ş•\¦
+    Call gsubDBErrorMessage(gstrCommandLine(8), cpubMyPrjName, _
+                           gstrCommandLine(3), gstrCommandLine(5), gstrGetErrDateFormat)
+    'µÌŞ¼Şª¸Ä‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+
+End Function
+'******************************************************************************
+'* @ ’ •[—pƒf[ƒ^íœ
+'******************************************************************************
+Public Function gfncblnDelPrintDat() As Boolean
+ Dim strSQL            As String
+
+On Error GoTo ErrgfncblnDelPrintDat
+
+    gfncblnDelPrintDat = False
+
+    'ƒRƒ“ƒsƒ…[ƒ^[–¼
+    odbDatabase.Parameters.Add "InStrCOMPUTERMEI", gstrCommandLine(5), ORAPARM_INPUT
+        odbDatabase.Parameters("InStrCOMPUTERMEI").ServerType = ORATYPE_VARCHAR2
+
+    'SQL•¶ì¬
+             strSQL = "BEGIN QPAP_CEnt080PkG.QPAP_CEnt080PrintDel("
+    strSQL = strSQL & ":InStrCOMPUTERMEI); END;" 'ƒRƒ“ƒsƒ…[ƒ^–¼
+
+    'SPÀs
+    odbDatabase.DbexecuteSQL (strSQL)
+
+    'ƒIƒuƒWƒFƒNƒg‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+
+    gfncblnDelPrintDat = True
+
+    Exit Function
+
+ErrgfncblnDelPrintDat:
+'´×°ˆ—
+    
+    '´×°Ò¯¾°¼Ş•\¦
+    Call gsubDBErrorMessage(gstrCommandLine(8), cpubMyPrjName, _
+                           gstrCommandLine(3), gstrCommandLine(5), gstrGetErrDateFormat)
+    'µÌŞ¼Şª¸Ä‚ÌŠJ•ú
+    Call gsubParaRemove(odbDatabase)
+
+End Function
+'******************************************************************************
+'*     –ˆ‰ñÜ—^•ÔÏŠzZoŠúŠÔ6ƒJŒˆÈŠO
+'******************************************************************************
+Function gfnclngSyouyoHensai(dblYuusibi As Double, dblRiritu As Double, varSyouyoDate1 As Variant, varSyouyoDate2 As Variant, intSyouyoHensaiKaisuu As Integer, lngSyouyoHensaiAll As Long, dblRisoku1 As Double, lngSyouyoTeigaku As Long) As Long
+ Dim T As Integer
+ Dim lngTeiGakuHensai_1 As Long   '’èŠz•ÔÏŠz_WORK
+ Dim lngTeiGakuHensai_2 As Long   '’èŠz•ÔÏŠz_WORK2
+ Dim lngTeiGakuHensai_3 As Long   '’èŠz•ÔÏŠz_•Û‘¶
+ Dim lngHensaiSagaku    As Long   '•ÔÏ·Šz_WORK
+ Dim lngHensaiSyuukei   As Long   '•ÔÏWŒv_WORK
+ Dim lngSyouyoHenZan    As Long   'Ü—^•ÔÏc‚_WORK
+ Dim lngSyouyoHenRsk    As Long   'Ü—^•ÔÏ—˜‘§_WORK
+ Dim strSyouyoKijitu    As String 'Ü—^Šú“ú_WORK
+ Dim strZenkaiSyouyoHen As String '‘O‰ñÜ—^•ÔÏ“ú_WORK
+ Dim lngSaisyuHensai    As Long   'ÅI•ÔÏŠz_WORK
+
+ Dim dblKeiyakuriritu    As Double   'ŒXÎƒN—˜—¦ƒ[ƒNiVƒVƒXƒeƒ€2001/11/01ˆÈ~‚Ég—pj
+
+    If lngSyouyoHensaiAll <= 0 Then
+        gfnclngSyouyoHensai = 0
+        Exit Function
+    End If
+
+    '--------------------
+    lngTeiGakuHensai_3 = lngSyouyoTeigaku
+    lngTeiGakuHensai_1 = lngSyouyoTeigaku
+
+    lngSyouyoHenZan = lngSyouyoHensaiAll - lngTeiGakuHensai_1 + dblRisoku1
+    
+    lngHensaiSyuukei = lngTeiGakuHensai_1
+    lngSaisyuHensai = lngTeiGakuHensai_1
+    strZenkaiSyouyoHen = CStr(CDate(Format(dblYuusibi, "YYYY/MM/DD")))
+
+    If DateDiff("Y", dblYuusibi, DateAdd("Y", -1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM") & "/01"))) >= 0 Then     'ˆêƒ–Œ‘O
+        strSyouyoKijitu = CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM/dd"))
+    ElseIf DateDiff("Y", dblYuusibi, DateAdd("Y", -1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate2, "MM") & "/01"))) >= 0 Then 'ˆêƒ–Œ‘O
+        strSyouyoKijitu = CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate2, "MM/dd"))
+    Else
+        strSyouyoKijitu = DateAdd("YYYY", 1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM/dd")))
+    End If
+
+    For T = 2 To intSyouyoHensaiKaisuu
+        strZenkaiSyouyoHen = strSyouyoKijitu
+        If Month(strSyouyoKijitu) = Month(varSyouyoDate1) Then
+            strSyouyoKijitu = CVDate(Format$(strSyouyoKijitu, "YYYY/") & Format$(varSyouyoDate2, "MM/dd"))
+        Else
+            strSyouyoKijitu = CVDate(Format$(DateAdd("YYYY", 1, strSyouyoKijitu), "YYYY/") & Format$(varSyouyoDate1, "MM/dd"))
+        End If
+        
+        '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+        If CDate(Format(dblYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+            dblKeiyakuriritu = Fix(dblRiritu / 12 * 1000000) / 1000000
+            lngSyouyoHenRsk = Fix(lngSyouyoHenZan * dblKeiyakuriritu * DateDiff("m", strZenkaiSyouyoHen, strSyouyoKijitu))
+        Else
+            lngSyouyoHenRsk = Int(lngSyouyoHenZan * dblRiritu * DateDiff("m", strZenkaiSyouyoHen, strSyouyoKijitu) / 12)
+        End If
+        
+        If T = intSyouyoHensaiKaisuu Then
+            lngHensaiSyuukei = lngHensaiSyuukei + lngSyouyoHenZan + lngSyouyoHenRsk
+            lngSaisyuHensai = lngSyouyoHenZan + lngSyouyoHenRsk
+            lngSyouyoHenZan = 0
+        Else
+            lngHensaiSyuukei = lngHensaiSyuukei + lngTeiGakuHensai_1
+            lngSyouyoHenZan = lngSyouyoHenZan - lngTeiGakuHensai_1 + lngSyouyoHenRsk
+        End If
+    Next T
+    lngTeiGakuHensai_2 = Int(lngHensaiSyuukei / intSyouyoHensaiKaisuu)
+
+    '--------------------
+    Do
+        lngHensaiSagaku = Abs(lngTeiGakuHensai_1 - lngSaisyuHensai)
+        lngTeiGakuHensai_3 = lngTeiGakuHensai_1
+        lngTeiGakuHensai_1 = lngTeiGakuHensai_2
+        lngSyouyoHenZan = lngSyouyoHensaiAll - lngTeiGakuHensai_1 + dblRisoku1
+        lngHensaiSyuukei = lngTeiGakuHensai_1
+        lngSaisyuHensai = lngTeiGakuHensai_1
+        strZenkaiSyouyoHen = dblYuusibi
+        If DateDiff("Y", dblYuusibi, DateAdd("Y", -1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM") & "/01"))) >= 0 Then                 'ˆêƒ–Œ‘O
+            strSyouyoKijitu = CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM/dd"))
+        ElseIf DateDiff("Y", dblYuusibi, DateAdd("Y", -1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate2, "MM") & "/01"))) >= 0 Then                 'ˆêƒ–Œ‘O
+            strSyouyoKijitu = CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate2, "MM/dd"))
+        Else
+            strSyouyoKijitu = DateAdd("YYYY", 1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM/dd")))
+        End If
+        For T = 2 To intSyouyoHensaiKaisuu
+            strZenkaiSyouyoHen = strSyouyoKijitu
+            If Month(strSyouyoKijitu) = Month(varSyouyoDate1) Then
+                strSyouyoKijitu = CVDate(Format$(strSyouyoKijitu, "YYYY/") & Format$(varSyouyoDate2, "MM/dd"))
+            Else
+                strSyouyoKijitu = CVDate(Format$(DateAdd("YYYY", 1, strSyouyoKijitu), "YYYY/") & Format$(varSyouyoDate1, "MM/dd"))
+            End If
+        
+            '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+            If CDate(Format(dblYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                dblKeiyakuriritu = Fix(dblRiritu / 12 * 1000000) / 1000000
+                lngSyouyoHenRsk = Fix(lngSyouyoHenZan * dblKeiyakuriritu * DateDiff("m", strZenkaiSyouyoHen, strSyouyoKijitu))
+            Else
+                lngSyouyoHenRsk = Int(lngSyouyoHenZan * dblRiritu * DateDiff("m", strZenkaiSyouyoHen, strSyouyoKijitu) / 12)
+            End If
+        
+            If T = intSyouyoHensaiKaisuu Then
+                lngHensaiSyuukei = lngHensaiSyuukei + lngSyouyoHenZan + lngSyouyoHenRsk
+                lngSaisyuHensai = lngSyouyoHenZan + lngSyouyoHenRsk
+                lngSyouyoHenZan = 0
+            Else
+                lngHensaiSyuukei = lngHensaiSyuukei + lngTeiGakuHensai_1
+                lngSyouyoHenZan = lngSyouyoHenZan - lngTeiGakuHensai_1 + lngSyouyoHenRsk
+            End If
+        Next T
+        lngTeiGakuHensai_2 = Int((lngHensaiSyuukei + 1) / intSyouyoHensaiKaisuu)
+    Loop While lngHensaiSagaku > Abs(lngTeiGakuHensai_1 - lngSaisyuHensai)
+
+    '***’èŠz•ÔÏŠz_•Û‘¶({‚P) ‚Ìê‡‚Å·Šz‚ğ‹‚ß‚é
+    lngTeiGakuHensai_2 = lngTeiGakuHensai_3
+    lngTeiGakuHensai_1 = lngTeiGakuHensai_2 + 1
+    lngSyouyoHenZan = lngSyouyoHensaiAll - lngTeiGakuHensai_1 + dblRisoku1
+    lngHensaiSyuukei = lngTeiGakuHensai_1
+    lngSaisyuHensai = lngTeiGakuHensai_1
+    strZenkaiSyouyoHen = dblYuusibi
+
+    If DateDiff("Y", dblYuusibi, DateAdd("Y", -1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM") & "/01"))) >= 0 Then                 'ˆêƒ–Œ‘O
+        strSyouyoKijitu = CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM/dd"))
+    ElseIf DateDiff("Y", dblYuusibi, DateAdd("Y", -1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate2, "MM") & "/01"))) >= 0 Then                 'ˆêƒ–Œ‘O
+        strSyouyoKijitu = CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate2, "MM/dd"))
+    Else
+        strSyouyoKijitu = DateAdd("YYYY", 1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM/dd")))
+    End If
+  
+    For T = 2 To intSyouyoHensaiKaisuu
+        strZenkaiSyouyoHen = strSyouyoKijitu
+        If Month(strSyouyoKijitu) = Month(varSyouyoDate1) Then
+            strSyouyoKijitu = CVDate(Format$(strSyouyoKijitu, "YYYY/") & Format$(varSyouyoDate2, "MM/dd"))
+        Else
+            strSyouyoKijitu = CVDate(Format$(DateAdd("YYYY", 1, strSyouyoKijitu), "YYYY/") & Format$(varSyouyoDate1, "MM/dd"))
+        End If
+        
+        '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+        If CDate(Format(dblYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+            dblKeiyakuriritu = Fix(dblRiritu / 12 * 1000000) / 1000000
+            lngSyouyoHenRsk = Fix(lngSyouyoHenZan * dblKeiyakuriritu * DateDiff("m", strZenkaiSyouyoHen, strSyouyoKijitu))
+        Else
+            lngSyouyoHenRsk = Int(lngSyouyoHenZan * dblRiritu * DateDiff("m", strZenkaiSyouyoHen, strSyouyoKijitu) / 12)
+        End If
+        
+        If T = intSyouyoHensaiKaisuu Then
+            lngHensaiSyuukei = lngHensaiSyuukei + lngSyouyoHenZan + lngSyouyoHenRsk
+            lngSaisyuHensai = lngSyouyoHenZan + lngSyouyoHenRsk
+            lngSyouyoHenZan = 0
+        Else
+            lngHensaiSyuukei = lngHensaiSyuukei + lngTeiGakuHensai_1
+            lngSyouyoHenZan = lngSyouyoHenZan - lngTeiGakuHensai_1 + lngSyouyoHenRsk
+        End If
+    Next T
+      
+    If lngHensaiSagaku > Abs(lngTeiGakuHensai_1 - lngSaisyuHensai) Then
+        lngTeiGakuHensai_3 = lngTeiGakuHensai_2 + 1
+    End If
+
+    If lngHensaiSagaku = Abs(lngTeiGakuHensai_1 - lngSaisyuHensai) Then
+        lngTeiGakuHensai_3 = lngTeiGakuHensai_2 + 1
+    End If
+    
+    '***’èŠz•ÔÏŠz_•Û‘¶(|‚P) ‚Ìê‡‚Å·Šz‚ğ‹‚ß‚é
+    lngTeiGakuHensai_1 = lngTeiGakuHensai_2 - 1
+    lngSyouyoHenZan = lngSyouyoHensaiAll - lngTeiGakuHensai_1 + dblRisoku1
+    lngHensaiSyuukei = lngTeiGakuHensai_1
+    lngSaisyuHensai = lngTeiGakuHensai_1
+    strZenkaiSyouyoHen = dblYuusibi
+
+    If DateDiff("Y", dblYuusibi, DateAdd("Y", -1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM") & "/01"))) >= 0 Then     'ˆêƒ–Œ‘O
+        strSyouyoKijitu = CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM/dd"))
+    ElseIf DateDiff("Y", dblYuusibi, DateAdd("Y", -1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate2, "MM") & "/01"))) >= 0 Then 'ˆêƒ–Œ‘O
+        strSyouyoKijitu = CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate2, "MM/dd"))
+    Else
+        strSyouyoKijitu = DateAdd("YYYY", 1, CVDate(Format$(dblYuusibi, "YYYY/") & Format$(varSyouyoDate1, "MM/dd")))
+    End If
+  
+    For T = 2 To intSyouyoHensaiKaisuu
+        strZenkaiSyouyoHen = strSyouyoKijitu
+        If Month(strSyouyoKijitu) = Month(varSyouyoDate1) Then
+            strSyouyoKijitu = CVDate(Format$(strSyouyoKijitu, "YYYY/") & Format$(varSyouyoDate2, "MM/dd"))
+        Else
+            strSyouyoKijitu = CVDate(Format$(DateAdd("YYYY", 1, strSyouyoKijitu), "YYYY/") & Format$(varSyouyoDate1, "MM/dd"))
+        End If
+        
+        '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+        If CDate(Format(dblYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+            dblKeiyakuriritu = Fix(dblRiritu / 12 * 1000000) / 1000000
+            lngSyouyoHenRsk = Fix(lngSyouyoHenZan * dblKeiyakuriritu * DateDiff("m", strZenkaiSyouyoHen, strSyouyoKijitu))
+        Else
+            lngSyouyoHenRsk = Int(lngSyouyoHenZan * dblRiritu * DateDiff("m", strZenkaiSyouyoHen, strSyouyoKijitu) / 12)
+        End If
+        
+        If T = intSyouyoHensaiKaisuu Then
+            lngHensaiSyuukei = lngHensaiSyuukei + lngSyouyoHenZan + lngSyouyoHenRsk
+            lngSaisyuHensai = lngSyouyoHenZan + lngSyouyoHenRsk
+            lngSyouyoHenZan = 0
+        Else
+            lngHensaiSyuukei = lngHensaiSyuukei + lngTeiGakuHensai_1
+            lngSyouyoHenZan = lngSyouyoHenZan - lngTeiGakuHensai_1 + lngSyouyoHenRsk
+        End If
+    Next T
+      
+    If lngHensaiSagaku >= Abs(lngTeiGakuHensai_1 - lngSaisyuHensai) Then
+        lngTeiGakuHensai_3 = lngTeiGakuHensai_2 - 1
+    End If
+
+    gfnclngSyouyoHensai = lngTeiGakuHensai_3
+
+End Function
+'******************************************************************************
+'*    “ú•t•ÏŠ·
+'******************************************************************************
+Public Function gvarCnvDate(intSyoriFlg As Integer, varHenkanDate As Variant) As Variant
+ Dim varHenkanMae As Variant
+
+On Error GoTo TO_ERROR_gvarCnvDate
+
+    gvarCnvDate = Null
+  
+    varHenkanMae = CVDate(varHenkanDate)
+
+    Select Case intSyoriFlg
+        Case 1: gvarCnvDate = Space(2 - Len(Format$(varHenkanMae, "E"))) & Format$(varHenkanMae, "E.") & Space(2 - Len(Format$(varHenkanMae, "M"))) & Format$(varHenkanMae, "M.") & Space(2 - Len(Format$(varHenkanMae, "D"))) & Format$(varHenkanMae, "D")
+        Case 2: gvarCnvDate = Format$(varHenkanMae, "GE.") & Space(2 - Len(Format$(varHenkanMae, "M"))) & Format$(varHenkanMae, "M.") & Space(2 - Len(Format$(varHenkanMae, "D"))) & Format$(varHenkanMae, "D")
+    End Select
+
+EXIT_gvarCnvDate:
+    Exit Function
+
+TO_ERROR_gvarCnvDate:
+    Resume EXIT_gvarCnvDate
+
+End Function
+'************************************************************************************************************
+'*  –ˆ‰ñ•ÔÏŠzZo
+'*    intHensaiFlg     : Œ•ÔÏŠzZo_FLG
+'*    strYuusiBi       : —Z‘“ú
+'*    dblRiritu        : Œ_–ñ—˜—¦
+'*    intHensaiTukisuu : •ÔÏŒ”
+'*    lngKyuuyo        : ‹‹—^•ÔÏŠz
+'*    lngSyouyo        : Ü—^•ÔÏŠz
+'*    varSyouyoDate1   : Ü—^x‹‹Œ1
+'*    varSyouyoDate2   : Ü—^x‹‹Œ2
+'************************************************************************************************************
+Function gfncstrKeisan(intHensaiFlg As Integer, strYuusibi As Double, dblRiritu As Double, intHensaiTukisuu As Integer, lngKyuuyo As Long, lngSyouyo As Long, varSyouyoDate1 As Variant, varSyouyoDate2 As Variant) As Long
+ Dim i                   As Integer
+ Dim T                   As Integer
+ Dim intNenKBN_WK        As Integer  '”N‹æ•ª_WORK
+ Dim intKBN_WK           As Integer  '‹æ•ª_WORK
+ Dim strHensaiKijitu_WK  As Double   '•ÔÏŠú“ú_WORK
+ Dim strSyouyoKijitu_WK  As Double   'Ü—^Šú“ú_WORK
+ Dim lngKyuuyoTeigaku_WK As Long     '‹‹—^’èŠz•ÔÏŠz_WORK
+ Dim lngKyuuyo1Zan_WK    As Long     '‹‹—^‘æ1c‚_WORK
+ Dim lngKyuuyoHenZan_WK  As Long     '‹‹—^•ÔÏc‚_WORK
+ Dim lngSyouyoTeigaku_WK As Long     'Ü—^’èŠz•ÔÏŠz_WORK
+ Dim lngSyouyo1Zan_WK    As Long     'Ü—^‘æ1c‚_WORK
+ Dim lngSyouyoHenZan_WK  As Long     'Ü—^•ÔÏc‚_WORK
+ Dim curTeigaku0_WK      As Currency '’èŠz_WORK0
+ Dim curTeigaku1_WK      As Currency '’èŠz_WORK1
+ Dim curTeigaku2_WK      As Currency '’èŠz_WORK2
+ Dim intSyouyoKaisuu_WK  As Integer  'Ü—^•ÔÏ‰ñ”_WORK
+ Dim strSyouyoDate_WK    As Variant  'Ü—^x‹‹Œ_WORK
+ Dim strHensaiKijitu2_WK As Variant  '•ÔÏŠú“ú_WORK2
+ Dim strHensaiKikan_WK   As Double   '•ÔÏŠúŠÔ_WORK
+ Dim strZenkaiSyouyo_WK  As Variant  '‘O‰ñÜ—^•ÔÏ“ú_WORK
+ Dim intSyouyoKikan_WK   As Integer  'Ü—^•ÔÏŠúŠÔ_WORK
+ Dim dblRisoku_WK        As Double    '—˜‘§_WORK
+ Dim dblRisoku2_WK       As Double   '—˜‘§2_WORK
+ Dim strZenkaiKyuuyo     As Variant  '‘O‰ñ‹‹—^•ÔÏ“ú
+ Dim strZenkaiSyouyo     As Variant  '‘O‰ñÜ—^•ÔÏ“ú
+ Dim strDaiitiSyouyo     As Variant  '‘æ1‰ñÜ—^•ÔÏ“ú
+ Dim curRisoku           As Currency 'WORK_—˜‘§
+ Dim curZandaka          As Currency 'WORK_c‚
+ Dim curSaisyuuHensai    As Currency 'ÅI•ÔÏŠz
+ Dim curTeigaku          As Currency '’èŠz_SAVE
+
+ Dim dblKeiyakuriritu    As Double    'Œ_–ñ—˜—¦ (2001/11/01ˆÈ~‚Ég—p)
+
+
+    '********************************************
+    '* —Z‘“ú‚ª 2000/03/01 ‚ğ‹«‚Éˆ—‚ğ•ª‚¯‚é
+    '********************************************
+    If CVDate(strYuusibi) < CVDate("2000/03/01") Then
+        '****************
+        '* Œ³X‚Ìˆ—
+        '****************
+        ' —˜—¦‚ğ “ ‚©‚ç ¬” ‚É•ÏŠ·
+        If dblRiritu >= 1 Then
+            dblRiritu = dblRiritu / 100
+        End If
+        ' Ü—^”NŒ“ú‚Ì¬‚³‚¢•û‚ğ "‚P" ‚Éİ’è
+        If DateDiff("y", varSyouyoDate1, varSyouyoDate2) < 0 Then
+            strSyouyoDate_WK = varSyouyoDate1
+            varSyouyoDate1 = varSyouyoDate2
+            varSyouyoDate2 = strSyouyoDate_WK
+        End If
+        intSyouyoKikan_WK = DateDiff("m", varSyouyoDate1, varSyouyoDate2)
+        strZenkaiSyouyo = strYuusibi
+        intNenKBN_WK = 1
+        T = 1
+        ' Ü—^‚Ì•ÔÏ‰ñ”‚ğ‹‚ß‚é
+        If intHensaiTukisuu <= 0 Then
+            intHensaiTukisuu = 1
+        End If
+        
+        intSyouyoKaisuu_WK = Fix(intHensaiTukisuu / 6)
+        For i = 1 To intHensaiTukisuu Mod 6
+            If DatePart("m", DateAdd("m", i, strYuusibi)) = DatePart("m", varSyouyoDate1) Or DatePart("m", DateAdd("m", i, strYuusibi)) = DatePart("m", varSyouyoDate2) Then
+                intSyouyoKaisuu_WK = intSyouyoKaisuu_WK + 1
+            End If
+        Next i
+        If intSyouyoKaisuu_WK <= 0 Then intSyouyoKaisuu_WK = 1
+        strHensaiKijitu_WK = DateAdd("m", 1, CVDate(Format$(strYuusibi, "yyyy/mm/25")))
+        If DateDiff("y", strYuusibi, DateAdd("y", -1, CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate1, "mm") & "/01"))) >= 0 Then                 'ˆêƒ–Œ‘O
+            strSyouyoKijitu_WK = CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate1, "mm/dd"))
+        ElseIf DateDiff("y", strYuusibi, DateAdd("y", -1, CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate2, "mm") & "/01"))) >= 0 Then                 'ˆêƒ–Œ‘O
+            strSyouyoKijitu_WK = CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+        Else
+            strSyouyoKijitu_WK = DateAdd("yyyy", 1, CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate1, "mm/dd")))
+        End If
+        lngKyuuyoHenZan_WK = lngKyuuyo
+        lngSyouyoHenZan_WK = lngSyouyo
+
+        '----------------------x•¥ŠzŒvZ---------------------------
+        lngKyuuyoTeigaku_WK = 0
+        lngSyouyoTeigaku_WK = 0
+        If intHensaiFlg = 1 Then
+            If Val(Format(strYuusibi, "dd")) >= 11 Then
+                strHensaiKikan_WK = 30
+            Else
+                strHensaiKikan_WK = 45
+            End If
+            dblRisoku2_WK = (lngKyuuyo * dblRiritu * strHensaiKikan_WK / 12 / 30)
+            dblRisoku_WK = Int(dblRisoku2_WK)
+            If intHensaiTukisuu <= 1 Then
+                lngKyuuyoTeigaku_WK = dblRisoku_WK + lngKyuuyo
+            Else
+                curTeigaku0_WK = 0
+                curTeigaku1_WK = Abs(-Pmt(dblRiritu / 12, intHensaiTukisuu - 1, lngKyuuyo, 0, 0))
+                curTeigaku2_WK = Abs(-Pmt(dblRiritu / 12, intHensaiTukisuu - 1, lngKyuuyo - curTeigaku1_WK + dblRisoku2_WK, 0, 0))
+                While Abs(curTeigaku1_WK - curTeigaku2_WK) > 0.001 Or Abs(curTeigaku0_WK - curTeigaku2_WK) > 0.001
+                    curTeigaku0_WK = curTeigaku1_WK: curTeigaku1_WK = curTeigaku2_WK
+                    curTeigaku2_WK = Abs(-Pmt(dblRiritu / 12, intHensaiTukisuu - 1, lngKyuuyo - (((curTeigaku0_WK) + (curTeigaku1_WK)) / 2) + dblRisoku2_WK, 0, 0))
+                Wend
+                lngKyuuyoTeigaku_WK = Fix(Abs(((curTeigaku0_WK) + (curTeigaku1_WK) + (curTeigaku2_WK)) / 3))
+            End If
+        End If
+        If intHensaiFlg = 2 Then
+            If intSyouyoKikan_WK = 6 Then
+                If Month(DateAdd("y", 1, strSyouyoKijitu_WK)) <> Month(strSyouyoKijitu_WK) Then
+                    dblRisoku2_WK = (lngSyouyo * dblRiritu * (DateDiff("m", strYuusibi, strSyouyoKijitu_WK) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21)) / 2 / 180)
+                Else
+                    dblRisoku2_WK = (lngSyouyo * dblRiritu * (DateDiff("m", strYuusibi, strSyouyoKijitu_WK) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21) + (Day(strSyouyoKijitu_WK) - 1 - 30)) / 2 / 180)
+                End If
+                dblRisoku_WK = Int(dblRisoku2_WK)
+            Else
+                dblRisoku2_WK = (lngSyouyo * dblRiritu * (DateDiff("m", strYuusibi, strSyouyoKijitu_WK) * 30 + IIf(Val(Format(strYuusibi, "dd")) >= 11, 6, 21) + ((10) - 1 - 30)) / 2 / 180)
+                dblRisoku_WK = Int(dblRisoku2_WK)
+            End If
+            If intSyouyoKaisuu_WK <= 1 Then
+                lngSyouyoTeigaku_WK = dblRisoku_WK + lngSyouyo
+            Else
+                curTeigaku0_WK = 0
+                curTeigaku1_WK = Abs(-Pmt(dblRiritu / 2, intSyouyoKaisuu_WK - 1, lngSyouyo, 0, 0))
+                curTeigaku2_WK = Abs(-Pmt(dblRiritu / 2, intSyouyoKaisuu_WK - 1, lngSyouyo - curTeigaku1_WK + dblRisoku2_WK, 0, 0))
+                While Abs(curTeigaku1_WK - curTeigaku2_WK) > 0.001 Or Abs(curTeigaku0_WK - curTeigaku2_WK) > 0.001
+                    curTeigaku0_WK = curTeigaku1_WK: curTeigaku1_WK = curTeigaku2_WK
+                    curTeigaku2_WK = Abs(-Pmt(dblRiritu / 2, intSyouyoKaisuu_WK - 1, lngSyouyo - (((curTeigaku0_WK) + (curTeigaku1_WK)) / 2) + dblRisoku2_WK, 0, 0))
+                Wend
+                lngSyouyoTeigaku_WK = Fix(Abs(((curTeigaku0_WK) + (curTeigaku1_WK) + (curTeigaku2_WK)) / 3))
+                If intSyouyoKikan_WK <> 6 Then
+                    lngSyouyoTeigaku_WK = gfnclngSyouyoHensai(CDbl(strYuusibi), dblRiritu, varSyouyoDate1, varSyouyoDate2, intSyouyoKaisuu_WK, lngSyouyo, dblRisoku_WK, lngSyouyoTeigaku_WK)
+               
+                End If
+            End If
+        End If
+        '-------------------------------------------------------------
+    Else
+        '****************
+        '* V‚µ‚¢ˆ—
+        '****************
+        ' —˜—¦‚ğ “ ‚©‚ç ¬” ‚É•ÏŠ·
+        If dblRiritu >= 1 Then
+            dblRiritu = dblRiritu / 100
+        End If
+        ' Ü—^”NŒ“ú‚Ì¬‚³‚¢•û‚ğ "‚P" ‚Éİ’è
+        If DateDiff("y", varSyouyoDate1, varSyouyoDate2) < 0 Then
+            strSyouyoDate_WK = varSyouyoDate1
+            varSyouyoDate1 = varSyouyoDate2
+            varSyouyoDate2 = strSyouyoDate_WK
+        End If
+        ' Ü—^‚Ì•ÔÏ‰ñ”‚ğ‹‚ß‚é
+        If intHensaiTukisuu <= 0 Then
+            intHensaiTukisuu = 1
+        End If
+        intSyouyoKaisuu_WK = Fix(intHensaiTukisuu / 6)
+        ' ”¼’[‚Èi‚P‚T‰ñ‚È‚Ç‚Ì‚U‚ÅŠ„‚èØ‚ê‚È‚¢jŒ”‚Å‚Ì•ÔÏ‚Ìê‡A
+        ' ”¼’[‚ÈŒ”‚Ì’†‚ÉÜ—^“ú‚ª‚ ‚ê‚ÎA‚»‚Ì‰ñ”‚ğ‰ÁZ‚·‚é
+        ' ’A‚µAƒtƒH[ƒ€iĞˆõ—Z‘‘ä’ j‚Å‚ÍA‚U‚Ì”{”‚Ì‰ñ”‚µ‚©“ü—Í‚Å‚«‚È‚¢ˆ×A
+        ' ‚ ‚è‚¦‚È‚¢‚ªAŒ³X‚Ìˆ—‚ğ‚»‚Ì‚Ü‚Ü‚Æ‚µ‚½
+        For i = 1 To intHensaiTukisuu Mod 6
+            If DatePart("m", DateAdd("m", i, strYuusibi)) = DatePart("m", varSyouyoDate1) Or DatePart("m", DateAdd("m", i, strYuusibi)) = DatePart("m", varSyouyoDate2) Then
+                intSyouyoKaisuu_WK = intSyouyoKaisuu_WK + 1
+            End If
+        Next i
+        If intSyouyoKaisuu_WK <= 0 Then
+            intSyouyoKaisuu_WK = 1
+        End If
+        ' ‚P‰ñ–Ú‚Ì‹‹—^•ÔÏ“ú‚ğ‹‚ß‚éi—Z‘“ú‚Ì—‚Œ‚Ì‚Q‚T“ú‚©‚çj
+        strHensaiKijitu_WK = DateAdd("m", 1, CVDate(Format$(strYuusibi, "yyyy/mm/25")))
+        ' ‚P‰ñ–Ú‚ÌÜ—^•ÔÏ“ú‚ğ‹‚ß‚éi—Z‘“ú‚Ì—‚ŒˆÈ~j
+        If DateDiff("y", strYuusibi, DateAdd("y", -1, CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate1, "mm") & "/01"))) >= 0 Then                 'ˆêƒ–Œ‘O
+            strSyouyoKijitu_WK = CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate1, "mm/dd"))
+        ElseIf DateDiff("y", strYuusibi, DateAdd("y", -1, CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate2, "mm") & "/01"))) >= 0 Then                 'ˆêƒ–Œ‘O
+            strSyouyoKijitu_WK = CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+        Else
+            strSyouyoKijitu_WK = DateAdd("yyyy", 1, CVDate(Format$(strYuusibi, "yyyy/") & Format$(varSyouyoDate1, "mm/dd")))
+        End If
+        lngKyuuyoHenZan_WK = lngKyuuyo
+        lngSyouyoHenZan_WK = lngSyouyo
+        
+        '----------------------x•¥ŠzŒvZ---------------------------
+        lngKyuuyoTeigaku_WK = 0
+        lngSyouyoTeigaku_WK = 0
+        '****************************
+        '* ‹‹—^‚Ì–ˆŒ‚Ì•ÔÏŠz‚ÌŒvZ
+        '****************************
+        If intHensaiFlg = 1 Then
+            ' —Z‘“úiŒvZ‚·‚é‚Í|‚P“ú‚·‚éj‚©‚çA‚P‰ñ–Ú‚Ì‹‹—^•ÔÏ“ú‚Ü‚Å‚ÌŠúŠÔZo
+            strHensaiKikan_WK = DateDiff("y", CVDate(DateAdd("y", -1, CVDate(strYuusibi))), CVDate(strHensaiKijitu_WK))
+            
+            '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+             ' ‚P‰ñ–Ú‚Ì‹‹—^•ÔÏ“ú‚Ü‚Å‚Ì—˜‘§ŒvZ
+            If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                dblRisoku_WK = Fix(lngKyuuyo * dblKeiyakuriritu * strHensaiKikan_WK)
+            Else
+                dblRisoku2_WK = (lngKyuuyo * dblRiritu * strHensaiKikan_WK / 365)
+                dblRisoku_WK = Int(dblRisoku2_WK)
+            End If
+            
+            
+            If intHensaiTukisuu <= 1 Then
+                ' ‚P‰ñ‚Å‚Ì•ÔÏ‚Ìê‡
+                lngKyuuyoTeigaku_WK = curRisoku + lngKyuuyo
+            Else
+                '* •W€ŠÖ”‚Å‹‚ß‚é–ˆ‰ñ‚Ì•ÔÏ‹àŠz
+                curTeigaku0_WK = Int(Abs(-Pmt(dblRiritu / 12, intHensaiTukisuu, lngKyuuyo, 0, 0)))
+                '* ‚P‰ñ–Ú—p‚Ì‘O‰ñ•ÔÏ“úi—Z‘“ú|‚P“új
+                strZenkaiKyuuyo = CVDate(DateAdd("y", -1, CVDate(strYuusibi)))
+                '* ‚P‰ñ–Ú—p‚Ì•ÔÏ“úi—Z‘“ú‚Ì—‚Œ‚Ì‚Q‚T“új
+                strHensaiKijitu_WK = DateAdd("m", 1, CVDate(Format$(strYuusibi, "yyyy/mm/25")))
+                curZandaka = lngKyuuyo
+                '*********************************************************
+                '* ‚P‰ñ–Ú‚©‚ç•ÔÏ‰ñ”|‚P‰ñ–Ú‚Ü‚Å‚Ì•ÔÏ—\’è‚ğ‡ŸŒvZ‚µA
+                '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz‚ğŒvZ‚·‚é
+                '*********************************************************
+                For i = 1 To intHensaiTukisuu - 1
+                    strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiKyuuyo), CVDate(strHensaiKijitu_WK))
+                    
+                    '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                    If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                        dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                        curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                    Else
+                        curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                    End If
+                    
+                    curZandaka = curZandaka - (curTeigaku0_WK - curRisoku)
+                    strZenkaiKyuuyo = strHensaiKijitu_WK
+                    strHensaiKijitu_WK = DateAdd("m", 1, strHensaiKijitu_WK)
+                Next i
+                '* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZ
+                strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiKyuuyo), CVDate(strHensaiKijitu_WK))
+                
+                '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                    dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                    curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                Else
+                    curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                End If
+                
+                '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz
+                curSaisyuuHensai = curRisoku + curZandaka
+                '* •W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ÆAÅI•ÔÏŠz‚Ì”äŠr
+                If curTeigaku0_WK = curSaisyuuHensai Then
+                    '* ˆê’v‚·‚éê‡‚ÍA•W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚Æ‚·‚é
+                    curTeigaku = curTeigaku0_WK
+                Else
+                    If curTeigaku0_WK < curSaisyuuHensai Then
+                        '* •W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚æ‚èAÅI•ÔÏŠz‚ª‘å‚«‚¢ê‡
+                        '*********************************************************
+                        '* •W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ğ{‚P‰~‚¸‚Â‚µ‚È‚ª‚çA
+                        '* ÅI•ÔÏŠz‚ğŒvZ‚µAÅ‚à‹ß‚¢‹àŠz‚ğZo‚·‚é
+                        '* i’A‚µA–ˆ‰ñ•ÔÏŠz <= ÅI•ÔÏŠz ‚Æ‚È‚é‹àŠzj
+                        '*********************************************************
+                        curTeigaku = curTeigaku0_WK
+                        Do
+                            '* –ˆ‰ñ•ÔÏŠz‚ğ‚P‰~‘Šz
+                            curTeigaku0_WK = curTeigaku0_WK + 1
+                            strZenkaiKyuuyo = CVDate(DateAdd("y", -1, CVDate(strYuusibi)))
+                            strHensaiKijitu_WK = DateAdd("m", 1, CVDate(Format$(strYuusibi, "yyyy/mm/25")))
+                            curZandaka = lngKyuuyo
+                            For i = 1 To intHensaiTukisuu - 1
+                                strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiKyuuyo), CVDate(strHensaiKijitu_WK))
+                                
+                                '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                                If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                    dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                    curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                                Else
+                                    curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                                End If
+                                
+                                curZandaka = curZandaka - (curTeigaku0_WK - curRisoku)
+                                strZenkaiKyuuyo = strHensaiKijitu_WK
+                                strHensaiKijitu_WK = DateAdd("m", 1, strHensaiKijitu_WK)
+                            Next i
+                            '* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZ
+                            strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiKyuuyo), CVDate(strHensaiKijitu_WK))
+                            
+                            '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                            If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                            Else
+                                curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                            End If
+                            
+                            '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz
+                            curSaisyuuHensai = curRisoku + curZandaka
+                            
+                            '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ÆAÅI•ÔÏŠz‚Ì”äŠr
+                            If curTeigaku0_WK < curSaisyuuHensai Then
+                                    
+                                curTeigaku = curTeigaku0_WK
+                                                                    
+                            Else
+                                '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ªAÅI•ÔÏŠz‚æ‚è‘å‚«‚­‚È‚Á‚½ê‡A
+                                '* ŒvZI—¹ ||„ ‚P‰ñ‘O‚Ì‹àŠz‚ğ–ˆ‰ñ•ÔÏŠz‚Æ‚·‚é
+                                Exit Do
+                            End If
+                        Loop
+                    Else
+                        '* ÅI•ÔÏŠz‚æ‚èA•W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ª‘å‚«‚¢ê‡
+                        '*********************************************************
+                        '* •W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ğ|‚P‰~‚¸‚Â‚µ‚È‚ª‚çA
+                        '* ÅI•ÔÏŠz‚ğŒvZ‚µAÅ‚à‹ß‚¢‹àŠz‚ğZo‚·‚é
+                        '* i’A‚µA–ˆ‰ñ•ÔÏŠz <= ÅI•ÔÏŠz ‚Æ‚È‚é‹àŠzj
+                        '*********************************************************
+                        curTeigaku = curTeigaku0_WK
+                        Do
+                            '* –ˆ‰ñ•ÔÏŠz‚ğ‚P‰~Œ¸Šz
+                            curTeigaku0_WK = curTeigaku0_WK - 1
+                            strZenkaiKyuuyo = CVDate(DateAdd("y", -1, CVDate(strYuusibi)))
+                            strHensaiKijitu_WK = DateAdd("m", 1, CVDate(Format$(strYuusibi, "yyyy/mm/25")))
+                            curZandaka = lngKyuuyo
+                            For i = 1 To intHensaiTukisuu - 1
+                                strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiKyuuyo), CVDate(strHensaiKijitu_WK))
+                                
+                                '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                                If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                    dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                    curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                                Else
+                                    curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                                End If
+                                
+                                curZandaka = curZandaka - (curTeigaku0_WK - curRisoku)
+                                strZenkaiKyuuyo = strHensaiKijitu_WK
+                                strHensaiKijitu_WK = DateAdd("m", 1, strHensaiKijitu_WK)
+                            Next i
+                            '* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZ
+                            strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiKyuuyo), CVDate(strHensaiKijitu_WK))
+                                
+                            '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                            If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                            Else
+                                curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                            End If
+                            
+                            '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz
+                            curSaisyuuHensai = curRisoku + curZandaka
+                            
+                            '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ÆAÅI•ÔÏŠz‚Ì”äŠr
+                            If curTeigaku0_WK <= curSaisyuuHensai Then
+                                '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ªAÅI•ÔÏŠzˆÈ‰º‚É‚È‚Á‚½ê‡A
+                                '* ŒvZI—¹ ||„ ¡‰ñ‚Ì‹àŠz‚ğ–ˆ‰ñ•ÔÏŠz‚Æ‚·‚é
+                                curTeigaku = curTeigaku0_WK
+                                Exit Do
+                            End If
+                        
+                        Loop
+                    End If
+                End If
+                lngKyuuyoTeigaku_WK = curTeigaku
+            End If
+        End If
+        '****************************
+        '* Ü—^‚Ì–ˆ‰ñ‚Ì•ÔÏŠz‚ÌŒvZ
+        '****************************
+        If intHensaiFlg = 2 Then
+            ' —Z‘“úiŒvZ‚·‚é‚Í|‚P“ú‚·‚éj‚©‚çA‚P‰ñ–Ú‚ÌÜ—^•ÔÏ“ú‚Ü‚Å‚ÌŠúŠÔZo
+            strHensaiKikan_WK = DateDiff("y", CVDate(DateAdd("y", -1, CVDate(strYuusibi))), CVDate(strSyouyoKijitu_WK))
+            
+            '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+             ' ‚P‰ñ–Ú‚Ì‹‹—^•ÔÏ“ú‚Ü‚Å‚Ì—˜‘§ŒvZ
+            If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                dblRisoku_WK = Fix(lngSyouyo * dblKeiyakuriritu * strHensaiKikan_WK)
+            Else
+                dblRisoku2_WK = (lngSyouyo * dblRiritu * strHensaiKikan_WK / 365)
+                dblRisoku_WK = Int(dblRisoku2_WK)
+            End If
+            
+            '* ‚P‰ñ–Ú‚ÌÜ—^•ÔÏ“ú‚Ì‘Ş”ğ
+            strDaiitiSyouyo = strSyouyoKijitu_WK
+            If intSyouyoKaisuu_WK <= 1 Then
+                ' ‚P‰ñ‚Å‚Ì•ÔÏ‚Ìê‡
+                lngSyouyoTeigaku_WK = dblRisoku_WK + lngSyouyo
+            Else
+                '* •W€ŠÖ”‚Å‹‚ß‚é–ˆ‰ñ‚Ì•ÔÏ‹àŠzi—˜—¦‚ÍÜ—^‚ÌŠÔŠu‚ª‹Ï“™‚È”N‚Q‰ñ‚Æ‰¼’è‚µ‚ÄŒvZ‚·‚éj
+                curTeigaku0_WK = Int(Abs(-Pmt(dblRiritu / 2, intSyouyoKaisuu_WK, lngSyouyo, 0, 0)))
+                '* ‚P‰ñ–Ú—p‚Ì‘O‰ñ•ÔÏ“úi—Z‘“ú|‚P“új
+                strZenkaiSyouyo_WK = CVDate(DateAdd("y", -1, CVDate(strYuusibi)))
+                curZandaka = lngSyouyo
+                '*********************************************************
+                '* ‚P‰ñ–Ú‚©‚çÜ—^‚Ì•ÔÏ‰ñ”|‚P‰ñ–Ú‚Ü‚Å‚Ì•ÔÏ—\’è‚ğ‡ŸŒvZ‚µA
+                '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz‚ğŒvZ‚·‚é
+                '*********************************************************
+                For i = 1 To intSyouyoKaisuu_WK - 1
+                    strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiSyouyo_WK), CVDate(strSyouyoKijitu_WK))
+                    
+                    '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                    If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                        dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                        curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                    Else
+                        curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                    End If
+                    
+                    curZandaka = curZandaka - (curTeigaku0_WK - curRisoku)
+                    strZenkaiSyouyo_WK = strSyouyoKijitu_WK
+                    '* Ÿ‰ñ‚ÌÜ—^“ú‚ÌŒvZ
+'*20031030
+'ŸÜ—^‚ª”N“x‚ğ‚Ü‚½‚®ê‡u* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZv‚É‚ÄA“ú•t‚ªƒ}ƒCƒiƒX‚É‚È‚é•s‹ï‡‚ğC³
+                    If Year(varSyouyoDate1) <> Year(varSyouyoDate2) Then
+                        '”N“x‚ğ‚Ü‚½‚®ê‡
+                        If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+                            'ŸÜ—^‚ª‰Ä‹G‚Ì”N“x‚É‚P’Ç‰Á
+                            strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate2, "mm/dd"))
+                        Else
+                            'ŸÜ—^‚Í“~‹G‚Ì‚Í”N“x‚Í•Ï‚í‚ç‚¸
+                            strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate1, "mm/dd"))
+                        End If
+                    Else
+                        '”N“x‚ğ‚Ü‚½‚ª‚È‚¢ê‡
+                        If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+                            'ŸÜ—^‚Í“~‹G‚Ì‚Í”N“x‚Í•Ï‚í‚ç‚¸
+                            strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+                        Else
+                            'ŸÜ—^‚ª‰Ä‹G‚Ì”N“x‚É‚P’Ç‰Á
+                            strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate1, "mm/dd"))
+                        End If
+                    End If
+'C³‘O‚Ìˆ—«
+'                    If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+'                        strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+'                    Else
+'                        strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate1, "mm/dd"))
+'                    End If
+'*20031030
+                Next i
+                '* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZ
+                strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiSyouyo_WK), CVDate(strSyouyoKijitu_WK))
+                
+                '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                    dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                    curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                Else
+                    curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                End If
+                
+                '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz
+                curSaisyuuHensai = curRisoku + curZandaka
+                '* •W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ÆAÅI•ÔÏŠz‚Ì”äŠr
+                If curTeigaku0_WK = curSaisyuuHensai Then
+                    '* ˆê’v‚·‚éê‡‚ÍA•W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚Æ‚·‚é
+                    curTeigaku = curTeigaku0_WK
+                Else
+                    If curTeigaku0_WK < curSaisyuuHensai Then
+                        '* •W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚æ‚èAÅI•ÔÏŠz‚ª‘å‚«‚¢ê‡
+                        '*********************************************************
+                        '* –ˆ‰ñ•ÔÏŠz‚ª‚P‚O‚O‚O‰~ˆÈã‚Ìê‡Aƒ‹[ƒv‚Ì‰ñ”‚ğŒ¸‚ç‚·‚½‚ß
+                        '* •W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ğ{‚P‚O‚O‚O‰~‚¸‚Â‚µ‚È‚ª‚çA
+                        '* ÅI•ÔÏŠz‚ğŒvZ‚µAÅI•ÔÏŠz‚ªZo‚µ‚½–ˆ‰ñ•ÔÏŠz‚æ‚è‚à
+                        '* ‘å‚«‚­‚È‚Á‚½‚PŒÂ‘O‚Ì‹àŠz‚ğ‹‚ß‚é
+                        '* iÜ—^‚Ìê‡AŒë·‚ª‘å‚«‚¢‚Ì‚Å‚±‚Ìˆ—‚ğ’Ç‰Á‚·‚éB
+                        '* @‹‹—^‚Ìê‡‚ÍŒë·‚ª­‚È‚¢‚Ì‚Å‚±‚Ìˆ—‚Í‚È‚¢Bj
+                        '*********************************************************
+                        curTeigaku = curTeigaku0_WK
+                        If Int(curTeigaku0_WK / 1000) >= 1 Then
+                            Do
+                                '* –ˆ‰ñ•ÔÏŠz‚ğ‚P‰~‘Šz
+                                curTeigaku0_WK = curTeigaku0_WK + 1000
+                                curSaisyuuHensai = CVDate(DateAdd("y", -1, CVDate(strYuusibi)))
+                                strSyouyoKijitu_WK = CVDate(strDaiitiSyouyo)
+                                curZandaka = lngSyouyo
+                                For i = 1 To intSyouyoKaisuu_WK - 1
+                                    strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiSyouyo_WK), CVDate(strSyouyoKijitu_WK))
+                                    
+                                    '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                                    If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                        dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                        curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                                    Else
+                                        curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                                    End If
+                                    
+                                    curZandaka = curZandaka - (curTeigaku0_WK - curRisoku)
+                                    strZenkaiSyouyo_WK = strSyouyoKijitu_WK
+
+                                    '* Ÿ‰ñ‚ÌÜ—^“ú‚ÌŒvZ
+'*20031030
+'ŸÜ—^‚ª”N“x‚ğ‚Ü‚½‚®ê‡u* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZv‚É‚ÄA“ú•t‚ªƒ}ƒCƒiƒX‚É‚È‚é•s‹ï‡‚ğC³
+                                    If Year(varSyouyoDate1) <> Year(varSyouyoDate2) Then
+                                        '”N“x‚ğ‚Ü‚½‚®ê‡
+                                        If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+                                            'ŸÜ—^‚ª‰Ä‹G‚Ì”N“x‚É‚P’Ç‰Á
+                                            strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate2, "mm/dd"))
+                                        Else
+                                            'ŸÜ—^‚Í“~‹G‚Ì‚Í”N“x‚Í•Ï‚í‚ç‚¸
+                                            strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate1, "mm/dd"))
+                                        End If
+                                    Else
+                                        '”N“x‚ğ‚Ü‚½‚ª‚È‚¢ê‡
+                                        If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+                                            'ŸÜ—^‚Í“~‹G‚Ì‚Í”N“x‚Í•Ï‚í‚ç‚¸
+                                            strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+                                        Else
+                                            'ŸÜ—^‚ª‰Ä‹G‚Ì”N“x‚É‚P’Ç‰Á
+                                            strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate1, "mm/dd"))
+                                        End If
+                                    End If
+'C³‘O‚Ìˆ—«
+'                                    If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+'                                        strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+'                                    Else
+'                                        strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate1, "mm/dd"))
+'                                    End If
+'*20031030
+                                Next i
+                                '* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZ
+                                strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiSyouyo), CVDate(strSyouyoKijitu_WK))
+                                    
+                                '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                                If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                    dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                    curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                                Else
+                                    curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                                End If
+                                
+                                '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz
+                                curSaisyuuHensai = curRisoku + curZandaka
+                                '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ÆAÅI•ÔÏŠz‚Ì”äŠr
+                                If curTeigaku0_WK < curSaisyuuHensai Then
+                                    curTeigaku = curTeigaku0_WK
+                                Else
+                                    '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ªAÅI•ÔÏŠz‚æ‚è‘å‚«‚­‚È‚Á‚½ê‡A
+                                    '* ŒvZI—¹ ||„ ‚P‰ñ‘O‚Ì‹àŠz‚ğ–ˆ‰ñ•ÔÏŠz‚Æ‚·‚é
+                                    Exit Do
+                                End If
+                            Loop
+                            curTeigaku0_WK = curTeigaku
+                        End If
+                    Else
+                        '* ÅI•ÔÏŠz‚æ‚èA•W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ª‘å‚«‚¢ê‡
+                        '*********************************************************
+                        '* –ˆ‰ñ•ÔÏŠz‚ª‚P‚O‚O‚O‰~ˆÈã‚Ìê‡Aƒ‹[ƒv‚Ì‰ñ”‚ğŒ¸‚ç‚·‚½‚ß
+                        '* •W€ŠÖ”‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ğ|‚P‚O‚O‚O‰~‚¸‚Â‚µ‚È‚ª‚çA
+                        '* ÅI•ÔÏŠz‚ğŒvZ‚µAÅI•ÔÏŠz‚ªZo‚µ‚½–ˆ‰ñ•ÔÏŠz‚æ‚è‚à
+                        '* ¬‚³‚­‚È‚Á‚½‹àŠz‚ğ‹‚ß‚é
+                        '* iÜ—^‚Ìê‡AŒë·‚ª‘å‚«‚¢‚Ì‚Å‚±‚Ìˆ—‚ğ’Ç‰Á‚·‚éB
+                        '* @‹‹—^‚Ìê‡‚ÍŒë·‚ª­‚È‚¢‚Ì‚Å‚±‚Ìˆ—‚Í‚È‚¢Bj
+                        '*********************************************************
+                        If Int(curTeigaku0_WK / 1000) >= 1 Then
+                            Do
+                                '* –ˆ‰ñ•ÔÏŠz‚ğ‚P‰~Œ¸Šz
+                                curTeigaku0_WK = curTeigaku0_WK - 1000
+                                strZenkaiSyouyo = CVDate(DateAdd("y", -1, CVDate(strYuusibi)))
+                                strSyouyoKijitu_WK = CVDate(strDaiitiSyouyo)
+                                curZandaka = lngSyouyo
+                                For i = 1 To intSyouyoKaisuu_WK - 1
+                                    strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiSyouyo), CVDate(strSyouyoKijitu_WK))
+                                    
+                                    '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                                    If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                        dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                        curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                                    Else
+                                        curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                                    End If
+                                    
+                                    curZandaka = curZandaka - (curTeigaku0_WK - curRisoku)
+                                    strZenkaiSyouyo = strSyouyoKijitu_WK
+                                    '* Ÿ‰ñ‚ÌÜ—^“ú‚ÌŒvZ
+'*20031030
+'ŸÜ—^‚ª”N“x‚ğ‚Ü‚½‚®ê‡u* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZv‚É‚ÄA“ú•t‚ªƒ}ƒCƒiƒX‚É‚È‚é•s‹ï‡‚ğC³
+                                    If Year(varSyouyoDate1) <> Year(varSyouyoDate2) Then
+                                        '”N“x‚ğ‚Ü‚½‚®ê‡
+                                        If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+                                            'ŸÜ—^‚ª‰Ä‹G‚Ì”N“x‚É‚P’Ç‰Á
+                                            strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate2, "mm/dd"))
+                                        Else
+                                            'ŸÜ—^‚Í“~‹G‚Ì‚Í”N“x‚Í•Ï‚í‚ç‚¸
+                                            strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate1, "mm/dd"))
+                                        End If
+                                    Else
+                                        '”N“x‚ğ‚Ü‚½‚ª‚È‚¢ê‡
+                                        If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+                                            'ŸÜ—^‚Í“~‹G‚Ì‚Í”N“x‚Í•Ï‚í‚ç‚¸
+                                            strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+                                        Else
+                                            'ŸÜ—^‚ª‰Ä‹G‚Ì”N“x‚É‚P’Ç‰Á
+                                            strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate1, "mm/dd"))
+                                        End If
+                                    End If
+'                                    If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+'                                        strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+'                                    Else
+'                                        strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate1, "mm/dd"))
+'                                    End If
+'*20031030
+
+                                Next i
+                                '* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZ
+                                strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiSyouyo), CVDate(strSyouyoKijitu_WK))
+                                
+                                '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                                If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                    dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                    curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                                Else
+                                    curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                                End If
+                                
+                                '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz
+                                curSaisyuuHensai = curRisoku + curZandaka
+                                '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ÆAÅI•ÔÏŠz‚Ì”äŠr
+                                If curTeigaku0_WK <= curSaisyuuHensai Then
+                                    '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ªAÅI•ÔÏŠzˆÈ‰º‚É‚È‚Á‚½ê‡A
+                                    '* ŒvZI—¹ ||„ ¡‰ñ‚Ì‹àŠz‚ğ–ˆ‰ñ•ÔÏŠz‚Æ‚·‚é
+                                    curTeigaku = curTeigaku0_WK
+                                    Exit Do
+                                End If
+                            Loop
+                            curTeigaku0_WK = curTeigaku
+                        End If
+                    End If
+                    '*********************************************************
+                    '* ã‹L‚Å‹‚ß‚½–ˆ‰ñ•ÔÏŠz‚ğ{‚P‰~‚¸‚Â‚µ‚È‚ª‚çA
+                    '* ÅI•ÔÏŠz‚ğŒvZ‚µAÅ‚à‹ß‚¢‹àŠz‚ğZo‚·‚é
+                    '* i’A‚µA–ˆ‰ñ•ÔÏŠz <= ÅI•ÔÏŠz ‚Æ‚È‚é‹àŠzj
+                    '*********************************************************
+                    curTeigaku = curTeigaku0_WK
+                    Do
+                        '* –ˆ‰ñ•ÔÏŠz‚ğ‚P‰~‘Šz
+                        curTeigaku0_WK = curTeigaku0_WK + 1
+                        strZenkaiSyouyo = CVDate(DateAdd("y", -1, CVDate(strYuusibi)))
+                        strSyouyoKijitu_WK = CVDate(strDaiitiSyouyo)
+                        curZandaka = lngSyouyo
+                        For i = 1 To intSyouyoKaisuu_WK - 1
+                            strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiSyouyo), CVDate(strSyouyoKijitu_WK))
+                            
+                            '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                            If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                                dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                                curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                            Else
+                                curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                            End If
+                            
+                            curZandaka = curZandaka - (curTeigaku0_WK - curRisoku)
+                            strZenkaiSyouyo = strSyouyoKijitu_WK
+                            '* Ÿ‰ñ‚ÌÜ—^“ú‚ÌŒvZ
+'*20031030
+'ŸÜ—^‚ª”N“x‚ğ‚Ü‚½‚®ê‡u* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZv‚É‚ÄA“ú•t‚ªƒ}ƒCƒiƒX‚É‚È‚é•s‹ï‡‚ğC³
+                            If Year(varSyouyoDate1) <> Year(varSyouyoDate2) Then
+                                '”N“x‚ğ‚Ü‚½‚®ê‡
+                                If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+                                    'ŸÜ—^‚ª‰Ä‹G‚Ì”N“x‚É‚P’Ç‰Á
+                                    strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate2, "mm/dd"))
+                                Else
+                                    'ŸÜ—^‚Í“~‹G‚Ì‚Í”N“x‚Í•Ï‚í‚ç‚¸
+                                    strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate1, "mm/dd"))
+                                End If
+                            Else
+                                '”N“x‚ğ‚Ü‚½‚ª‚È‚¢ê‡
+                                If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+                                    'ŸÜ—^‚Í“~‹G‚Ì‚Í”N“x‚Í•Ï‚í‚ç‚¸
+                                    strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+                                Else
+                                    'ŸÜ—^‚ª‰Ä‹G‚Ì”N“x‚É‚P’Ç‰Á
+                                    strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate1, "mm/dd"))
+                                End If
+                            End If
+
+'                            If Month(strSyouyoKijitu_WK) = Month(varSyouyoDate1) Then
+'                                strSyouyoKijitu_WK = CVDate(Format$(strSyouyoKijitu_WK, "yyyy/") & Format$(varSyouyoDate2, "mm/dd"))
+'                            Else
+'                                strSyouyoKijitu_WK = CVDate(Format$(Year(strSyouyoKijitu_WK) + 1, "0000") & "/" & Format$(varSyouyoDate1, "mm/dd"))
+'                            End If
+'*20031030
+
+                        Next i
+                        '* ÅI•ÔÏ‚Å‚Ì—˜‘§ŒvZ
+                        strHensaiKikan_WK = DateDiff("y", CVDate(strZenkaiSyouyo), CVDate(strSyouyoKijitu_WK))
+                        
+                        '/*—˜‘§Zo —Z‘“ú‚ªVƒVƒXƒeƒ€ˆÚsŒã(2001/11/01) */                                                    -- 10/23 UPD
+                        If CDate(Format(strYuusibi, "YYYY/MM/DD")) >= CDate(Format(gcnsstrSysChng, "YYYY/MM/DD")) Then
+                            dblKeiyakuriritu = Fix(dblRiritu / 365 * 1000000) / 1000000
+                            curRisoku = Fix(curZandaka * dblKeiyakuriritu * strHensaiKikan_WK)
+                        Else
+                            curRisoku = Int(curZandaka * dblRiritu * strHensaiKikan_WK / 365)
+                        End If
+                        
+                        '* ÅI•ÔÏ‚Å‚Ì•ÔÏŠz
+                        curSaisyuuHensai = curRisoku + curZandaka
+                        '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ÆAÅI•ÔÏŠz‚Ì”äŠr
+                        If curTeigaku0_WK = curSaisyuuHensai Then
+                            '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ÆÅI•ÔÏŠz‚ª“™‚µ‚­ê‡A
+                            '* ¡‰ñ‚Ì‹àŠz‚ğ–ˆ‰ñ•ÔÏŠz‚Æ‚·‚é
+                            curTeigaku = curTeigaku0_WK
+                            Exit Do
+                        Else
+                            If curTeigaku0_WK < curSaisyuuHensai Then
+                                curTeigaku = curTeigaku0_WK
+                            
+                            Else
+                                '* ¡‰ñ‚Ìƒ‹[ƒv‚Ì–ˆ‰ñ•ÔÏŠz‚ªAÅI•ÔÏŠz‚æ‚è‘å‚«‚­‚È‚Á‚½ê‡A
+                                '* ŒvZI—¹ ||„ ‚P‰ñ‘O‚Ì‹àŠz‚ğ–ˆ‰ñ•ÔÏŠz‚Æ‚·‚é
+                                Exit Do
+                            End If
+                        End If
+                    Loop
+                End If
+                lngSyouyoTeigaku_WK = curTeigaku
+            End If
+        End If
+    End If
+  
+    gfncstrKeisan = 0
+    Select Case intHensaiFlg
+        Case 1: gfncstrKeisan = lngKyuuyoTeigaku_WK
+        Case 2: gfncstrKeisan = lngSyouyoTeigaku_WK
+    End Select
+
+End Function

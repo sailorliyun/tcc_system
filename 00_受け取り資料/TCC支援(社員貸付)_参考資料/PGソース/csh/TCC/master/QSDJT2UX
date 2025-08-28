@@ -1,0 +1,45 @@
+#!/bin/csh
+setenv JOBNET_ID   QSDT01UX
+setenv JOB_ID      QSDJT2UX
+setenv USERKEY     QSDJT2UX
+set    MODULE   =  QSDJT2UX
+set    LOGWRITE =  $EXE_DIR/QUAJ_MSGLOG.BAT
+set    oradir   =  /d051/UFS/data/qs
+set    Muko_F   =  MukoShiji.dat
+
+$LOGWRITE "$MODULE" I "START : 電話無効データ取込み" "$USERKEY"
+#-----------------------------------------------------#
+#  ファイル確認
+#-----------------------------------------------------#
+if ( ! -e $oradir/$Muko_F ) then   ## ﾌｧｲﾙがない時は処理ｽｷｯﾌﾟ
+     goto END00
+endif
+
+#-----------------------------------------------------#
+#  対応履歴取込
+#-----------------------------------------------------#
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qtap_sdbt020pkg.qtap_sdbt020('$JOBNET_ID','$JOB_ID','$oradir','$Muko_F')"
+
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 電話無効データ取込み RC=[$rc]" "$USERKEY"
+    echo "*** QTAP_SDBT020 ERROR RC=[$rc] ***"
+    exit(1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+#-----------------------------------------------------#
+#  電話無効ファイル削除
+#-----------------------------------------------------#
+\rm -f $oradir/$Muko_F
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 電話無効ファイル削除 RC=[$rc]" "$USERKEY"
+    echo "*** MukoShiji.dat Delete ERROR RC=[$rc] ***"
+   exit(1)
+endif
+
+END00:
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)

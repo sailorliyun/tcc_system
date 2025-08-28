@@ -1,0 +1,9 @@
+  ALTER TABLE QPB3_ZNDKRRK
+	ADD (
+	    QPB3_TOZAIKBN  CHAR(1),      --“Œ¼‹æ•ª
+	    QPB3_SYOZOKUCD CHAR(3),      --Š‘®“XCD
+	    QPB3_SYOZOKUNM VARCHAR(24)   --Š‘®“X–¼
+	    );
+
+
+

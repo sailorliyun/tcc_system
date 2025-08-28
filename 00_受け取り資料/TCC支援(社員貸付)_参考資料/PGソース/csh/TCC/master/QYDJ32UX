@@ -1,0 +1,76 @@
+#!/bin/csh
+#　スクリプト名  ： QYDJ32UX
+#　 機  能       ： 発券データ編集
+#　 作成者       ： FIP
+#
+#   管理番号   修正内容                         担当者        日付
+#   000001     繰越ファイル作成修正             NBC.林        2007/07/24
+#
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                           # シェル名
+setenv JOB_ID       $SHELL_NAME:t                # ジョブ名
+setenv JOBNET_ID   'QYD012UX'                    # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log  # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT     # ログ出力モジュール
+setenv USERKEY      'QYDJ32UX'                   # ユーザキー
+set    KINOU      = '発券データ編集'             # 機能
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#########################################
+# STEP-1                                #
+#########################################
+STEP_01:
+
+#000001 add 2007/07/24 haayshi START
+cat $QY_DATA_DIR/hakken_daily/qyaf_hakkendata.kur \
+    $FROMHOST1_DIR/qy/rcv/qyaf_hakkendata.hulft   \
+  > $FROMHOST1_DIR/qy/rcv/qyaf_hakkendata.dat
+#000001 add 2007/07/24 haayshi END
+
+
+set MODULE = 'qyab_s000600'
+$LOGWRITE "$MODULE" I "開始:発券データ編集" $USERKEY
+
+set PROGRAM = $EXE_DIR/qyab_s000600.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+#000001 MOD 2007/07/24 haayshi START
+#    setenv INFILE   $FROMHOST1_DIR/qy/rcv/qyaf_hakkendata.hulft
+    setenv INFILE   $FROMHOST1_DIR/qy/rcv/qyaf_hakkendata.dat
+#000001 MOD 2007/07/24 haayshi END
+#000001 MOD 2007/07/24 haayshi START
+#    setenv OUTFILE  $QY_DATA_DIR/hakken_daily/qyaf_hakkendata.edit
+    setenv OUTFILE  $QY_DATA_DIR/hakken_daily/qyaf_hakkendata.load
+#000001 MOD 2007/07/24 haayshi END
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:発券データ編集 RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:発券データ編集" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

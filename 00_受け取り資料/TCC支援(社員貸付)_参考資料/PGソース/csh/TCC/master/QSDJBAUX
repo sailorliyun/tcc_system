@@ -1,0 +1,110 @@
+#!/bin/csh
+#
+#  日次フルバックアップ (QSDJBAUX)
+#        (4クラス使用)
+#
+#     機  能：
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+#   00001    2010/02/12  FIP.Eriguchi   テープライブラリ装置の変更に伴う、
+#                                       ﾊﾞｯｸｱｯﾌﾟｺﾏﾝﾄﾞのサーバ名の変更
+#
+set  SHELL_NAME = $0                                    # シェル名
+set  MODULE   =  $SHELL_NAME:t                          # モジュール名
+set  LOGFILE  =  $USER_LOG_DIR/db_ope.log               # ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ログ出力用共通シェル
+
+set  NET_BKUP = /usr/openv/netbackup/bin/bpbackup       # Net Backup コマンド
+set  CLASS_FILE = /usr/local/auto/master/class_file     # 前回使用したクラス
+
+# set  CLASS1_1 = sueswc-tccd-1                           # クラス
+# set  CLASS1_2 = sueswc-tccd-2                           # クラス
+# set  CLASS1_3 = sueswc-tccd-3                           # クラス
+# set  CLASS1_4 = sueswc-tccd-4                           # クラス
+set  CLASS1_1 = sunuy1-tccd-1                           # クラス
+set  CLASS1_2 = sunuy1-tccd-2                           # クラス
+set  CLASS1_3 = sunuy1-tccd-3                           # クラス
+set  CLASS1_4 = sunuy1-tccd-4                           # クラス
+
+$LOGWRITE  "日次フルバックアップ開始" >> $LOGFILE
+
+#############################################################
+# EMC ﾌﾙ ﾊﾞｯｸｱｯﾌﾟ (尚、ﾊﾞｯｸｱｯﾌﾟ対象はｸﾗｽ内にて指定)	    #
+#############################################################
+$LOGWRITE  "ＥＭＣからＳＴＫへのフルバックアップ開始" >> $LOGFILE
+
+setenv  OLD_CLASS  `cat $CLASS_FILE`
+switch  ($OLD_CLASS)
+        case  $CLASS1_1
+#             setenv  NEW_CLASS  sueswc-tccd-2
+              setenv  NEW_CLASS  sunuy1-tccd-2
+              breaksw
+        case  $CLASS1_2
+#             setenv  NEW_CLASS  sueswc-tccd-3
+              setenv  NEW_CLASS  sunuy1-tccd-3
+              breaksw
+        case  $CLASS1_3
+#             setenv  NEW_CLASS  sueswc-tccd-4
+              setenv  NEW_CLASS  sunuy1-tccd-4
+              breaksw
+        case  $CLASS1_4
+#             setenv  NEW_CLASS  sueswc-tccd-1
+              setenv  NEW_CLASS  sunuy1-tccd-1
+              breaksw
+        default
+#             $LOGWRITE "クラスファイルがありません" >> $LOGFILE
+              $LOGWRITE "ポリシーファイルがありません" >> $LOGFILE
+              exit 1
+endsw
+
+### EMC BACKUP ﾏｽﾀｰｻｰﾊﾞより実行 ###
+
+# rsh sunuw9 -l root $NET_BKUP -i -c $NEW_CLASS -w 0
+# 00001 mod by FIP.Eriguchi start
+# rsh fmsvyr -l root $NET_BKUP -i -p $NEW_CLASS -w 0
+$NET_BKUP -i -p $NEW_CLASS -w 0
+# 00001 mod by FIP.Eriguchi end
+set   RC = $status
+if ( $RC != 0 ) then
+        $LOGWRITE  "ＥＭＣからＳＴＫへのフルバックアップ失敗 \[RC=$RC\]" >> $LOGFILE
+        exit 1
+endif
+
+rm $CLASS_FILE
+echo $NEW_CLASS >> $CLASS_FILE
+
+$LOGWRITE  "ＥＭＣからＳＴＫへのフルバックアップ正常終了" >> $LOGFILE
+
+##########################################################################
+# REDOアーカイブログファイルをクリアする テスト時は以下コメント 01.05.25 #
+##########################################################################
+#set CNT = `ls -1 /d230/DBF/qs_tcc/arch | wc -l`
+#if ( $CNT > 0 ) then
+#	rm /d230/DBF/qs_tcc/arch/*
+#	set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+#	if ( $RC != 0 ) then
+#		$LOGWRITE "REDO ARCHIVE in /d230 削除失敗 \[RC=$RC\]"   >> $LOGFILE
+#		$LOGWRITE  "フルバックアップ失敗" >> $LOGFILE
+#		exit 1
+#	endif
+#endif
+#
+#set CNT = `ls -1 /d240/DBF/qs_tcc/arch | wc -l`
+#if ( $CNT > 0 ) then
+#	rm /d240/DBF/qs_tcc/arch/*
+#	set RC = $status                      # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+#	if ( $RC != 0 ) then
+#		$LOGWRITE "REDO ARCHIVE in /d240 削除失敗 \[RC=$RC\]"   >> $LOGFILE
+#		$LOGWRITE  "フルバックアップ失敗" >> $LOGFILE
+#		exit 1
+#	endif
+#endif
+
+$LOGWRITE  "日次フルバックアップ正常終了" >> $LOGFILE
+
+exit 0 

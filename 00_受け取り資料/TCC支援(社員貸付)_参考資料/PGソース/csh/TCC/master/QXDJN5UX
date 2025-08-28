@@ -1,0 +1,84 @@
+#!/bin/csh
+#
+#　スクリプト名  ： QXDJN5UX
+#　 機  能       ： 悪用売上データLOAD
+#　 作成者       ： FIP
+#  修正番号 修正者   修正日時   修正内容
+#  000001   hayashi  2007/07/13 ﾛｰﾀﾞｰ後ｲﾝﾃﾞｯｸｽﾁｪｯｸ追加
+#
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QXD1D4UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+setenv USERKEY      'QXDJN5UX'                      # ユーザキー
+set    KINOU      = '悪用売上データLOADER'
+set    QX_DATA_DIR   = /d051/UFS/data/qxn/alarmdata    #TMP FILE DIR
+# 000001 hayashi add 2007/07/13 start
+set TABLE_NAME = QXN5_AKUDATAT            # 対象テーブル名
+# 000001 hayashi add 2007/07/13 end
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+##################################
+# STEP-1 データロード            #
+##################################
+STEP_01:
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:QXN5 データロード" $USERKEY
+
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID           \
+   control=$LDR_CTRL_DIR/qxnd_akudatat.sql  \
+   data=$QX_DATA_DIR/qxn5_loaddata_dat.load               \
+   log=$LDR_LOG_DIR/qxnd_akudatat.log                \
+   direct=true                                       \
+               > $LOGFILE
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:QXN5 データロード RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+# 000001 hayashi add 2007/07/13 start
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:データロード(sqlplus) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+    set MSG = "失敗:データロード(grep) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+# 000001 hayashi add 2007/07/13 end
+$LOGWRITE "$MODULE" I "終了:QXN5 データロード" $USERKEY
+
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0
+

@@ -1,0 +1,101 @@
+#!/bin/csh
+#　 スクリプト名 ： QTYJ11UX
+#　 機  能       ： 不要会員ファイルマージ処理
+#　 作成者       ： FIP
+
+########################################
+#           環境設定                   #
+########################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID    QTYF01UX                           # ジョブネット名
+setenv USERKEY      QTYJ11UX                           # ユーザキー
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    KINOU      = '不要会員ファイルマージ処理'       # 機能
+set    DATA_DIR   = $QJ_DATA_DIR/qt/data/host/merge    # 作業ＤＩＲ
+
+set    MODULE     = SHELL                              # モジュール名
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#########################################
+# ファイル作成                          #
+#########################################
+set    MODULE     = COBOL                              # モジュール名
+set    STEPKINOU  = '不要会員ファイル変換処理'         # 機能
+
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"     # 開始メッセージの出力
+
+#  ファイル識別子の設定
+setenv INFILE  $FROMHOST1_DIR/qt/rcv/qtaf_kaiin5.jsn   # 受信ファイル
+setenv OTFILE  $DATA_DIR/qtaf_kaiin5.hft               # 変換ファイル
+
+set PROGRAM = $EXE_DIR/qtab_s000411.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS            # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                             # プログラム起動
+    set rc = $status                                   # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC             # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                             # 異常終了
+endif
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$STEPKINOU  RC=[$rc]"  "$USERKEY"
+    exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# ファイルをマージする                  #
+#########################################
+set    MODULE     = SHELL                              # モジュール名
+set    STEPKINOU  = 'ファイルマージ処理'               # 機能
+
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"     # 開始メッセージの出力
+
+cat $DATA_DIR/qtaf_kaiin5.hft $DATA_DIR/qtaf_kaiin5.kur > $DATA_DIR/qtaf_kaiin5.mrg
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# ソートファイル作成                    #
+#########################################
+set    MODULE     = COBOL                              # モジュール名
+set    STEPKINOU  = '不要会員ファイルソート処理'       # 機能
+
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"     # 開始メッセージの出力
+
+#  ファイル識別子の設定
+setenv INFILE    $DATA_DIR/qtaf_kaiin5.mrg
+setenv OTFILE    $DATA_DIR/qtaf_kaiin5.sort
+setenv SORTWK    $DATA_DIR/qtaf_kaiin5.sort_wk
+
+set PROGRAM = $EXE_DIR/qtab_s000412.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS            # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                             # プログラム起動
+    set rc = $status                                   # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC             # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                             # 異常終了
+endif
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$STEPKINOU  RC=[$rc]"  "$USERKEY"
+    exit(1)
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"     # 終了メッセージの出力
+
+#########################################
+set    MODULE     = SHELL                              # モジュール名
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+exit 0                                                 # 正常終了
+

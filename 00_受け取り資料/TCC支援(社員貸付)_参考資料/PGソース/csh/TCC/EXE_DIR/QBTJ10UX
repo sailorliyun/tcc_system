@@ -1,0 +1,112 @@
+#!/bin/csh
+#set   SHELL_NAME = $0
+setenv JOBNET_ID    QBT010UX
+setenv JOB_ID       QBTJ10UX
+setenv USERKEY      QBTJ10UX
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    datdir     = $QB_DATA_DIR
+set    homedir    = (/d041/UFS/data/qb/FTP)
+set    qbwdir     = (/d041/UFS/data/qb/QBWORK)
+set    logdir     = (/d041/UFS/data/qb/FLOLOG)
+
+#--------------------------------------------------#
+#   SDBT150  削除データ抽出
+#--------------------------------------------------#
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qbap_sdbt150pkg.qbap_sdbt150('$JOBNET_ID','$JOB_ID','$qbwdir','sdbt150o01.txt')"
+set rc = $status
+if ($rc != 0) then
+   echo "SDBT150 ABNORMAL ENDED : RC=[$rc]"
+   exit(1)
+endif
+
+#--------------------------------------------------#
+#   SDBT160  バックアップファイル作成
+#--------------------------------------------------#
+setenv DDQBA1   $datdir/sdbt160o01.txt
+setenv DDQBA2   $datdir/sdbt160o02.txt
+setenv DDQBA3   $datdir/sdbt160o03.txt
+setenv DDQBA4   $datdir/sdbt160o04.txt
+setenv DDQBA5   $datdir/sdbt160o05.txt
+setenv DDQBA6   $datdir/sdbt160o06.txt
+setenv DDQBA7   $datdir/sdbt160o07.txt
+setenv DDQBA8   $datdir/sdbt160o08.txt
+setenv DDQBA9   $datdir/sdbt160o09.txt
+setenv DDQBC0   $datdir/sdbt160o10.txt
+setenv DDQBC1   $datdir/sdbt160o11.txt
+setenv DDQBC2   $datdir/sdbt160o12.txt
+setenv DDQBC3   $datdir/sdbt160o13.txt
+setenv DDQBC4   $datdir/sdbt160o14.txt
+setenv DDQBC5   $datdir/sdbt160o15.txt
+setenv DDQBC6   $datdir/sdbt160o16.txt
+setenv DDQBC7   $datdir/sdbt160o17.txt
+setenv DDQBC8   $datdir/sdbt160o18.txt
+setenv DDQBC9   $datdir/sdbt160o19.txt
+setenv DDQBCA   $datdir/sdbt160o20.txt
+setenv DDQBCB   $datdir/sdbt160o21.txt
+setenv DDQBCC   $datdir/sdbt160o22.txt
+setenv DDQBE3   $datdir/sdbt160o23.txt
+setenv DDQBI1   $datdir/sdbt160o24.txt
+setenv DDQBI2   $datdir/sdbt160o25.txt
+setenv DDQBI3   $datdir/sdbt160o26.txt
+setenv DDQBI4   $datdir/sdbt160o27.txt
+setenv DDQBI5   $datdir/sdbt160o28.txt
+setenv DDQBI6   $datdir/sdbt160o29.txt
+setenv DDQBM1   $datdir/sdbt160o30.txt
+setenv DDQBM2   $datdir/sdbt160o31.txt
+setenv DDQBM3   $datdir/sdbt160o32.txt
+setenv DDQBM4   $datdir/sdbt160o33.txt
+setenv DDQBM5   $datdir/sdbt160o34.txt
+setenv DDQBM6   $datdir/sdbt160o35.txt
+setenv DDQBM8   $datdir/sdbt160o36.txt
+setenv DDQBAA   $datdir/sdbt160o37.txt
+$EXE_DIR/qbab_sdbt160.exe
+set rc = $status
+if ($rc != 0) then
+   echo "SDBT160 ABNORMAL ENDED : RC=[$rc]"
+   exit(1)
+endif
+
+#--------------------------------------------------#
+#   SDBT151  削除データ抽出
+#--------------------------------------------------#
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qbap_sdbt151pkg.qbap_sdbt151('$JOBNET_ID','$JOB_ID','$qbwdir','sdbt151o01.txt')"
+set rc = $status
+if ($rc != 0) then
+   echo "SDBT151 ABNORMAL ENDED : RC=[$rc]"
+   exit(1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+#-----------------------------------------------------#
+#   SFW0003  クーリア削除
+#-----------------------------------------------------#
+set    MODULE            = QBAC_SFW0003
+
+setenv IF_MIFAM_NAME       mifam
+setenv IFMIFAMNAME         mifam
+setenv HOSTNAME            sueswc
+setenv FW_HostName         sueswc
+setenv FW_UserID           ifam
+setenv DBPASSWORD          ifam
+setenv FW_MapName          TCCMAP02
+setenv FW_ActivityName     QB100010
+setenv FW_CourierEntry     '*'
+setenv FW_CourierMove      '*'
+
+setenv FW_LogPath          $logdir/
+setenv FW_CourierResult    $logdir/sdbt150Del.txt
+setenv FW_CourierDelete    $qbwdir/sdbt150o01.txt
+
+$LOGWRITE "$MODULE" I "START Courier Delete" "$USERKEY"
+$EXE_DIR/qbwc_sfw0003
+
+set rc = $status
+if ($rc != 0)  then
+    $LOGWRITE "$MODULE" E "ERROR : RC=[$rc] Courier Delete" "$USERKEY"
+    echo "SFW0003 ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)
+

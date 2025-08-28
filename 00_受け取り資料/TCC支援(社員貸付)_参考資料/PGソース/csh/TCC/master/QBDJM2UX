@@ -1,0 +1,79 @@
+#!/bin/csh
+# 　スクリプト名 ： QBDJM2UX
+#　 機  能       ： 新規会員及びブラックデータから口振Ｔに会員情報を取込む
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBDM01UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QBK1_KFURIT'                      # ユーザキー 
+set    KINOU      = '新規会員及びブラックデータから口振Ｔに会員情報を取込む'
+
+#  03.11.05 追加 -->
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+setenv USERKEY     'QBK1_KFURIT'
+setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_kaiin11.hft
+setenv OTFILE /d031/UFS/data/qt/data/svr/dat/qtaf_kaiin11.dat
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qtab_s000100.exe
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 会員マスタ変換 qtab_s000100 RC=[$rc]" "$USERKEY"
+    echo "qtab_s000100 ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+#  03.11.05 追加 <--
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'qbkc_putkaiin.exe'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS  
+
+### ＥＸＥ・の実行 ###
+#  03.11.05 変更 -->
+#set  PRM_KAIINF = '/d031/UFS/data/qt/data/svr/dat/qtaf_kaiin1.dat'
+set  PRM_KAIINF = '/d031/UFS/data/qt/data/svr/dat/qtaf_kaiin11.dat'
+#  03.11.05 変更 <--
+set  PRM_BLACKF = '/d031/UFS/data/qt/data/svr/dat/qtaf_black1.dat'
+#####set  PRM_KAIINF = "$EXE_DIR/data/qtaf_kaiin1.dat"
+#####set  PRM_BLACKF = "$EXE_DIR/data/qtaf_black1.dat"
+$EXE_DIR/qbkc_putkaiin.exe  $PRM_KAIINF  $PRM_BLACKF  $JOBNET_ID  $JOB_ID 
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC  
+
+if ( $rc == 1 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]ファイル無し($PRM_KAIINF)"  "$USERKEY"   
+	exit  1                                      # 異常終了
+endif
+
+if ( $rc == 2 ) then
+       $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]ファイル無し($PRM_BLACKF)"  "$USERKEY"  
+        exit  1                                      # 異常終了
+endif
+
+
+if ( $rc != 0 ) then
+       $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+       exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+

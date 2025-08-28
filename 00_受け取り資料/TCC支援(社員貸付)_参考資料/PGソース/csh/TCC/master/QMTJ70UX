@@ -1,0 +1,71 @@
+#!/bin/csh
+#　スクリプト名  ： QMTJ70UX
+#　 プロセス     ： 抽選完了キャンペーン更新
+#　 機  能       ： 抽選済キャンペーン更新
+#　 作成者       ： FIP
+#　 更新者       ： 
+##########################################
+#         共通環境設定                   #
+##########################################
+set    SHELL_NAME = $0                                      # シェル名
+setenv JOB_ID       $SHELL_NAME:t                           # ジョブ名
+setenv JOBNET_ID    'QMT409UX'                              # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log             # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT                # ログ出力モジュール
+setenv USERKEY      'QMTJ70UX'                              # ユーザキー
+set    KINOU      = 'ポイント付与・抽選済キャンペーン更新'
+
+##########################################
+#         固有環境設定                   #
+##########################################
+set    DATDIR     = /d321/UFS/data/qma
+setenv INFILE1      $DATDIR/qmab_s001000_OT2.dat
+set    PGMPARA     = 3                                      #ＥＸＥＣパラメータセット
+
+##########################################
+#         処理開始メッセージ             #
+##########################################
+set MODULE        = 'SHELL'                                 # モジュール
+$LOGWRITE "$MODULE" I "開始：$KINOU" "$USERKEY"             # 開始メッセージの出力
+
+##########################################
+# STEP-1  抽選済キャンペーン更新         #
+##########################################
+STEP_1:
+set MODULE        = 'QMAB_S000500'
+set STEPKINOU     = '抽選済キャンペーン更新'
+ $LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+set PROGRAM       = $EXE_DIR/qmab_s000500.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG  Japanese_Japan.JA16SJIS                #文字コード体系をSJISにする
+    $PROGRAM $PGMPARA      >&  $LOGFILE                     #プログラム起動
+    set rc = $status                                        #リターンステータス退避
+     setenv NLS_LANG  Japanese_Japan.JA16EUC                #文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit (1)                                                #異常終了
+endif
+
+if ($rc != 0) then                                          #リターンステータス判定
+    set MSG = "失敗：$STEPKINOU RC=[$rc]"
+
+     $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+
+  $LOGWRITE  "$MODULE" I "終了：$STEPKINOU" "$USERKEY"      #終了メッセージの出力
+
+##########################################
+# STEP-6 中間ファイル削除                #
+##########################################
+STEP_6:
+cp  /dev/null  $INFILE1
+
+##########################################
+# STEP-99  終了メッセージ出力            #
+##########################################
+STEP_99:
+set MODULE        = 'SHELL'
+$LOGWRITE "$MODULE" I "終了：$KINOU" "$USERKEY"             # 終了メッセージの出力
+
+exit(0)

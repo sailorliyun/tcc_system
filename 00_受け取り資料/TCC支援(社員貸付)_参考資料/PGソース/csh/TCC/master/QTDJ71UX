@@ -1,0 +1,103 @@
+#!/bin/csh
+#　スクリプト名  ： QTDJ71UX
+#　 機  能       ： 対応履歴登録・統合メモテーブル追加データ作成処理
+#　 作成者       ： ＦＩＰ．横山
+#
+#   0001   20060608  ＦＩＰ横山     アクティブＰＩＮ
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QTD401UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QTDJ71UX'                         # ユーザキー
+set    KINOU      = '対応履歴登録・統合メモテーブル追加データ作成処理'
+set    QX_DATA_DIR = '/d321/UFS'
+
+#########################################
+# STEP-1  各ファイルの存在チェック      #
+#########################################
+
+set MODULE = 'SHELL'
+set KINOU  = '対応履歴登録データコンカチ処理'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+### 対応履歴登録データ存在チェック ###
+set KINOU  = '対応履歴登録データ存在チェック'
+
+ls $QX_DATA_DIR/fromhost/qt/rcv/OFQWA1.hft
+
+set rc = $status
+if ($rc != 0 ) then
+        $LOGWRITE "$MODULE" E "失敗:$KINOU  RC=[$rc]" "$USERKEY"   # 異常終了メッセージの出力
+        exit 1
+endif
+
+###  0001  Start  Of ADD 2006.06.08 by ALPHA.YOKOYAMA >> アクティブＰＩＮ対応 <<  ---------------------
+### ＰＩＮ対応履歴登録データ存在チェック ###
+set KINOU  = 'ＰＩＮ対応履歴登録データ存在チェック'
+
+ls $QX_DATA_DIR/data/qt/qtaf_ofqa57.dat
+
+###  0001  End    Of ADD 2006.05.08 by ALPHA.YOKOYAMA >> アクティブＰＩＮ対応 <<  ---------------------
+
+### （異常時用）統合メモテーブル登録データ存在チェック ###
+set KINOU  = '（異常時用）統合メモテーブル登録データ存在チェック'
+
+ls $QX_DATA_DIR/data/qt/QSA7_TOGOMEMOT.txt
+
+set rc = $status
+if ($rc != 0 ) then
+        $LOGWRITE "$MODULE" E "失敗:$KINOU  RC=[$rc]" "$USERKEY"   # 異常終了メッセージの出力
+        exit 1
+endif
+
+#########################################
+# STEP-2                                #
+#########################################
+
+set KINOU  = '対応履歴登録データコンカチ処理'
+
+#setenv NLS_LANG Japanese_Japan.JA16SJIS  
+
+### ファイルをマージする ###
+cat $QX_DATA_DIR/fromhost/qt/rcv/OFQWA1.hft >> $QX_DATA_DIR/data/qt/QSA7_TOGOMEMOT.txt
+set rc = $status
+
+#setenv NLS_LANG Japanese_Japan.JA16EUC  
+
+if ( $rc != 0 ) then
+        $LOGWRITE "$MODULE" E "失敗:$KINOU  RC=[$rc] " "$USERKEY"   # 異常終了メッセージの出力
+	exit  1                                      # 異常終了
+endif
+
+###  0001  Start  Of ADD 2006.06.08 by ALPHA.YOKOYAMA >> アクティブＰＩＮ対応 <<  ---------------------
+
+#########################################
+# STEP-3                                #
+#########################################
+
+set KINOU  = 'アクティブＰＩＮ対応履歴データコンカチ処理'
+
+#setenv NLS_LANG Japanese_Japan.JA16SJIS  
+
+### ファイルをマージする ###
+cat $QX_DATA_DIR/data/qt/qtaf_ofqa57.dat >> $QX_DATA_DIR/data/qt/QSA7_TOGOMEMOT.txt
+set rc = $status
+
+#setenv NLS_LANG Japanese_Japan.JA16EUC  
+
+if ( $rc != 0 ) then
+        $LOGWRITE "$MODULE" E "失敗:$KINOU  RC=[$rc] " "$USERKEY"   # 異常終了メッセージの出力
+	exit  1                                      # 異常終了
+endif
+
+###  0001  End    Of ADD 2006.06.08 by ALPHA.YOKOYAMA >> アクティブＰＩＮ対応 <<  ---------------------
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+
+exit 0

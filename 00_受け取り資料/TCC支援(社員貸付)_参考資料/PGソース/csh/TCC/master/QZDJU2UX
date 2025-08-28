@@ -1,0 +1,160 @@
+#!/bin/csh
+#　スクリプト名  ： QZDJU2UX
+#　 機  能       ： チケットPOSSTSﾌｧｲﾙ取込処理
+#　 作成者       ： FIP
+#　 作成日       ： 2009.07.23
+#　 概要         ：ホストより受信したPOSデータを
+#                  QZT9_MEMBER_STATUSに登録する
+#                      1.テーブルをトランケート
+#                      2.データをLOAD
+#　 修正履歴     ： YYYY.MM.DD 　修　　　正　　　内　　　容　　修正者
+#                   2009.07.23   ・BCVﾘｶﾊﾞﾘﾈｯﾄ対応のため、
+#                                  旧JOB［QZDJU1UX］のDB登録処理をSTEPごと移動し、
+#                                  JOBを新規作成。
+#                                ・旧JOBでの障害対応のため、データロード形式を
+#                                  従来型からdirectに変更。
+#                                  同時に、インデックスの削除／再構築のSTEPを追加。
+#                                                               FIP.Eriguchi
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QZDU02UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QZDJU2UX'                         # ユーザキー
+set    KINOU      = 'チケットシステムPOSステータス取込'
+
+set    TICKET_HOME = /d361/UFS/data/qzt                 # チケットシステム　データホームディレクトリ
+set    DATA_DIR  = $TICKET_HOME/tmp                     #TMP DIR
+set    HUL_DIR   = $TICKET_HOME/fromhost                #受信DIR
+set    HUL_FILE_NAME = O.F.QA46.hft                     #受信ファイル名
+set    LOAD_DATA_FILE = qzt9_member_status_data.dat     #処理用ファイル名
+set    SAVE_DATA_FILE = save_qzt9.dat                   #saveファイル名
+
+###########################################
+# STEP-1 POSデータテーブルTRUNCATE        #
+###########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"       # 処理開始メッセージの出力
+
+set MODULE = 'SQL*PLUS-1'
+set STEPKINOU = 'チケットシステム未収チェックテーブルTRUNCATE'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY       # STEP開始メッセージの出力
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+      TRUNCATE TABLE QZT9_MEMBER_STATUS;
+quit SQL.SQLCODE
+EOF
+
+set rc = $status
+if ( $rc != 0 ) then
+     set MSG = "失敗:$STEPKINOU RC=[$rc]"
+     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY          # STEP異常終了メッセージの出力
+     exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY       # STEP終了メッセージの出力
+
+###########################################
+# STEP-2 POSデータＴ   主キー制約削除     #
+###########################################
+set MODULE = 'SQL*PLUS-2'
+set STEPKINOU = 'チケットシステム未収チェックテーブル 主キー削除'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table QZT9_MEMBER_STATUS drop primary key;
+quit SQL.SQLCODE
+EOF
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-3 POSデータファイルをDBに登録      #
+###########################################
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'POSデータファイルをDBに登録'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY       # STEP開始メッセージの出力
+
+set CTRLFILE    = $LDR_CTRL_DIR/qzdjt1_qzt9_load.ctl
+set DATAFILE    = $DATA_DIR/$LOAD_DATA_FILE
+set SQLLOGFILE  = $LDR_LOG_DIR/qzt9_member_status_load.log
+set BADFILE     = $DATA_DIR/qzt9_member_status_load.bad
+
+### SQL*LOADERの実行 ###
+#ﾃﾞｰﾀをﾀﾞｲﾚｸﾄ型ﾊﾟｽﾛｰﾄﾞでﾛｰﾄﾞ
+setenv NLS_LANG  Japanese_Japan.JA16SJIS
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID \
+     control=$CTRLFILE                     \
+     data=$DATAFILE                        \
+     log=$SQLLOGFILE                       \
+     bad=$BADFILE                          \
+     direct=true                           \
+         > $LOGFILE
+
+set rc = $status
+setenv NLS_LANG  Japanese_Japan.JA16EUC
+if ( $rc != 0 ) then                                     # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY            # STEP異常終了メッセージの出力
+    exit  1                                              # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY         # STEP終了メッセージの出力
+
+###########################################
+# STEP-4 POSデータＴ 主キー制約付与       #
+###########################################
+set MODULE = 'SQL*PLUS-3'
+set STEPKINOU = 'チケットシステム未収チェックテーブル 主キー付与'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+alter table QZT9_MEMBER_STATUS add
+		PRIMARY KEY (QZT9_KIGYOUCD, QZT9_SUBRANGEKEY, QZT9_NAIBUKAIINNO)
+		USING INDEX
+		PCTFREE 10
+		INITRANS 2
+		MAXTRANS 255
+		TABLESPACE TICKETIDX
+		STORAGE(
+          INITIAL 120M
+          NEXT 12290K
+          MINEXTENTS 1
+          MAXEXTENTS 100
+          PCTINCREASE 0
+          FREELISTS 1
+          FREELIST GROUPS 1
+          BUFFER_POOL DEFAULT
+		)
+		NOLOGGING
+;
+quit SQL.SQLCODE
+EOF
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 処理終了メッセージの出力
+
+exit 0

@@ -1,0 +1,45 @@
+      *****************************************************************
+      * ÇbÇqäÓñ{óvåèÇs (QBS040)    ÉåÉRÅ[Éhí∑ÅFÇSÇQÇVÇaÇôÇîÇÖ
+      *****************************************************************
+            03  QBS040-CRBASEYKT.
+              05  QBS040-TABANO                   PIC  X(006).
+              05  QBS040-UKETSUKENO               PIC  X(008).
+              05  QBS040-INQKBN                   PIC  X(001).
+              05  QBS040-KAZOKURENBAN             PIC  X(001).
+              05  QBS040-SAIIRAIKBN               PIC  X(001).
+              05  QBS040-SAIIRAICNT               PIC  X(003).
+              05  QBS040-CICINQREQ                PIC  X(001).
+              05  QBS040-CICINQRESULT             PIC  X(001).
+              05  QBS040-JISHAINQREQ              PIC  X(001).
+              05  QBS040-JISHAINQRESULT           PIC  X(001).
+              05  QBS040-BLACKINQREQ              PIC  X(001).
+              05  QBS040-BLACKINQRESULT           PIC  X(001).
+              05  QBS040-NGRIYU                   PIC  X(004).
+              05  QBS040-RECORDKBN                PIC  X(001).
+              05  QBS040-RECORDSKB1               PIC  X(001).
+              05  QBS040-RENBAN1                  PIC  X(002).
+              05  QBS040-RECORDSKB2               PIC  X(001).
+              05  QBS040-RENBAN2                  PIC  X(002).
+              05  QBS040-TYPE                     PIC  X(002).
+              05  QBS040-KANANA                   PIC  X(030).
+              05  QBS040-KANJINA                  PIC  X(020).
+              05  QBS040-SYMD                     PIC  X(007).
+              05  QBS040-YUBIN                    PIC  X(005).
+              05  QBS040-CHIBAN                   PIC  X(003).
+              05  QBS040-KANAADD                  PIC  X(060).
+              05  QBS040-KANJIADD                 PIC  X(080).
+              05  QBS040-ADD                      PIC  X(011).
+              05  QBS040-CHIBANKT                 PIC  X(060).
+              05  QBS040-TEL                      PIC  X(014).
+              05  QBS040-TELKBN                   PIC  X(001).
+              05  QBS040-SEX                      PIC  X(001).
+              05  QBS040-HAIGU                    PIC  X(001).
+              05  QBS040-ZANSAI                   PIC  X(006).
+              05  QBS040-KOBETKN                  PIC  X(002).
+              05  QBS040-ZHANFLG1                 PIC  X(001).
+              05  QBS040-ZHANFLG2                 PIC  X(001).
+              05  QBS040-STRDATE                  PIC  X(019).
+              05  QBS040-UPDDATE                  PIC  X(019).
+              05  QBS040-DELDATE                  PIC  X(019).
+              05  QBS040-OPID                     PIC  X(008).
+              05  QBS040-WSID                     PIC  X(020).

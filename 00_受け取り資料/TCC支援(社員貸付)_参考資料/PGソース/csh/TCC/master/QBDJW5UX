@@ -1,0 +1,612 @@
+#!/bin/csh
+#   スクリプト名： QBDJW5UX
+#   機  能	： 応諾データバックアップ
+#   作成者	： NBC 斎藤
+#     修正履歴
+# 項番   管理番号    修正内容                 修正者         修正日
+# 000001             日次アベンドリカバリ対応 NBC.Saitoh    2007/03/05
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBD603UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY     'QBDJW5UX'                          # ユーザキー
+set    KINOU      = '応諾データバックアップ'           # 機能名
+set    QB_ERR_DIR  = /d360/UFS/imgkanri/data           # エラー処理用ファイル保存先
+set    QB_DATA_DIR  = /d360/UFS/imgkanri/image_buffer  # 応諾データ保存先
+set    QB_HUL_DIRR  = /d360/UFS/data/fromhost/qb/rcv   # HULFT 受信ディレクトリ
+set    QB_BACK_DIR  = /d360/UFS/imgkanri/bkhost        # 応諾データバックアップディレクトリ
+
+# 000001 add NBC.Saitoh 2007/03/05 start
+set    RUNFIL     = /d360/UFS/imgkanri/image_buffer/runfile.dat
+# 000001 add NBC.Saitoh 2007/03/05 end
+
+set MODULE = 'SHELL'
+# 開始メッセージの出力
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"
+
+#########################################
+# STEP-0 環境確認                       #
+#########################################
+
+# サブプログラム確認
+set PROGRAM = $EXE_DIR/qbfb_s000500.csh
+if !( -x $PROGRAM ) then
+
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU プログラムが見つかりません[$PROGRAM]" "$USERKEY"
+	exit 1
+
+endif
+
+# 000001 add NBC.Saitoh 2007/03/05 start
+# イメージ管理実行用ファイル作成
+date '+%y%m%d%H%M%S' > $RUNFIL
+# 000001 add NBC.Saitoh 2007/03/05 end
+
+
+#########################################
+# STEP-1 受信応諾データ確認             #
+#        存在しない場合0件で作成        #
+#########################################
+
+### 応諾データ（O.F.QA01.txt）
+if !( -f $QB_HUL_DIRR/O.F.QA01.txt ) then
+
+	$LOGWRITE "$MODULE" W "警告:$KINOU  受信応諾データ O.F.QA01.txtが存在しない為作成" "$USERKEY"
+
+	touch $QB_HUL_DIRR/O.F.QA01.txt
+	set rc = $status
+
+	if ( $rc != 0 ) then
+
+		# 異常終了メッセージの出力
+		$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データ O.F.QA01.txt作成不可 RC=[$rc]" "$USERKEY"
+		exit 1
+
+	endif
+
+else
+
+	# 受信応諾データが0バイト以上の場合処理する。
+	test -s $QB_HUL_DIRR/O.F.QA01.txt
+	set rc = $status
+
+	if ( $rc == 0 ) then
+
+		# 一時作業用ファイルが存在した場合削除
+		if ( -f $QB_HUL_DIRR/O.F.QA01.hft ) then
+
+			rm -f $QB_HUL_DIRR/O.F.QA01.hft
+			set rc = $status
+
+			if ( $rc != 0 ) then
+
+				# 異常終了メッセージの出力
+				$LOGWRITE "$MODULE" E "異常終了:$KINOU 開始O.F.QA01.hft削除不可 RC=[$rc]" "$USERKEY"
+				exit 1
+
+			endif
+		endif
+
+		# 応諾データを一時作業用ファイルに移動
+		mv $QB_HUL_DIRR/O.F.QA01.txt $QB_HUL_DIRR/O.F.QA01.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA01.txt退避不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 空応諾データ作成
+		touch $QB_HUL_DIRR/O.F.QA01.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA01.txt作業用作成不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データtab区切り付加
+		cat $QB_HUL_DIRR/O.F.QA01.hft | awk '{ printf("%s\t%s\t%s\t%s\t%s\t\n", substr($0,1,8), substr($0,9,16), substr($0,25,16), substr($0,41,8), substr($0,49,1) ) }' >> $QB_HUL_DIRR/O.F.QA01.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA01.txt区切変更不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データ受信時の日時に変更
+		touch -r $QB_HUL_DIRR/O.F.QA01.hft $QB_HUL_DIRR/O.F.QA01.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA01.txt日時更新不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 作業用応諾データ削除
+		rm -f $QB_HUL_DIRR/O.F.QA01.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 終了O.F.QA01.hft削除不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+	endif
+
+endif
+
+
+### 応諾データ（O.F.QA02.txt）
+if !( -f $QB_HUL_DIRR/O.F.QA02.txt ) then
+
+	$LOGWRITE "$MODULE" W "警告:$KINOU  受信応諾データ O.F.QA02.txtが存在しない為作成" "$USERKEY"
+
+	touch $QB_HUL_DIRR/O.F.QA02.txt
+	set rc = $status
+
+	if ( $rc != 0 ) then
+
+		# 異常終了メッセージの出力
+		$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データ O.F.QA02.txt作成不可 RC=[$rc]" "$USERKEY"
+		exit 1
+
+	endif
+
+else
+
+	# 受信応諾データが0バイト以上の場合処理する。
+	test -s $QB_HUL_DIRR/O.F.QA02.txt
+	set rc = $status
+
+	if ( $rc == 0 ) then
+
+		# 一時作業用ファイルが存在した場合削除
+		if ( -f $QB_HUL_DIRR/O.F.QA02.hft ) then
+
+			rm -f $QB_HUL_DIRR/O.F.QA02.hft
+			set rc = $status
+
+			if ( $rc != 0 ) then
+
+				# 異常終了メッセージの出力
+				$LOGWRITE "$MODULE" E "異常終了:$KINOU 開始O.F.QA02.hft削除不可 RC=[$rc]" "$USERKEY"
+				exit 1
+
+			endif
+		endif
+
+		# 応諾データを一時作業用ファイルに移動
+		mv $QB_HUL_DIRR/O.F.QA02.txt $QB_HUL_DIRR/O.F.QA02.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA02.txt退避不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 空応諾データ作成
+		touch $QB_HUL_DIRR/O.F.QA02.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA02.txt作業用作成不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データtab区切り付加
+		cat $QB_HUL_DIRR/O.F.QA02.hft | awk '{ printf("%s\t%s\t%s\t%s\t\n", substr($0,1,8), substr($0,9,8), substr($0,17,8), substr($0,25,1) ) }' >> $QB_HUL_DIRR/O.F.QA02.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA02.txt区切変更不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データ受信時の日時に変更
+		touch -r $QB_HUL_DIRR/O.F.QA02.hft $QB_HUL_DIRR/O.F.QA02.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA02.txt日時更新不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 作業用応諾データ削除
+		rm -f $QB_HUL_DIRR/O.F.QA02.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 終了O.F.QA02.hft削除不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+	endif
+
+endif
+
+
+### 応諾データ（O.F.QA03.txt）
+if !( -f $QB_HUL_DIRR/O.F.QA03.txt ) then
+
+	$LOGWRITE "$MODULE" W "警告:$KINOU  受信応諾データ O.F.QA03.txtが存在しない為作成" "$USERKEY"
+
+	touch $QB_HUL_DIRR/O.F.QA03.txt
+	set rc = $status
+
+	if ( $rc != 0 ) then
+
+		# 異常終了メッセージの出力
+		$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データ O.F.QA03.txt作成不可 RC=[$rc]" "$USERKEY"
+		exit 1
+
+	endif
+
+else
+
+	# 受信応諾データが0バイト以上の場合処理する。
+	test -s $QB_HUL_DIRR/O.F.QA03.txt
+	set rc = $status
+
+	if ( $rc == 0 ) then
+
+		# 一時作業用ファイルが存在した場合削除
+		if ( -f $QB_HUL_DIRR/O.F.QA03.hft ) then
+
+			rm -f $QB_HUL_DIRR/O.F.QA03.hft
+			set rc = $status
+
+			if ( $rc != 0 ) then
+
+				# 異常終了メッセージの出力
+				$LOGWRITE "$MODULE" E "異常終了:$KINOU 開始O.F.QA03.hft削除不可 RC=[$rc]" "$USERKEY"
+				exit 1
+
+			endif
+		endif
+
+		# 応諾データを一時作業用ファイルに移動
+		mv $QB_HUL_DIRR/O.F.QA03.txt $QB_HUL_DIRR/O.F.QA03.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA03.txt退避不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 空応諾データ作成
+		touch $QB_HUL_DIRR/O.F.QA03.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA03.txt作業用作成不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データtab区切り付加
+		cat $QB_HUL_DIRR/O.F.QA03.hft | awk '{ printf("%s\t%s\t%s\t%s\t%s\t\n", substr($0,1,16), substr($0,17,16), substr($0,33,16), substr($0,49,8), substr($0,57,1) ) }' >> $QB_HUL_DIRR/O.F.QA03.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA03.txt区切変更不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データ受信時の日時に変更
+		touch -r $QB_HUL_DIRR/O.F.QA03.hft $QB_HUL_DIRR/O.F.QA03.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA03.txt日時更新不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 作業用応諾データ削除
+		rm -f $QB_HUL_DIRR/O.F.QA03.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 終了O.F.QA03.hft削除不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+	endif
+
+endif
+
+
+### 応諾データ（O.F.QA04.txt）
+if !( -f $QB_HUL_DIRR/O.F.QA04.txt ) then
+
+	$LOGWRITE "$MODULE" W "警告:$KINOU  受信応諾データ O.F.QA04.txtが存在しない為作成" "$USERKEY"
+
+	touch $QB_HUL_DIRR/O.F.QA04.txt
+	set rc = $status
+
+	if ( $rc != 0 ) then
+
+		# 異常終了メッセージの出力
+		$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データ O.F.QA04.txt作成不可 RC=[$rc]" "$USERKEY"
+		exit 1
+
+	endif
+
+else
+
+	# 受信応諾データが0バイト以上の場合処理する。
+	test -s $QB_HUL_DIRR/O.F.QA04.txt
+	set rc = $status
+
+	if ( $rc == 0 ) then
+
+		# 一時作業用ファイルが存在した場合削除
+		if ( -f $QB_HUL_DIRR/O.F.QA04.hft ) then
+
+			rm -f $QB_HUL_DIRR/O.F.QA04.hft
+			set rc = $status
+
+			if ( $rc != 0 ) then
+
+				# 異常終了メッセージの出力
+				$LOGWRITE "$MODULE" E "異常終了:$KINOU 開始O.F.QA04.hft削除不可 RC=[$rc]" "$USERKEY"
+				exit 1
+
+			endif
+		endif
+
+		# 応諾データを一時作業用ファイルに移動
+		mv $QB_HUL_DIRR/O.F.QA04.txt $QB_HUL_DIRR/O.F.QA04.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA04.txt退避不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 空応諾データ作成
+		touch $QB_HUL_DIRR/O.F.QA04.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA04.txt作業用作成不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データtab区切り付加
+		cat $QB_HUL_DIRR/O.F.QA04.hft | awk '{ printf("%s\t%s\t%s\t%s\t%s\t\n", substr($0,1,16), substr($0,17,16), substr($0,33,16), substr($0,49,8), substr($0,57,1) ) }' >> $QB_HUL_DIRR/O.F.QA04.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA04.txt区切変更不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データ受信時の日時に変更
+		touch -r $QB_HUL_DIRR/O.F.QA04.hft $QB_HUL_DIRR/O.F.QA04.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA04.txt日時更新不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 作業用応諾データ削除
+		rm -f $QB_HUL_DIRR/O.F.QA04.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 終了O.F.QA04.hft削除不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+	endif
+
+endif
+
+
+### 応諾データ（O.F.QA05.txt）
+if !( -f $QB_HUL_DIRR/O.F.QA05.txt ) then
+
+	$LOGWRITE "$MODULE" W "警告:$KINOU  受信応諾データ O.F.QA05.txtが存在しない為作成" "$USERKEY"
+
+	touch $QB_HUL_DIRR/O.F.QA05.txt
+	set rc = $status
+
+	if ( $rc != 0 ) then
+
+		# 異常終了メッセージの出力
+		$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データ O.F.QA05.txt作成不可 RC=[$rc]" "$USERKEY"
+		exit 1
+
+	endif
+
+else
+
+	# 受信応諾データが0バイト以上の場合処理する。
+	test -s $QB_HUL_DIRR/O.F.QA05.txt
+	set rc = $status
+
+	if ( $rc == 0 ) then
+
+		# 一時作業用ファイルが存在した場合削除
+		if ( -f $QB_HUL_DIRR/O.F.QA05.hft ) then
+
+			rm -f $QB_HUL_DIRR/O.F.QA05.hft
+			set rc = $status
+
+			if ( $rc != 0 ) then
+
+				# 異常終了メッセージの出力
+				$LOGWRITE "$MODULE" E "異常終了:$KINOU 開始O.F.QA05.hft削除不可 RC=[$rc]" "$USERKEY"
+				exit 1
+
+			endif
+		endif
+
+		# 応諾データを一時作業用ファイルに移動
+		mv $QB_HUL_DIRR/O.F.QA05.txt $QB_HUL_DIRR/O.F.QA05.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA05.txt退避不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 空応諾データ作成
+		touch $QB_HUL_DIRR/O.F.QA05.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA05.txt作業用作成不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データtab区切り付加
+		cat $QB_HUL_DIRR/O.F.QA05.hft | awk '{ printf("%s\t%s\t%s\t%s\t%s\t\n", substr($0,1,16), substr($0,17,16), substr($0,33,16), substr($0,49,8), substr($0,57,1) ) }' >> $QB_HUL_DIRR/O.F.QA05.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA05.txt区切変更不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 応諾データ受信時の日時に変更
+		touch -r $QB_HUL_DIRR/O.F.QA05.hft $QB_HUL_DIRR/O.F.QA05.txt
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 受信応諾データO.F.QA05.txt日時更新不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+		# 作業用応諾データ削除
+		rm -f $QB_HUL_DIRR/O.F.QA05.hft
+		set rc = $status
+
+		if ( $rc != 0 ) then
+
+			# 異常終了メッセージの出力
+			$LOGWRITE "$MODULE" E "異常終了:$KINOU 終了O.F.QA05.hft削除不可 RC=[$rc]" "$USERKEY"
+			exit 1
+
+		endif
+
+	endif
+
+endif
+
+
+#########################################
+# STEP-2 応諾データ移動                 #
+#########################################
+
+### HULFT受信先からイメージ管理処理用ディレクトリに応諾データを移動
+mv $QB_HUL_DIRR/O.F.QA0?.txt $QB_DATA_DIR
+set rc = $status
+
+if ( $rc != 0 ) then
+
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU 応諾データ移動エラー RC=[$rc]" "$USERKEY"
+	exit 1
+
+endif
+
+
+#########################################
+# STEP-3 応諾データバックアップ         #
+#########################################
+
+$PROGRAM
+set rc = $status
+
+if ( $rc != 0 ) then
+
+	# 異常終了メッセージの出力
+	$LOGWRITE "$MODULE" E "異常終了:$KINOU バックアップ移動エラー RC=[$rc]" "$USERKEY"
+	exit 1
+
+endif
+
+
+### 終了メッセージの出力
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"
+exit 0

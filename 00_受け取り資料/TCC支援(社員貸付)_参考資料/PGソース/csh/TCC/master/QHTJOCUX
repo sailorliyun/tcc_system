@@ -1,0 +1,80 @@
+#!/bin/csh
+# 　スクリプト名 ： QHTJOCUX
+#　 機  能       ： 請求月次登録後処理（ＬＯＡＤファイル圧縮、削除を行う）
+#　 作成者       ： FIP
+#                ： ①2002/09/21 新請求書用に修正
+#                ： 2006/02/20 作業ディレクトリ変更 NBC.YOSHIKAWA 00001
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QHT731UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+setenv USERKEY      'QHTJOCUX'                      # ユーザキー
+set    KINOU      = '請求月次登録後処理'
+# add by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+set    SEIKYU_DATA_DIR     = '/d380/UFS/data/qh/monthly'
+# add by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+
+
+############################################
+# STEP-1 請求会員ＴＭＰ削除                #
+############################################
+STEP_1:
+
+set MODULE = 'rm'
+$LOGWRITE "$MODULE" I "開始:QHE1 ＴＭＰ削除" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#rm -f $QH_DATA_DIR/monthly/qhef_seikyukai??.dat
+rm -f $SEIKYU_DATA_DIR/qhef_seikyukai??.dat
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+$LOGWRITE "$MODULE" I "終了:QHE1 ＴＭＰ削除" $USERKEY
+
+############################################
+# STEP-2 請求明細ＨＵＬＦＴ圧縮            #
+############################################
+STEP_2:
+
+set MODULE = 'compress'
+$LOGWRITE "$MODULE" I "開始:QHE4 データ圧縮" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#compress -f $QH_DATA_DIR/monthly/qhef_meisai??.hulft
+compress -f $SEIKYU_DATA_DIR/qhef_meisai??.hulft
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+$LOGWRITE "$MODULE" I "終了:QHE4 データ圧縮" $USERKEY
+
+############################################
+# STEP-3 作業メモ（自動留置）ＴＭＰ削除    #
+############################################
+STEP_3:
+
+set MODULE = 'rm'
+$LOGWRITE "$MODULE" I "開始:QHE1 ＴＭＰ削除" $USERKEY
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#rm -f $QH_DATA_DIR/monthly/qhef_sagyomemo??.dat
+rm -f $SEIKYU_DATA_DIR/qhef_sagyomemo??.dat
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+$LOGWRITE "$MODULE" I "終了:QHE1 ＴＭＰ削除" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

@@ -1,0 +1,90 @@
+#!/bin/csh
+#　スクリプト名  ： QHTJI7UX
+#　 機  能       ： 請求用受信ファイル作成７（請求会員、自動留置）
+#　 作成者       ： FIP
+#　 変  更       ： 2002/09/21 新請求書用に変更
+#
+#　　　　　　　　： 2006/01/13 エラーログ障害対応
+#　　　　　　　　：　修正日　2006/01/13
+#　　　　　　　　：　対応者　NBC菅原
+#                ： 2006/02/20 作業ディレクトリ変更 NBC.YOSHIKAWA 00001
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID   'QHTJI1UX'                      # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QHTJI7UX'                     # ユーザキー
+set    KINOU      = '請求会員、自動留置作成処理７'
+# add by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+set    SEIKYU_DATA_DIR     = '/d380/UFS/data/qh/monthly'
+# add by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'qheb_s000100'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#rm -f $QH_DATA_DIR/monthly/qhef_sagyomemo07.dat.Z
+#rm -f $QH_DATA_DIR/monthly/qhef_seikyukai07.dat.Z
+rm -f $SEIKYU_DATA_DIR/qhef_sagyomemo07.dat.Z
+rm -f $SEIKYU_DATA_DIR/qhef_seikyukai07.dat.Z
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+set PROGRAM = $EXE_DIR/qheb_s000100.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#    setenv INFILE   $QH_DATA_DIR/monthly/qhef_seikyu07.hulft
+#    setenv OUT1FILE $QH_DATA_DIR/monthly/qhef_sagyomemo07.dat
+#    setenv OUT2FILE $QH_DATA_DIR/monthly/qhef_seikyukai07.dat
+    setenv INFILE   $SEIKYU_DATA_DIR/qhef_seikyu07.hulft
+    setenv OUT1FILE $SEIKYU_DATA_DIR/qhef_sagyomemo07.dat
+    setenv OUT2FILE $SEIKYU_DATA_DIR/qhef_seikyukai07.dat
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+
+    #ADD-START  2006/01/13 NBC菅原
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    #ADD-END    2006/01/13 NBC菅原
+
+    exit  1                                      # 異常終了
+endif
+
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==>
+#compress -f $QH_DATA_DIR/monthly/qhef_seikyu07.hulft
+compress -f $SEIKYU_DATA_DIR/qhef_seikyu07.hulft
+# mod by NBC.YOSHIKAWA 2006/02/20 00001 ==<
+
+#####ADD-START  2006/01/13 NBC菅原
+set rc = $status
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+
+    $LOGWRITE  "$MODULE"  E  "失敗:請求会員、自動留置作成処理７(COMPRESS失敗)  RC=[$rc]"  "$USERKEY"
+
+    exit  1                                      # 異常終了
+
+endif
+
+#####ADD-END    2006/01/13 NBC菅原
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了

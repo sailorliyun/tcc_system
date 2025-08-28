@@ -1,0 +1,56 @@
+#!/bin/csh
+#　 スクリプト名 ： QTEJE3UX
+#　 機  能       ： 会員マスタデータ削除･圧縮処理
+#　 作成者       ： 江口
+#　 作成日       ： 
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME  = $0                                  # シェル名
+setenv JOB_ID        $SHELL_NAME:t                       # ジョブ名
+setenv JOBNET_ID     'QTEIB2UX'                          # ジョブネット名
+set    USERKEY     = 'QTEJE3UX'                          # ユーザキー
+set    LOGFILE     = $USER_LOG_DIR/${JOB_ID}.log         # ログファイル名
+set    LOGWRITE    = $EXE_DIR/QUAJ_MSGLOG.BAT            # ログ出力モジュール
+set    KINOU       = '洗替えデータファイル削除･圧縮処理' # 機能
+set    MODULE      = 'SHELL'
+set    QT_WORK_DIR = /d380/UFS/data/qt/svr               # 作業用ディレクトリ
+set    QT_DATA_DIR = /d380/UFS/data/qt/host              # 作業用ディレクトリ
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"           # 開始メッセージの出力
+#########################################
+# STEP1-1 会員Ｍファイルの削除          #
+#########################################
+#作業用ファイル１を削除する
+rm $QT_WORK_DIR/qtab_s000100.dat*.1
+set rc = $status
+if ( $rc != 0 ) then
+   set MSG = "失敗:会員マスタデータファイル削除１ RC=[$rc]"
+   $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+   exit  1
+endif
+
+#作業用ファイル２を削除する
+rm $QT_WORK_DIR/qtab_s000100.dat*.2
+set rc = $status
+if ( $rc != 0 ) then
+   set MSG = "失敗:会員マスタデータファイル削除２ RC=[$rc]"
+   $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+   exit  1
+endif
+
+#########################################
+# STEP1-2 会員Ｍファイルの圧縮を行なう  #
+#########################################
+#会員入替えファイルを圧縮する
+compress -f $QT_DATA_DIR/qtaf_kaiin9_*.hft
+set rc = $status
+if ( $rc != 0 ) then
+   set MSG = "失敗:会員マスタデータ圧縮 RC=[$rc]"
+   $LOGWRITE "$MODULE"  E  "$MSG" $USERKEY
+   exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"           # 終了メッセージの出力
+
+exit 0

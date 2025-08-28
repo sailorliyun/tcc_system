@@ -1,0 +1,118 @@
+#!/bin/csh
+# 　スクリプト名 ： QPDJB6UX
+#　 業  務       ： 社員貸付システム
+#　 機  能       ： 履歴登録処理、貸付分解データ処理（社員貸付二次）
+#　 作成者       ： FIP
+#
+#   項番     修正日      修正者         修正内容
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME  = $0                                 # シェル名
+setenv JOB_ID        $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID    'QPDBA1UX'                          # ジョブネット名
+set    LOGFILE     = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE    = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY     = 'QPDIJ4UX'                         # ユーザキー 
+set    KINOU       = '社員貸付履歴登録・貸付分解'
+set    MODULE      = 'SHELL'
+set    TABLE_NAME  = QPB3_ZNDKRRK                       # 対象テーブル名
+set    QP_DATA_DIR = /d051/UFS/data/qp                  # TMP FILE DIR
+set    PRM_JOBNET  =  "'"$JOBNET_ID"'"
+set    PRM_JOB     = "'"$JOB_ID"'"
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+
+#########################################
+# STEP-1 貸付データ登録                 #
+#########################################
+set MODULE = 'SQL*LOADER'
+set KINOU  = '小口融資・貸付データ登録'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+### SQL*LOADERの実行 ###
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID               \
+   control = $LDR_CTRL_DIR/qpb1_hostkasituke2.sql        \
+   data    = $QP_DATA_DIR/qpb1_hostkasituke.dat          \
+   log     = $LDR_LOG_DIR/qpb1_hostkasituke2.log         \
+   direct=true                                           \
+             > $LOGFILE
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "異常:$KINOU ローダーロード RC=[$rc]" "$USERKEY"
+    echo "SQL*LOADER ABNORMAL ENDED : RC=[$rc]"
+    exit 1
+endif
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-2 インデックスエラーのチェック   #
+#########################################
+
+set MODULE = 'SQL*PLUSE'
+set KINOU  = '残高履歴テーブルインデックスチェック'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE "$MODULE" E "異常:$KINOU ローダーロード RC=[$rc]" "$USERKEY"
+    echo "SQL*PLUSE ABNORMAL ENDED : RC=[$rc]"
+    exit  1
+endif
+
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+    $LOGWRITE "$MODULE" E "異常:$KINOU ローダーロード(grep) RC=[$rc]" "$USERKEY"
+    echo "grep ABNORMAL ENDED : RC=[$rc]"
+    exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+
+
+#########################################
+# STEP-3 残高履歴登録・分解戻し/分解    #
+#########################################
+set MODULE = 'qusc_sspexec.exe'
+set KINOU  = '残高履歴更新・分解戻し分解登録'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID "tccuser.QPAP_CEnt1540PkG.QPAP_ZNDK_BNKITURK($PRM_JOBNET, $PRM_JOB)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "異常:$KINOU QPAP_CEnt1540PkG.QPAP_ZNDK_BNKITURK RC=[$rc]" "$USERKEY"
+    echo "QPAP_CEnt1540PkG.QPAP_ZNDK_BNKITURK ABNORMAL ENDED : RC=[$rc]"
+    exit 1
+endif
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-4 終了処理                       #
+#########################################
+set    KINOU      = '社員貸付履歴登録・貸付分解'
+set    MODULE     = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+exit 0                                             # 正常終了

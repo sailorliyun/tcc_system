@@ -1,0 +1,83 @@
+#!/bin/csh
+#　スクリプト名  ： QBDJ70UX
+#　 機  能       ： JR旧Gイメージデータ登録処理
+#                   JR旧Gイメージデータ登録処理を起動する
+#　 作成者       ： FIP.Kemmochi
+#   作成日       ： 2013/01/31
+#   修正履歴
+#   項番   管理番号    修正内容                修正者         修正日
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID   'QBD701UX'                      # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QBDJ70UX'                     # ユーザキー 
+set    KINOU      = 'JR旧Gイメージデータ登録処理'
+
+set    COBOL_WORK_DIR = '/d360/UFS/imgkanri2/tmp'		# COBOLファイル出力フォルダー
+set    FILE1_NAME = 'ImageTorikomiWorkFile.txt'			# COBOL出力ファイル名
+set    OT_FILE1   = $COBOL_WORK_DIR/$FILE1_NAME			# COBOL出ファイルフルパス
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     		# 開始メッセージ
+
+#########################################
+# STEP-1  一覧ファイル削除              #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:登録対象一覧ファイルクリア " "$USERKEY"		# 開始メッセージ
+if (-e $OT_FILE1) then
+	rm -f $OT_FILE1														# ファイル削除
+	set rc = $status
+	if ( $rc != 0 ) then
+		$LOGWRITE  "$MODULE"  E  "失敗:登録対象一覧ファイル削除  RC=[$rc]"  "$USERKEY"
+		exit  1                                      					# 異常終了
+	endif
+endif
+touch $OT_FILE1															# 空ファイル作成
+set rc = $status
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:登録対象一覧空ファイル作成  RC=[$rc]"  "$USERKEY"
+	exit  1                                      						# 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:登録対象一覧ファイルクリア " "$USERKEY"    	# 終了メッセージ
+
+############################################################
+# STEP-2  JR旧Gイメージデータ登録処理                      #
+############################################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:JR旧Gイメージデータ登録処理 " "$USERKEY" 	# 開始メッセージの出力
+set PROGRAM = $EXE_DIR/qbgb_s000100.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv OTFILE $OT_FILE1
+    #    
+    setenv NLS_LANG Japanese_Japan.JA16SJIS     	# 文字コード体系をSJISにする
+    $PROGRAM                                    	# プログラム起動
+    set rc = $status                            	# リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC      	# 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                      	# 異常終了
+endif
+
+if ( $rc != 0 ) then                           		# リターンステータス判定
+    $LOGWRITE  "$MODULE"  E  "失敗:JR旧Gイメージデータ登録処理起動 RC=[$rc]" "$USERKEY"
+    exit  1                                     	# 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:JR旧Gイメージデータ登録処理 " "$USERKEY"  		# 終了メッセージの出力
+
+#########################################
+# STEP-99  終了処理                     #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  	# 終了メッセージの出力
+exit 0                                          	# 正常終了

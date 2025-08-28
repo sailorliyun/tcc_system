@@ -1,0 +1,30 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJ34UX
+#　 機  能       ： ホスト貸付データ移行ロードファイル処理
+#　 作成者       ： NCB.hayashi
+#
+
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSD311UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSDJ34UX'                         # ユーザキー
+set    KINOU      = 'ｶｰﾄﾞ発券繰越ファイル０バイト'
+
+
+#########################################
+# STEP-1  繰越ファイルを0バイトにする   #
+#########################################
+
+set MODULE = 'shell'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+ cp  /dev/null $QY_DATA_DIR/hakken_daily/qyaf_hakkendata.kur
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+
+exit 0                                           # 正常終了
+

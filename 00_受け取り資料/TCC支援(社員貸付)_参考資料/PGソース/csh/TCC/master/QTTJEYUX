@@ -1,0 +1,656 @@
+#!/bin/csh
+#Å@ ÉXÉNÉäÉvÉgñº ÅF QTTJEYUX
+#Å@ ã@  î\       ÅF å⁄ãqï™êÕÉfÅ[É^HULFTÉtÉ@ÉCÉãçÏê¨
+#Å@ çÏê¨é“       ÅF FIP
+#Å@èCÅ@ê≥Å@óöÅ@óÅF ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA 2004/09/28
+#Å@ èCê≥óöó     ÅF 00001 ÉfÉBÉåÉNÉgÉäïœçX        IMZ.YOSHIDA 2005/11/25
+#                   1102086 å⁄ãqï™êÕópÇÃâÔàıëÆê´ÉfÅ[É^ÇÃÉåÉCÉAÉEÉgïœçX imz.Yoshida 2011/05/26
+#------------------------------------------------------#
+# ä¬ã´ê›íË                                             #
+#------------------------------------------------------#
+setenv JOBNET_ID    QTT4BAUX                           # ÉWÉáÉuÉlÉbÉgñº
+setenv JOB_ID       QTTJEYUX                           # ÉWÉáÉuñº
+setenv USERKEY      QTTJEYUX                           # ÉÜÅ[ÉUÉLÅ[
+set    KINOU      = 'å⁄ãqï™êÕÉfÅ[É^HULFTçÏê¨'          # ã@î\
+set    HULFT_DIR1 = (/d290/UFS/data/qta)               # HULFTéÛêMÇcÇhÇqÇP
+set    HULFT_DIR2 = (/d311/UFS/data/qta)               # HULFTéÛêMÇcÇhÇqÇQ
+# add by IMZ.YOSHIDA 2005/11/25 00001 ==>
+set    HULFT_DIR3 = (/d371/UFS/data/qta)               # HULFTéÛêMÇcÇhÇqÇR
+# add by IMZ.YOSHIDA 2005/11/25 00001 <==
+#et    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ÉçÉOÉtÉ@ÉCÉãñº
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ÉçÉOèoóÕÉÇÉWÉÖÅ[Éã
+#------------------------------------------------------#
+# STEP-1                                               #
+#------------------------------------------------------#
+set    MODULE     = zcat                               # ÉÇÉWÉÖÅ[Éãñº
+$LOGWRITE "$MODULE" I "äJén:$KINOU" "$USERKEY"         # äJénÉÅÉbÉZÅ[ÉWÇÃèoóÕ
+#------------------------------------------------------#
+#Å@ ã@  î\       ÅF ÇgÇtÇkÇeÇsçÏê¨ÅiâÔàıëÆê´èÓïÒÉtÉ@ÉCÉãÅj
+#rm   $HULFT_DIR1/qtab_s008000.dat?
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008000.1datA.Z >> $HULFT_DIR1/qtab_s008000.dat1
+zcat $HULFT_DIR3/qtab_s008000.1datA.Z >> $HULFT_DIR3/qtab_s008000.dat1
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008000.1datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008000.1datB.Z >> $HULFT_DIR1/qtab_s008000.dat1
+zcat $HULFT_DIR3/qtab_s008000.1datB.Z >> $HULFT_DIR3/qtab_s008000.dat1
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008000.1datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008000.2datA.Z >> $HULFT_DIR1/qtab_s008000.dat2
+zcat $HULFT_DIR3/qtab_s008000.2datA.Z >> $HULFT_DIR3/qtab_s008000.dat2
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008000.2datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008000.2datB.Z >> $HULFT_DIR1/qtab_s008000.dat2
+zcat $HULFT_DIR3/qtab_s008000.2datB.Z >> $HULFT_DIR3/qtab_s008000.dat2
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008000.2datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008000.3datA.Z >> $HULFT_DIR1/qtab_s008000.dat3
+zcat $HULFT_DIR3/qtab_s008000.3datA.Z >> $HULFT_DIR3/qtab_s008000.dat3
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008000.3datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008000.3datB.Z >> $HULFT_DIR1/qtab_s008000.dat3
+zcat $HULFT_DIR3/qtab_s008000.3datB.Z >> $HULFT_DIR3/qtab_s008000.dat3
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008000.3datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008000.4datA.Z >> $HULFT_DIR1/qtab_s008000.dat4
+zcat $HULFT_DIR3/qtab_s008000.4datA.Z >> $HULFT_DIR3/qtab_s008000.dat4
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008000.4datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008000.4datB.Z >> $HULFT_DIR1/qtab_s008000.dat4
+zcat $HULFT_DIR3/qtab_s008000.4datB.Z >> $HULFT_DIR3/qtab_s008000.dat4
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008000.4datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# del 2011/05/26 1102086 ÉåÉCÉAÉEÉgïœçXëŒâû Start
+## 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA -->
+## mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+##zcat $HULFT_DIR2/qtab_s008000.5datA.Z >> $HULFT_DIR1/qtab_s008000.dat5
+#zcat $HULFT_DIR3/qtab_s008000.5datA.Z >> $HULFT_DIR3/qtab_s008000.dat5
+## mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+#set rc = $status
+#if $rc != 0 then
+#    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5A RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL (s008000.5datA) RC=[$rc] >>***"
+#   exit(1)
+#endif
+## mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+##zcat $HULFT_DIR2/qtab_s008000.5datB.Z >> $HULFT_DIR1/qtab_s008000.dat5
+#zcat $HULFT_DIR3/qtab_s008000.5datB.Z >> $HULFT_DIR3/qtab_s008000.dat5
+## mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+#set rc = $status
+#if $rc != 0 then
+#    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5B RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL (s008000.5datB) RC=[$rc] >>***"
+#   exit(1)
+#endif
+## mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+##zcat $HULFT_DIR2/qtab_s008000.6datA.Z >> $HULFT_DIR1/qtab_s008000.dat6
+#zcat $HULFT_DIR3/qtab_s008000.6datA.Z >> $HULFT_DIR3/qtab_s008000.dat6
+## mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+#set rc = $status
+#if $rc != 0 then
+#    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6A RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL (s008000.6datA) RC=[$rc] >>***"
+#   exit(1)
+#endif
+## mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+##zcat $HULFT_DIR2/qtab_s008000.6datB.Z >> $HULFT_DIR1/qtab_s008000.dat6
+#zcat $HULFT_DIR3/qtab_s008000.6datB.Z >> $HULFT_DIR3/qtab_s008000.dat6
+## mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+#set rc = $status
+#if $rc != 0 then
+#    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6B RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL (s008000.6datB) RC=[$rc] >>***"
+#   exit(1)
+#endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA <--
+# del 2011/05/26 1102086 ÉåÉCÉAÉEÉgïœçXëŒâû end
+#------------------------------------------------------#
+#Å@ ã@  î\       ÅF ÇgÇtÇkÇeÇsçÏê¨ÅiâÔàıâ∆ë∞èÓïÒÉtÉ@ÉCÉãÅj
+#rm   $HULFT_DIR1/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008100.1datA.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.1datA.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.1datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008100.1datB.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.1datB.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.1datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008100.2datA.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.2datA.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.2datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008100.2datB.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.2datB.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.2datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008100.3datA.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.3datA.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.3datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008100.3datB.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.3datB.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.3datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008100.4datA.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.4datA.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.4datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008100.4datB.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.4datB.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.4datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA -->
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008100.5datA.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.5datA.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.5datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008100.5datB.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.5datB.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.5datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008100.6datA.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.6datA.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.6datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008100.6datB.Z >> $HULFT_DIR1/qtab_s008100.dat
+zcat $HULFT_DIR3/qtab_s008100.6datB.Z >> $HULFT_DIR3/qtab_s008100.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008100.6datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA <--
+#------------------------------------------------------#
+#Å@ ã@  î\       ÅF ÇgÇtÇkÇeÇsçÏê¨Åiìñåéóòópñæç◊ì`ï[ÉtÉ@ÉCÉãÅj
+#rm   $HULFT_DIR1/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008300.1datA.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.1datA.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.1datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008300.1datB.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.1datB.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.1datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008300.2datA.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.2datA.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.2datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008300.2datB.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.2datB.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.2datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008300.3datA.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.3datA.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.3datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008300.3datB.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.3datB.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.3datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008300.4datA.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.4datA.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.4datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008300.4datB.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.4datB.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.4datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA -->
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008300.5datA.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.5datA.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.5datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008300.5datB.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.5datB.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.5datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008300.6datA.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.6datA.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.6datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008300.6datB.Z >> $HULFT_DIR1/qtab_s008300.dat
+zcat $HULFT_DIR3/qtab_s008300.6datB.Z >> $HULFT_DIR3/qtab_s008300.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008300.6datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA <--
+#------------------------------------------------------#
+#Å@ ã@  î\       ÅF ÇgÇtÇkÇeÇsçÏê¨Åiìñåéóòópñæç◊çsÉtÉ@ÉCÉãÅj
+#rm   $HULFT_DIR1/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008400.1datA.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.1datA.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.1datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008400.1datB.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.1datB.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.1datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008400.2datA.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.2datA.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.2datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008400.2datB.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.2datB.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.2datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008400.3datA.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.3datA.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.3datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008400.3datB.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.3datB.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.3datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008400.4datA.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.4datA.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.4datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008400.4datB.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.4datB.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.4datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA -->
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008400.5datA.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.5datA.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.5datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008400.5datB.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.5datB.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.5datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008400.6datA.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.6datA.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.6datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008400.6datB.Z >> $HULFT_DIR1/qtab_s008400.dat
+zcat $HULFT_DIR3/qtab_s008400.6datB.Z >> $HULFT_DIR3/qtab_s008400.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008400.6datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA <--
+#------------------------------------------------------#
+#Å@ ã@  î\       ÅF ÇgÇtÇkÇeÇsçÏê¨ÅiìñåéóòópÉTÉ}ÉäÉtÉ@ÉCÉãÅj
+#rm   $HULFT_DIR1/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008500.1datA.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.1datA.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.1datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008500.1datB.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.1datB.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 1B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.1datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008500.2datA.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.2datA.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.2datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008500.2datB.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.2datB.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 2B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.2datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008500.3datA.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.3datA.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.3datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR1/qtab_s008500.3datB.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.3datB.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 3B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.3datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008500.4datA.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.4datA.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.4datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008500.4datB.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.4datB.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 4B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.4datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA -->
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008500.5datA.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.5datA.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.5datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008500.5datB.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.5datB.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 5B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.5datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008500.6datA.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.6datA.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.6datA) RC=[$rc] >>***"
+   exit(1)
+endif
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#zcat $HULFT_DIR2/qtab_s008500.6datB.Z >> $HULFT_DIR1/qtab_s008500.dat
+zcat $HULFT_DIR3/qtab_s008500.6datB.Z >> $HULFT_DIR3/qtab_s008500.dat
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "é∏îs:$KINOU 6B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL (s008500.6datB) RC=[$rc] >>***"
+   exit(1)
+endif
+# 2004/09/28 ÉTÉuÉåÉìÉWí«â¡Ç…î∫Ç§èCê≥ IMZ.YAMADA <--
+#------------------------------------------------------#
+$LOGWRITE "$MODULE" I "èIóπ:$KINOU" "$USERKEY"         # èIóπÉÅÉbÉZÅ[ÉWÇÃèoóÕ
+exit 0                                                 # ê≥èÌèIóπ

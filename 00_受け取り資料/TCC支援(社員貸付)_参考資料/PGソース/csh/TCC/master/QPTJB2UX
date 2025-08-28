@@ -1,0 +1,98 @@
+#!/bin/csh
+#　スクリプト名  ： QPTJB2UX
+#　 機  能       ： 控除テーブルデータ抽出（給与用）
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPDIXXUX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPTJB2UX'                         # ユーザキー
+set    KINOU      = '控除テーブルデータ抽出シェル'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+#########################################
+# STEP-1 控除テーブルデータ抽出         #
+#########################################
+
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:社員貸付・控除テーブルデータ抽出（給与）" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qpab_s000220.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    #  レイアウト変更に伴う変更　2005/06/25 START 
+    #setenv OTFILE   $QP_DATA_DIR/kyuuyohiki.dat
+    setenv OTFILE   $QP_DATA_DIR/kyuuyohikiold.dat
+    #  レイアウト変更に伴う変更　2005/06/25 END 
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:社員貸付・控除テーブルデータ抽出（給与）" "$USERKEY"     # 終了メッセージの出力
+
+#######################################################
+#抽出データレイアウト変更に伴う追加　2005/6/5　START  #
+#######################################################
+
+#########################################
+# STEP-2 控除テーブルデータ抽出         #
+#########################################
+
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:社員貸付・控除テーブルデータレイアウト変換（給与）" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qpab_s000240.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv INFILE   $QP_DATA_DIR/kyuuyohikiold.dat
+    setenv OTFILE   $QP_DATA_DIR/kyuuyohiki.dat
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:社員貸付・控除テーブルデータレイアウト変換（給与）" "$USERKEY"     # 終了メッセージの出力
+
+#########################################
+# STEP-1 控除テーブルデータＣＯＰＹ     #
+#########################################
+#set MODULE = 'COBOL'
+#$LOGWRITE "$MODULE" I "開始:社員貸付・控除データCOPY（給与）" "$USERKEY"     # 開始メッセージの出力
+#         cp  $QP_DATA_DIR/kyuuyohiki.dat $QP_HUL_DIR/kyuuyohiki.dat
+#
+#$LOGWRITE "$MODULE" I "終了:社員貸付・控除データCOPY（給与）" "$USERKEY"     # 終了メッセージの出力
+#
+#######################################################
+#抽出データレイアウト変更に伴う追加　2005/6/5　END    #
+#######################################################
+exit 0                                           # 正常終了
+

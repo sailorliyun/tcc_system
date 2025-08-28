@@ -1,0 +1,48 @@
+#!/bin/csh
+# 　スクリプト名 ： QBTJM1UX
+#　 機  能       ： 自振返戻データから口振Ｔに返戻結果を取込む
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBTM11UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QBK1_KFURIT'                      # ユーザキー 
+set    KINOU      = '自振返戻データから口振Ｔに返戻結果を取込む'
+
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'qbkc_putjfuri.exe'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS  
+
+### ＥＸＥ・の実行 ###
+set  PRM_JFURIF = '/d031/UFS/data/qt/data/svr/dat/qsaf_jfhenrei.dat'
+######set  PRM_JFURIF = "$EXE_DIR/data/qsaf_jfhenrei.dat"
+$EXE_DIR/qbkc_putjfuri.exe  $PRM_JFURIF   $JOBNET_ID  $JOB_ID
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC  
+
+if ( $rc == 1 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]ファイル無し($PRM_JFURIF)"  "$USERKEY"   
+	exit  1                                      # 異常終了
+endif
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+

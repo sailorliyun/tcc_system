@@ -1,0 +1,68 @@
+#!/bin/csh
+#   スクリプト名： QBDJWCUX
+#   機  能	： イメージ画像移動エラー時対応処理
+#   作成者	： NBC 斎藤
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBD601UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY     'QBDJWCUX'                          # ユーザキー
+set    KINOU      = 'イメージ画像移動エラー時対応処理' # 機能名
+set    HSTDIR     = /d360/UFS/imgkanri/tmp/image_buffer
+
+set MODULE = 'SHELL'
+# 開始メッセージの出力
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"
+
+#########################################
+#  STEP1 新会員インデックス削除処理     #
+#########################################
+
+# 削除対象データが存在する場合のみ実行
+if ( -f $HSTDIR/ERRSERCH ) then
+
+	set MODULE = 'COBOL'
+	$LOGWRITE "$MODULE" I "開始:$KINOU 新会員インデックス削除処理" "$USERKEY"
+	set PROGRAM = $EXE_DIR/qbfb_s000400.exe
+	if ( -x $PROGRAM ) then
+	    setenv   INFILE $HSTDIR/ERRSERCH                   # 削除対象キー
+	    setenv   OTFILE $HSTDIR/DELETENG                   # 削除失敗データ
+	    setenv   NLS_LANG Japanese_Japan.JA16SJIS
+
+	    $PROGRAM
+	    set rc = $status
+	    setenv   NLS_LANG Japanese_Japan.JA16EUC
+
+	else
+
+	    $LOGWRITE  "$MODULE" W "警告:$KINOU 実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+	    exit 0
+
+	endif
+
+	if ( $rc != 0 ) then
+
+	    $LOGWRITE "$MODULE" W "警告:$KINOU 新会員インデックス削除処理 RC=[$rc]" "$USERKEY"
+	    exit 0
+
+	endif
+
+	# 削除失敗データあり
+	set val = `wc -l $OTFILE`
+	if ( "$val[1]" != 0 ) then
+	    $LOGWRITE "$MODULE" W "警告:$KINOU 新会員インデックス削除処理 $HSTDIR/DELETENG" "$USERKEY"
+	endif
+
+	$LOGWRITE "$MODULE" I "終了:$KINOU 新会員インデックス削除処理" "$USERKEY"
+
+endif
+
+### 終了メッセージの出力
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"
+exit 0

@@ -1,0 +1,84 @@
+#!/bin/csh
+#　スクリプト名  ： QTTJG2UX
+#　 機  能       ： キャッシング明細ＤＢレコード管理
+#　 作成者       ： ＦＩＰ．横山
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QTTE02UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QTTJG2UX'                         # ユーザキー
+set    HUL_DIR    = /d361/UFS/data/qta/fromhost
+set    DAT_DIR    = /d361/UFS/data/qta/dat
+
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'qtab_s008000'
+set KINOU  = 'キャッシング明細ＤＢ削除レコード抽出'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+rm -f ls $DAT_DIR/cdmeisai.del.data.txt
+
+#  ファイル識別子の設定
+setenv IN1FILE $HUL_DIR/O.F.QW96.hft
+setenv OT1FILE $DAT_DIR/cdmeisai.del.data.txt
+
+set PROGRAM = $EXE_DIR/qtab_s008000.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                       # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をＥＵＣに戻す
+else
+
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    $LOGWRITE  "$MODULE"  E  "[$PROGRAM]異常終了。" "$USERKEY"
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-2                                #
+#########################################
+
+set MODULE = 'qtab_s008100'
+set KINOU  = 'キャッシング明細ＤＢレコード削除'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+
+#  ファイル識別子の設定
+setenv INFILE $DAT_DIR/cdmeisai.del.data.txt
+
+set PROGRAM = $EXE_DIR/qtab_s008100.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                       # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をＥＵＣに戻す
+else
+
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    $LOGWRITE  "$MODULE"  E  "[$PROGRAM]異常終了。" "$USERKEY"
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力

@@ -1,0 +1,64 @@
+#!/bin/csh
+setenv JOBNET_ID  QBDV01UX
+setenv JOB_ID     QBDJV1UX
+setenv USERKEY    QBDJV1UX
+set    MODULE   = QBDJV1UX
+set    LOGWRITE = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    datdir   = $QB_DATA_DIR
+set    huldir   = $FROMHOST2_DIR/qb/rcv
+
+#echo  `date +%y%m%d%H%M%S` >! $datdir/QBDV00UX.txt
+set    key      = `cut -b1-12 $datdir/QBDV00UX.txt`
+
+$LOGWRITE "$MODULE" I "START : 申込書更新・ＨＯＳＴ入会" "$USERKEY"
+#-----------------------------------------------------#
+#   SDBT370   ＨＯＳＴデータ・更新対象データ抽出
+#-----------------------------------------------------#
+setenv INFILE    $datdir/sdbt370i01_$key.txt
+setenv OT1FILE   $datdir/sdbt370o01_$key.txt
+setenv OT2FILE   $datdir/sdbt370o02_$key.txt
+
+setenv NLS_LANG  Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qbab_sdbt370.exe
+
+set rc = $status
+setenv NLS_LANG  Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then 
+   $LOGWRITE "$MODULE" E "ERROR : ＨＯＳＴデータ・更新対象データ抽出 RC=[$rc]" "$USERKEY"
+   echo "SDBT370 ABNORMAL ENDED : RC=[$rc]" 
+   exit(1) 
+endif 
+#-----------------------------------------------------#
+#   SDBT360   申込書更新・ＨＯＳＴ受付データ
+#-----------------------------------------------------#
+setenv INFILE    $datdir/sdbt370o01_$key.txt
+setenv OTFILE    $datdir/sdbt360o01_$key.txt
+
+setenv NLS_LANG  Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qbab_sdbt360.exe
+
+set rc = $status
+setenv NLS_LANG  Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then 
+   $LOGWRITE "$MODULE" E "ERROR : 申込書更新・ＨＯＳＴ入会 RC=[$rc]" "$USERKEY"
+   echo "SDBT360 ABNORMAL ENDED : RC=[$rc]" 
+   exit(1) 
+endif 
+#-----------------------------------------------------#
+if !(-z $datdir/sdbt360o01_$key.txt) then
+   $LOGWRITE "$MODULE" W "WARNING : 申込書更新・ＨＯＳＴ入会データ不備" "$USERKEY"
+   echo "SDBT360 WARNING" 
+endif 
+#-----------------------------------------------------#
+#   rm        前日分クリア
+#-----------------------------------------------------#
+rm -f  $datdir/sdbt360zen.txt
+touch  $datdir/sdbt360zen.txt
+
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+
+exit(0)

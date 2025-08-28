@@ -1,0 +1,273 @@
+#!/bin/csh
+#set   SHELL_NAME = $0
+setenv JOBNET_ID    QBDL10UX
+setenv JOB_ID       QBDJL1UX
+setenv USERKEY      QBDJL1UX
+set    MODULE     = QBDJL1UX
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    datdir     = $QB_DATA_DIR
+set    huldir     = $FROMHOST2_DIR/qb/rcv
+set    homedir    = (/d041/UFS/data/qb/FTP)
+set    logdir     = (/d041/UFS/data/qb/FLOLOG)
+set    oradir     = (/d041/UFS/data/qb/ORAWRK)
+set    qbwdir     = (/d041/UFS/data/qb/QBWORK)
+set    flodir     = (/d041/UFS/data/qb/FLOCSH)
+set    autodir    = (/usr/local/auto/master)
+#Delete 2004/09/02 ＦｌｏＷａｒｅ削除対応漏れ imz.Yoshida
+
+$LOGWRITE "$MODULE " I "START : 入会管理バッチ初期設定" "$USERKEY"
+#-----------------------------------------------------#
+#   Deadline Shell ﾘｶﾊﾞﾘ
+#-----------------------------------------------------#
+cp ${autodir}/QBDJ99UX $flodir
+chmod 777 ${flodir}/QBDJ99UX
+
+#-----------------------------------------------------#
+#   Directory Clear
+#-----------------------------------------------------#
+#--- QB Work Directory ---#
+#$EXE_DIR/qbac_mov003 "$qbwdir" '4' 
+$EXE_DIR/qbac_mov003 "$qbwdir" '11' 
+set rc = $status
+if ($rc != 0)  then
+    $LOGWRITE "$MODULE " E "ERROR : 削除（ＱＢＷＯＲＫ）RC=[$rc]" "$USERKEY"
+    echo 'MOV003(Dir Clear(1)) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+#--- IMG AES Directory ---#
+#$EXE_DIR/qbac_mov003 "$homedir/IMGBCK" '4'
+$EXE_DIR/qbac_mov003 "$homedir/IMGBCK" '11'
+set rc = $status
+if ($rc != 0)  then
+    $LOGWRITE "$MODULE " E "ERROR : 削除（ＩＭＧＢＣＫ）RC=[$rc]" "$USERKEY"
+    echo 'MOV003(Dir Clear(2)) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+#$EXE_DIR/qbac_mov003 "$homedir/AESBCK" '4'
+$EXE_DIR/qbac_mov003 "$homedir/AESBCK" '11'
+set rc = $status
+if ($rc != 0)  then
+    $LOGWRITE "$MODULE " E "ERROR : 削除（ＡＥＳＢＣＫ）RC=[$rc]" "$USERKEY"
+    echo 'MOV003(Dir Clear(3)) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+#--- FloWare Directory ---#
+$EXE_DIR/qbac_mov003 "$datdir" '11' 
+set rc = $status
+if ($rc != 0)  then
+    $LOGWRITE "$MODULE " E "ERROR : 削除（入会管理ワーク）RC=[$rc]" "$USERKEY"
+    echo 'MOV003(Dir Clear(4)) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+$EXE_DIR/qbac_mov003 "$logdir" '11' 
+set rc = $status
+if ($rc != 0)  then
+    $LOGWRITE "$MODULE " E "ERROR : 削除（ＦＬＯＬＯＧ）RC=[$rc]" "$USERKEY"
+    echo 'MOV003(Dir Clear(5)) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+$EXE_DIR/qbac_mov003 "$oradir" '11' 
+set rc = $status
+if ($rc != 0)  then
+    $LOGWRITE "$MODULE " E "ERROR : 削除（ＯＲＡＷＲＫ）RC=[$rc]" "$USERKEY"
+    echo 'MOV003(Dir Clear(6)) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+#------------------------------------------------------------#
+#   Delete   QBW6_FTPSendALLT
+#------------------------------------------------------------#
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qbap_deletepkg.qbap_workdelete('$JOBNET_ID','$JOB_ID','QBW6_FTPSENDALLT')"
+
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE " E "ERROR : 当日分ＦＴＰＡＬＬＴ削除 RC=[$rc]" "$USERKEY"
+    echo "DELETE(QBW6) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+#------------------------------------------------------------#
+#   Delete   QSA1_NOCTRT
+#------------------------------------------------------------#
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.QSAP_CommonPkG.QSAP_InitNo('QB','AES','1')"
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE " E "ERROR : 採番Ｔ削除（ＡＥＳ）RC=[$rc]" "$USERKEY"
+    echo "DELETE(QSA1-1) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.QSAP_CommonPkG.QSAP_InitNo('QB','SDBT080','1')"
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE " E "ERROR : 採番Ｔ削除（ＳＤＢＴ０８０）RC=[$rc]" "$USERKEY"
+    echo "DELETE(QSA1-2) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.QSAP_CommonPkG.QSAP_InitNo('QB','SOBT020','1')"
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE " E "ERROR : 採番Ｔ削除（ＳＯＢＴ０２０）RC=[$rc]" "$USERKEY"
+    echo "DELETE(QSA1-3) ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+#Delete 2004/09/02 ＦｌｏＷａｒｅ削除対応漏れ imz.Yoshida ==>
+##-----------------------------------------------------#
+##  FTP TMPファイルバックアップ
+##-----------------------------------------------------#
+#set today  = `date +%y%m%d`
+#cp -f $homedir/AESBCK/ftp.txt $homedir/AESBCK/ftp_$today.bck
+#set rc = $status
+#if ($rc != 0) then
+#    $LOGWRITE "$MODULE  " E "ERROR : ＦＴＰＴＭＰバックアップ RC=[$rc]" "$USERKEY"
+#    echo 'FTP tmpfile Backup ABNORMAL ENDED : RC=[$rc]"
+#    exit(1)
+#endif
+#rm -f $homedir/AESBCK/ftp.txt
+#
+##-----------------------------------------------------#
+##  HULFT用ダミーファイル削除(×15)
+##-----------------------------------------------------#
+#rm -f $huldir/O.F.Q216
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q217
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q218
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q219
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q220
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q221
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q222
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q223
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q224
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q225
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q226
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q227
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q228
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q229
+#set rc = $status
+#if ($rc != 0) goto Err00
+#rm -f $huldir/O.F.Q230
+#set rc = $status
+#if ($rc != 0) goto Err00
+#goto Next00
+#
+#Err00:
+#$LOGWRITE "$MODULE   " E "ERROR : 配信ダミー削除 RC=[$rc]" "$USERKEY"
+#echo 'HULFT Dummyfile(snd) Delete ABNORMAL ENDED : RC=[$rc]"
+#exit(1)
+#
+#Next00:
+#rm -f $huldir/O.F.Q251
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q252
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q253
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q254
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q255
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q256
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q257
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q258
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q259
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q260
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q261
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q262
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q263
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q264
+#set rc = $status
+#if ($rc != 0) goto Err01
+#rm -f $huldir/O.F.Q265
+#set rc = $status
+#if ($rc != 0) goto Err01
+#goto Next01
+#
+#Err01:
+#$LOGWRITE "$MODULE   " E "ERROR : 集信ダミー削除 RC=[$rc]" "$USERKEY"
+#echo 'HULFT Dummyfile(rcv) Delete ABNORMAL ENDED : RC=[$rc]"
+#exit(1)
+#
+##-----------------------------------------------------#
+##  Dummysnd.txt FileID 初期値設定
+##-----------------------------------------------------#
+#Next01:
+#
+#echo   "O.F.Q201" >! $flodir/Dummysnd.txt
+#set rc = $status
+#if ($rc != 0) goto Err02
+#echo   "OFQ201"   >! $flodir/FileID.txt
+#set rc = $status
+#if ($rc != 0) goto Err02
+#echo   "O.F.Q271" >! $flodir/Dummyrcv.txt
+#set rc = $status
+#if ($rc != 0) goto Err02
+#echo   "OFQ271"   >! $flodir/FileID2.txt
+#set rc = $status
+#if ($rc != 0) goto Err02
+#goto Next02
+#
+#Err02:
+#$LOGWRITE "$MODULE   " E "ERROR : テキスト初期値設定 RC=[$rc]" "$USERKEY"
+#echo 'SETUP Dummytxtfile ABNORMAL ENDED : RC=[$rc]"
+#exit(1)
+#
+#Next02:
+#Delete 2004/09/02 ＦｌｏＷａｒｅ削除対応漏れ imz.Yoshida <==
+
+$LOGWRITE "$MODULE   " I "END" "$USERKEY"
+exit(0)
+

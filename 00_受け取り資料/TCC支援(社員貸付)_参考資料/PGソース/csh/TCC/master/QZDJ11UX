@@ -1,0 +1,160 @@
+#!/bin/csh
+#　スクリプト名  ： QZDJ11UX
+#　 機  能       ： アクセスログレコード作成処理
+#　 作成者       ： FIP
+#　 改造         ： 05/05/10 
+#　 修正         ： 06/08/08 ディレクトリ変更 NBC 齋藤
+####################################################
+#      環境設定                                    #
+####################################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID    'QZD101UX'                     # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QZDJ11UX'                     # ユーザキー 
+set    KINOU      = 'アクセスログレコード作成'
+
+# MOD-START 2006/08/08 ディレクトリ変更
+# set    FILE_DIR      = /d321/UFS/data/fromhost/qz/rcv  #ACCLOG FILE DIR
+set    FILE_DIR      = /d440/UFS/data/ac/fromhost/rcv    #ACCLOG FILE DIR
+# set    QZ_SAVE_DIR   = /d321/UFS/data/qz               #ACCLOG(SYSTEM用)
+set    QZ_SAVE_DIR   = /d440/UFS/data/ac                 #ACCLOG(SYSTEM用)
+# MOD-END
+
+set    STEP_F       = $QZ_SAVE_DIR/${JOB_ID}_STEP_.tmp
+
+set MODULE = 'SHELL       '
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     #開始メッセージの出力
+####################################################
+#      STEP-1  アクセスログレコード作成            #
+####################################################
+STEP_1:
+set MODULE = 'qzab_s000100'
+set STEPKINOU = 'アクセスログレコード作成（インフォメーション）'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY" # 開始メッセージの出力
+
+setenv IN1FIL1 $QZ_SAVE_DIR/qzaf_accctlf08.inf
+setenv OUT1FIL1 $QZ_SAVE_DIR/qzaf_00000008SV.dat
+
+set PROGRAM = $EXE_DIR/qzab_s000100.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS        # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                    # プログラム起動
+    set rc = $status                               # リターンステータス待避
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                         # 異常終了
+endif
+
+if ( $rc != 0 ) then                               # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE      "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                        # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY" #終了メッセージの出力
+####################################################
+#     STEP-2  最終スペースデータ削除処理           #
+####################################################
+STEP_2:
+set MODULE = 'ACCLOG      '
+set STEPKINOU = 'アクセスログ最終データ削除（インフォメーション）'
+$LOGWRITE     "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+sed -e '/^$/d' $QZ_SAVE_DIR/qzaf_00000008SV.dat > $QZ_SAVE_DIR/qzaf_00000008.dat
+rm -f $QZ_SAVE_DIR/qzaf_00000008SV.dat
+#ログファイル(SYSTEM)→アクセスログファイルコピー(追加書き）
+cat  $QZ_SAVE_DIR/qzaf_00000008.dat  >>  $FILE_DIR/qzaf_00000008.dat
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+####################################################
+#      STEP-3  アクセスログレコード作成            #
+####################################################
+STEP_3:
+set MODULE = 'qzab_s000100'
+set STEPKINOU = 'アクセスログレコード作成（支援システム）'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY" # 開始メッセージの出力
+
+setenv IN1FIL1 $QZ_SAVE_DIR/qzaf_accctlf02.inf
+setenv OUT1FIL1 $QZ_SAVE_DIR/qzaf_00000002SV.dat
+
+set PROGRAM = $EXE_DIR/qzab_s000100.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS        # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                    # プログラム起動
+    set rc = $status                               # リターンステータス待避
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                         # 異常終了
+endif
+
+if ( $rc != 0 ) then                               # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE      "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                        # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY" #終了メッセージの出力
+####################################################
+#     STEP-4  最終スペースデータ削除処理           #
+####################################################
+STEP_4:
+set MODULE = 'ACCLOG      '
+set STEPKINOU = 'アクセスログ最終データ削除（支援システム）'
+$LOGWRITE     "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+sed -e '/^$/d' $QZ_SAVE_DIR/qzaf_00000002SV.dat > $QZ_SAVE_DIR/qzaf_00000002.dat
+rm -f $QZ_SAVE_DIR/qzaf_00000002SV.dat
+#ログファイル(SYSTEM)→アクセスログファイルコピー(追加書き）
+cat  $QZ_SAVE_DIR/qzaf_00000002.dat  >>  $FILE_DIR/qzaf_00000002.dat
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+####################################################
+#      STEP-5  アクセスログレコード作成            #
+####################################################
+STEP_5:
+set MODULE = 'qzab_s000100'
+set STEPKINOU = 'アクセスログレコード作成（イメージ）'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"      # 開始メッセージの出力
+
+setenv IN1FIL1 $QZ_SAVE_DIR/qzaf_accctlf04.inf
+setenv OUT1FIL1 $QZ_SAVE_DIR/qzaf_00000004SV.dat
+
+set PROGRAM = $EXE_DIR/qzab_s000100.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS        # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                    # プログラム起動
+    set rc = $status                               # リターンステータス待避
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                         # 異常終了
+endif
+
+if ( $rc != 0 ) then                               # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE      "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                        # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY" #終了メッセージの出力
+####################################################
+#     STEP-6  最終スペースデータ削除処理           #
+####################################################
+STEP_6:
+set MODULE = 'ACCLOG      '
+set STEPKINOU = 'アクセスログ最終データ削除（イメージ）'
+$LOGWRITE     "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+sed -e '/^$/d' $QZ_SAVE_DIR/qzaf_00000004SV.dat > $QZ_SAVE_DIR/qzaf_00000004.dat
+rm -f $QZ_SAVE_DIR/qzaf_00000004SV.dat
+#ログファイル(SYSTEM)→アクセスログファイルコピー(追加書き）
+cat  $QZ_SAVE_DIR/qzaf_00000004.dat  >>  $FILE_DIR/qzaf_00000004.dat
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+####################################################
+# STEP-99      終了処理                            #
+####################################################
+STEP_END_PROC:
+
+set MODULE = 'SHELL       '
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     #終了メッセージの出力
+
+exit 0

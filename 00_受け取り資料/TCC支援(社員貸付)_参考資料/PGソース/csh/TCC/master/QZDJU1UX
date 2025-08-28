@@ -1,0 +1,172 @@
+#!/bin/csh
+#　スクリプト名  ： QZDJU1UX
+#　 機  能       ： チケットシステムPOSステータス取込
+#　                   －チケットPOSSTSﾌｧｲﾙ作成処理
+#　 作成者       ： FIP & OrientalArts
+#　 作成日       ： 2005.08.25
+#　 概要         ：ホストより受信したPOSデータを
+#                  QZT9_MEMBER_STATUSに登録する
+#                      1.前回処理データをTMPにコピー(障害発生時に前回の状況に戻せるようにsave)
+#                      2.今回受信データをコピー
+#                      # 3.テーブルをトランケート         #対応 000003 にてQZDJU2UXに移動
+#                      # 4.データをLOAD                   #対応 000003 にてQZDJU2UXに移動
+#                      # 5.受信DIRの受信ファイルをクリア  #対応 000003 にてQZDJU3UXに移動
+#　 修正履歴     ： YYYY.MM.DD 　修　　　正　　　内　　　容　　修正者
+#                ： 2005.08.25   新規作成                      OARTS Furukawa
+# 000002 0807073    2009.03.29   非互換対応                    NBC.ISHIDA
+# 000002 0808052    2009.03.29   非互換対応                    NBC.ISHIDA
+# 000003            2009.07.23   BCVによるﾘｶﾊﾞﾘﾈｯﾄに対応するため、   FIP.Eriguchi
+#                                ﾌｧｲﾙｺﾋﾟｰ処理とDB登録処理を
+#                                別JOBに分割。
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QZDU01UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QZDJU1UX'                         # ユーザキー
+set    KINOU      = 'チケットPOSSTSﾌｧｲﾙ作成処理'
+
+set    TICKET_HOME = /d361/UFS/data/qzt                 # チケットシステム　データホームディレクトリ
+set    DATA_DIR  = $TICKET_HOME/tmp                     #TMP DIR
+set    HUL_DIR   = $TICKET_HOME/fromhost                #受信DIR
+set    HUL_FILE_NAME = O.F.QA46.hft                     #受信ファイル名
+set    LOAD_DATA_FILE = qzt9_member_status_data.dat     #処理用ファイル名
+set    SAVE_DATA_FILE = save_qzt9.dat                   #saveファイル名
+
+#####################################################
+# STEP-1 前回データバックアップ&今回受信データ移動  #
+#####################################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"       # 処理開始メッセージの出力
+
+set STEPKINOU = 'データ取込準備'                     # 前回データコピー
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY     # STEP開始メッセージの出力
+
+  #前回データがあったらSAVEする
+  if ( -f $DATA_DIR/$LOAD_DATA_FILE ) then
+    cp -p $DATA_DIR/$LOAD_DATA_FILE  $DATA_DIR/$SAVE_DATA_FILE
+    set rc = $status
+    if ( $rc != 0 ) then
+         set MSG = "失敗:$STEPKINOU RC=[$rc]：前回データコピー"
+         $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY          # STEP異常終了メッセージの出力
+         exit  1
+    endif
+  endif
+
+  #受信ファイル有無チェック
+  if ( ! -f $HUL_DIR/$HUL_FILE_NAME ) then
+     set MSG = "失敗:$STEPKINOU ：受信データがありません"
+     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY          # STEP異常終了メッセージの出力
+     exit  1
+  endif
+
+  #受信データをTMPディレクトリにコピー
+  cp $HUL_DIR/$HUL_FILE_NAME  $DATA_DIR/$LOAD_DATA_FILE
+
+ set rc = $status
+ if ( $rc != 0 ) then
+     set MSG = "失敗:$STEPKINOU RC=[$rc]：受信データ移動"
+     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY          # STEP異常終了メッセージの出力
+     exit  1
+ endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY       # STEP終了メッセージの出力
+
+#DEL 0000003 20090723 FIP.Eriguchi start
+############################################
+## STEP-2 POSデータテーブルTRUNCATE        #
+############################################
+#set MODULE = 'SQL*PLUS1'
+#set STEPKINOU = 'チケットシステム未収チェックテーブルTRANCATE'
+#$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY       # STEP開始メッセージの出力
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+#      TRUNCATE TABLE QZT9_MEMBER_STATUS;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#     set MSG = "失敗:$STEPKINOU RC=[$rc]"
+#     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY          # STEP異常終了メッセージの出力
+#     exit  1
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY       # STEP終了メッセージの出力
+#
+############################################
+## STEP-3 POSデータファイルをDBに登録      #
+############################################
+#set MODULE = 'SQL*LOADER'
+#set STEPKINOU = 'POSデータファイルをDBに登録'
+#$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY       # STEP開始メッセージの出力
+#
+#set CTRLFILE    = $LDR_CTRL_DIR/qzdjt1_qzt9_load.ctl
+#set DATAFILE    = $DATA_DIR/$LOAD_DATA_FILE
+#set SQLLOGFILE  = $LDR_LOG_DIR/qzt9_member_status_load.log
+#set BADFILE     = $DATA_DIR/qzt9_member_status_load.bad
+#
+#### SQL*LOADERの実行 ###
+#setenv NLS_LANG  Japanese_Japan.JA16SJIS
+##MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+##sqlldr $DB_USERID/$DB_PASSWORD             \
+##     control=$CTRLFILE                     \
+##     data=$DATAFILE                        \
+##     log=$SQLLOGFILE                       \
+##     bad=$BADFILE                          \
+##         > $LOGFILE
+#sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID \
+#     control=$CTRLFILE                     \
+#     data=$DATAFILE                        \
+#     log=$SQLLOGFILE                       \
+#     bad=$BADFILE                          \
+#         > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+#
+#set rc = $status
+#setenv NLS_LANG  Japanese_Japan.JA16EUC
+#if ( $rc != 0 ) then                                     # リターンステータス判定
+#    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+#     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY            # STEP異常終了メッセージの出力
+#    exit  1                                              # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY         # STEP終了メッセージの出力
+#
+###########################################
+## STEP-99      後始末                    #
+###########################################
+#STEP_END_PROC:
+#
+#set MODULE = 'SHELL'
+#
+##受信ファイルのクリア
+#set STEPKINOU = '受信ファイルのクリア'
+#$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY          # STEP開始メッセージの出力
+#
+# cp  /dev/null $HUL_DIR/$HUL_FILE_NAME
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+#     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY             # STEP異常終了メッセージの出力
+#    exit 1
+#endif
+#$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY       # STEP終了メッセージの出力
+#DEL 0000003 20090723 FIP.Eriguchi end
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 処理終了メッセージの出力
+
+exit 0

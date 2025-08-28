@@ -1,0 +1,113 @@
+#!/bin/csh
+#   スクリプト名 ： QBDJW2UX
+#   機  能       ： イメージ管理会員データ登録
+#   作成者       ： FIP
+#
+#   0001   20050830  ＦＩＰ高橋     パス変更
+#   0002   20050830  ＦＩＰ高橋     ステータス変更
+#     修正履歴
+# 項番   管理番号    修正内容                 修正者         修正日
+# 000003             日次アベンドリカバリ対応 NBC.Saitoh    2007/03/05
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBD601UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QBDJW2UX'                         # 
+#   0001 更新  ==>
+# set    HSTDIR     = /s050/UFS/imagekanri/image/imgkanri/image_buffer/fromhost
+set    HSTDIR     = /d360/UFS/imgkanri/tmp/image_buffer/fromhost
+#   0001 更新  <==
+set    KINOU      = 'イメージ管理会員データ登録'
+# 000003 add NBC.Saitoh 2007/03/05 start
+set    BRNFIL     = /d360/UFS/imgkanri/image_buffer/badfile.dat
+# 000003 add NBC.Saitoh 2007/03/05 end
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+# 000003 add NBC.Saitoh 2007/03/05 start
+if ( -f $BRNFIL) then
+	$LOGWRITE "$MODULE" I "終了:$KINOU 前JOBにてエラーが有った為終了" "$USERKEY"
+	exit 0
+endif
+# 000003 add NBC.Saitoh 2007/03/05 end
+
+#########################################
+#                                       #
+#########################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+
+# タブを削除
+cp /dev/null $HSTDIR/O.F.QA01.hft
+cp /dev/null $HSTDIR/O.F.QA02.hft
+cp /dev/null $HSTDIR/O.F.QA03.hft
+cp /dev/null $HSTDIR/O.F.QA04.hft
+cp /dev/null $HSTDIR/O.F.QA05.hft
+
+cat $HSTDIR/O.F.QA01.txt | awk '{ print $1 " " $2 " " $3 " " $4 " " $5}' > $HSTDIR/O.F.QA01.hft
+cat $HSTDIR/O.F.QA02.txt | awk '{ print $1 " " $2 " " $3 " " $4 }' > $HSTDIR/O.F.QA02.hft
+cat $HSTDIR/O.F.QA03.txt | awk '{ print $1 " " $2 " " $3 " " $4 " " $5}' > $HSTDIR/O.F.QA03.hft
+cat $HSTDIR/O.F.QA04.txt | awk '{ print $1 " " $2 " " $3 " " $4 " " $5}' > $HSTDIR/O.F.QA04.hft
+cat $HSTDIR/O.F.QA05.txt | awk '{ print $1 " " $2 " " $3 " " $4 " " $5}' > $HSTDIR/O.F.QA05.hft
+
+set PROGRAM = $EXE_DIR/qbfb_s000100.exe
+if ( -x $PROGRAM ) then
+
+    #
+    #  ファイル識別子の設定
+    setenv INFILE01 $HSTDIR/O.F.QA01.hft
+    setenv INFILE02 $HSTDIR/O.F.QA02.hft
+    setenv INFILE03 $HSTDIR/O.F.QA03.hft
+    setenv INFILE04 $HSTDIR/O.F.QA04.hft
+    setenv INFILE05 $HSTDIR/O.F.QA05.hft
+    setenv OTFILE $HSTDIR/WORNING.dat
+    #
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS            # 文字コード体系をSJISにする
+    $PROGRAM                                           # プログラム起動
+    set rc = $status                                   # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC             # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+#   0002 更新  ==>
+#    exit 0                                             # 異常終了
+    exit 1                                             # 異常終了
+#   0002 更新  <==
+endif
+
+#   0002 更新（exec変更、９９追加）  ==>
+# if ( $rc == 50 ) then                                  # リターンステータス判定
+#     $LOGWRITE "$MODULE" E "失敗:$KINOU" "$USERKEY"     # 終了メッセージの出力
+#    exit  0                                            # 異常終了
+# endif
+if ( $rc == 50 ) then                                  # リターンステータス判定
+    $LOGWRITE "$MODULE" E "失敗:$KINOU" "$USERKEY"     # 終了メッセージの出力
+    exit  1                                            # 異常終了
+endif
+
+if ( $rc == 99 ) then                                  # リターンステータス判定
+    $LOGWRITE "$MODULE" E "失敗:$KINOU" "$USERKEY"     # 終了メッセージの出力
+    exit  1                                            # 異常終了
+endif
+#   0002 更新  <==
+
+if ($rc == 1) then
+     $LOGWRITE "$MODULE" W "警告:$KINOU" "$USERKEY"    # 終了メッセージの出力
+    exit  0                                            #
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

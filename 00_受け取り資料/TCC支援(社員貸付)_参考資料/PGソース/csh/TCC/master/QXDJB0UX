@@ -1,0 +1,51 @@
+#!/bin/csh
+#
+#　スクリプト名  ： QXDJB0UX
+#　 機  能       ： 日次異常検知ファイル削除
+#　 作成者       ： NBC野村
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                              # シェル名
+setenv JOB_ID       $SHELL_NAME:t                   # ジョブ名
+setenv JOBNET_ID   'QSOED1UX'                       # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log     # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT        # ログ出力モジュール
+setenv USERKEY      'QXDJB0UX'                      # ユーザキー
+set    KINOU      = '日次異常検知ファイル削除'
+
+set    ABEND_FILE_DIR    = /s020/UFS/data/netabend              # 日次異常時ディレクトリ
+set    D_ABEND_FILE      = $ABEND_FILE_DIR/dailyabend.dat       # 日次異常検知ファイル
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+
+##########################################
+# STEP-1 日次異常検知ファイル削除        #
+##########################################
+STEP_01:
+
+if ( -f $D_ABEND_FILE ) then
+    
+    rm -f $D_ABEND_FILE
+    
+    set rc = $status
+    if ( $rc != 0 ) then
+        set MSG = "失敗:$KINOU RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+    endif
+    
+endif
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0
+

@@ -1,0 +1,146 @@
+#!/bin/csh
+#   スクリプト名 ： QPDJK4UX
+#   業  務        : 社員貸付２次
+#   機  能       ： 分解・分解戻しＴ、残高履歴Ｔ、控除履歴Ｔの期日管理
+#   作成者       ： FIP
+#
+
+##################################################
+#           環境設定                             #
+##################################################
+set    SHELL_NAME = $0                                 # シェル名 file 名=job名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPDBB1UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QPDJI3UX'                         # ユーザキー
+set    PRM_JOBNET =  "'"$JOBNET_ID"'"
+set    PRM_JOB    = "'"$JOB_ID"'"
+
+###########################################################################
+# STEP-1     ストアド・プロシジャの実行                                   #
+###########################################################################
+set   MODULE = 'qusc_sspexec.exe'
+set   MONTH  = 120                                     # 削除月数
+set   KINOU  = '分解・分解戻Ｔ残高履歴Ｔ控除履歴Ｔ期日管理'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+
+###########################################################################
+# STEP-2.1   ストアド・プロシジャの実行(分解・分解戻しテーブル期日管理)   #
+###########################################################################
+set    KINOU      = '期日管理：分解・分解戻しＴ'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID "tccuser.QPAP_CEnt1500PkG.QPAP_DeleteQPB2( $PRM_JOBNET, $PRM_JOB, $MONTH)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "異常:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#インデックスの最適化
+$LOGWRITE "$MODULE" I "開始:${KINOU}最適化" "$USERKEY"  # 開始メッセージの出力
+sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE
+ALTER INDEX tccuser.XIDX1_QPB2_BUNKAI COALESCE;
+quit SQL.SQLCODE
+EOF
+set rc = $status
+	if ( $rc != 0 ) then
+	        $LOGWRITE "$MODULE " E "異常:${KINOU}最適化 RC=[$rc]" "$USERKEY"
+	        echo "${KINOU}最適化失敗 : RC=[$rc]"
+	        exit 1
+	endif
+$LOGWRITE "$MODULE" I "終了:${KINOU}最適化" "$USERKEY"  # 終了メッセージの出力
+
+###########################################################################
+# STEP-2.2   ストアド・プロシジャの実行(残高履歴テーブル期日管理)         #
+###########################################################################
+set    KINOU      = '期日管理：残高履歴Ｔ'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID "tccuser.QPAP_CEnt1500PkG.QPAP_DeleteQPB3( $PRM_JOBNET, $PRM_JOB, $MONTH)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "異常:$KINOU  RC=[$rc]"  "$USERKEY"
+        echo "QPAP_CEnt1500PkG.QPAP_DeleteQPB3 ABNORMAL ENDED : RC=[$rc]"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#インデックスの最適化
+$LOGWRITE "$MODULE" I "開始:${KINOU}最適化" "$USERKEY"  # 開始メッセージの出力
+sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE
+ALTER INDEX tccuser.XIDX1_QPB3_ZNDKRRK COALESCE;
+quit SQL.SQLCODE
+EOF
+set rc = $status
+	if ( $rc != 0 ) then
+	        $LOGWRITE "$MODULE " E "異常:${KINOU}最適化1 RC=[$rc]" "$USERKEY"
+	        echo "${KINOU}最適化失敗 : RC=[$rc]"
+	        exit 1
+	endif
+sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE
+ALTER INDEX tccuser.XIDX2_QPB3_ZNDKRRK COALESCE;
+quit SQL.SQLCODE
+EOF
+set rc = $status
+	if ( $rc != 0 ) then
+	        $LOGWRITE "$MODULE " E "異常:${KINOU}最適化2 RC=[$rc]" "$USERKEY"
+	        echo "${KINOU}最適化失敗 : RC=[$rc]"
+	        exit 1
+	endif
+$LOGWRITE "$MODULE" I "終了:${KINOU}最適化" "$USERKEY"  # 終了メッセージの出力
+
+###########################################################################
+# STEP-2.3   ストアド・プロシジャの実行(控除履歴テーブル期日管理)         #
+###########################################################################
+set    KINOU      = '期日管理：控除履歴Ｔ'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID "tccuser.QPAP_CEnt1500PkG.QPAP_DeleteQPB0( $PRM_JOBNET, $PRM_JOB, $MONTH)"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "異常:$KINOU  RC=[$rc]"  "$USERKEY"
+        echo "QPAP_CEnt1500PkG.QPAP_DeleteQPB0 ABNORMAL ENDED : RC=[$rc]"
+        exit  1                                  # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+#インデックスの最適化
+$LOGWRITE "$MODULE" I "開始:${KINOU}最適化" "$USERKEY"  # 開始メッセージの出力
+sqlplus -S $DB_ADMINID/$DB_ADMINPASS@$ORACLE_SID << EOF > $LOGFILE
+ALTER INDEX tccuser.XIDX1_QPB0_KOJORRKT COALESCE;
+quit SQL.SQLCODE
+EOF
+set rc = $status
+	if ( $rc != 0 ) then
+	        $LOGWRITE "$MODULE " E "異常:${KINOU}最適化 RC=[$rc]" "$USERKEY"
+	        echo "${KINOU}最適化失敗 : RC=[$rc]"
+	        exit 1
+	endif
+$LOGWRITE "$MODULE" I "終了:${KINOU}最適化" "$USERKEY"  # 終了メッセージの出力
+
+###########################################################################
+#                           終 了                                         #
+###########################################################################
+set    KINOU     =  '分解・分解戻Ｔ残高履歴Ｔ控除履歴Ｔ期日管理'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+
+exit 0                                           # 正常終了

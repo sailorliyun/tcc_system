@@ -1,0 +1,462 @@
+#!/bin/csh
+#　 スクリプト名 ： QTTJFKUX
+#　 機  能       ： 顧客分析データサマリファイル作成　６
+#　 作成者       ： FIP
+#　 修正履歴     ： 00001 ディレクトリ変更        IMZ.YOSHIDA 2005/11/25
+#　                 1102086 会員基本属性Ｆのﾚｲｱｳﾄ変更 FIP.ERIGUCHI 2011/5/22
+#------------------------------------------------------#
+# 環境設定                                             #
+#------------------------------------------------------#
+setenv JOBNET_ID    QTT4B8UX                           # ジョブネット名
+setenv JOB_ID       QTTJFKUX                           # ジョブ名
+setenv USERKEY      QTTJFKUX                           # ユーザキー
+set    KINOU      = '顧客分析ﾃﾞｰﾀ会員･利用･ｻﾏﾘ5･6'     # 機能
+set    HULFT_DIR1 = (/d290/UFS/data/qta)               # HULFT受信ＤＩＲ１
+set    HULFT_DIR2 = (/d311/UFS/data/qta)               # HULFT受信ＤＩＲ２
+# add by IMZ.YOSHIDA 2005/11/25 00001 ==>
+set    HULFT_DIR3 = (/d371/UFS/data/qta)               # HULFT受信ＤＩＲ３
+# add by IMZ.YOSHIDA 2005/11/25 00001 <==
+#et    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+#------------------------------------------------------#
+# STEP-1                                               #
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+#------------------------------------------------------#
+#　 機  能       ： 当月サマリ集計Ａ
+echo "*** qtab_s006500 ***"
+set    IN_FA      = ($HULFT_DIR2/qtab_s006000.6datA)
+set    IN_FB      = ($HULFT_DIR2/qtab_s006300.6datA)
+set    OT_F       = ($HULFT_DIR2/qtab_s006500.6datA)
+echo   "入力ファイルＡ：$IN_FA"
+echo   "入力ファイルＢ：$IN_FB"
+echo   "出力ファイル名：$OT_F"
+setenv INFILE1    $IN_FA
+setenv INFILE2    $IN_FB
+setenv OTFILE     $OT_F
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006500.exe
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006500 A RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+#　 機  能       ： コンバート変換（会員属性情報）
+# mod 20110522 1102086 FIP.ERIGUCHI START
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#set    OT_F2      = ($HULFT_DIR2/qtab_s008000.6datA)
+#set    OT_F2      = ($HULFT_DIR3/qtab_s008000.6datA)
+set    OT_F2      = ($HULFT_DIR3/qtab_s008001.6datA)
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+# mod 20110522 1102086 FIP.ERIGUCHI END
+echo   "入力ファイルＡ：$IN_FA"
+echo   "出力ファイル名：$OT_F2"
+setenv IQTS800    $IN_FA
+setenv OQTS800    $OT_F2
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006600.exe QTS800
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006600 A RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+set    MODULE     = compress                           # モジュール名
+compress -f       $IN_FA
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+# add 20110522 1102086 FIP.ERIGUCHI START
+#------------------------------------------------------#
+#　 機  能       ： 会員基本属性　配信用ファイル作成
+set    OT_F5      = ($HULFT_DIR3/qtab_s008000.6datA)
+echo   "入力ファイルＡ：$OT_F2"
+echo   "出力ファイル名：$OT_F5"
+setenv INFILE    $OT_F2
+setenv OTFILE    $OT_F5
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006800.exe
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006800 A RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+# add 20110522 1102086 FIP.ERIGUCHI END
+#------------------------------------------------------#
+compress -f       $OT_F2
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+# add 20110522 1102086 FIP.ERIGUCHI START
+#------------------------------------------------------#
+compress -f       $OT_F5
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+# add 20110522 1102086 FIP.ERIGUCHI END
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+#　 機  能       ： コンバート変換（利用明細伝票）
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#set    OT_F3      = ($HULFT_DIR2/qtab_s008300.6datA)
+set    OT_F3      = ($HULFT_DIR3/qtab_s008300.6datA)
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+echo   "入力ファイルＡ：$IN_FB"
+echo   "出力ファイル名：$OT_F3"
+setenv IQTS830    $IN_FB
+setenv OQTS830    $OT_F3
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006600.exe QTS830
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006600 A RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+set    MODULE     = compress                           # モジュール名
+compress -f       $IN_FB
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+compress -f       $OT_F3
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+#　 機  能       ： コンバート変換（当月サマリ集計）
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#set    OT_F4      = ($HULFT_DIR2/qtab_s008500.6datA)
+set    OT_F4      = ($HULFT_DIR3/qtab_s008500.6datA)
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+echo   "入力ファイルＡ：$OT_F"
+echo   "出力ファイル名：$OT_F4"
+setenv IQTS850    $OT_F
+setenv OQTS850    $OT_F4
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006600.exe QTS850
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006600 A RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+set    MODULE     = compress                           # モジュール名
+compress -f       $OT_F
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+compress -f       $OT_F4
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+#　 機  能       ： 当月サマリ集計Ｂ
+echo "*** qtab_s006500 ***"
+set    IN_FA      = ($HULFT_DIR2/qtab_s006000.6datB)
+set    IN_FB      = ($HULFT_DIR2/qtab_s006300.6datB)
+set    OT_F       = ($HULFT_DIR2/qtab_s006500.6datB)
+echo   "入力ファイルＡ：$IN_FA"
+echo   "入力ファイルＢ：$IN_FB"
+echo   "出力ファイル名：$OT_F"
+setenv INFILE1    $IN_FA
+setenv INFILE2    $IN_FB
+setenv OTFILE     $OT_F
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006500.exe
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006500 B RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+#　 機  能       ： コンバート変換（会員属性情報）
+# mod 20110522 1102086 FIP.ERIGUCHI START
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#set    OT_F2      = ($HULFT_DIR2/qtab_s008000.6datB)
+#set    OT_F2      = ($HULFT_DIR3/qtab_s008000.6datB)
+set    OT_F2      = ($HULFT_DIR3/qtab_s008001.6datB)
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+# mod 20110522 1102086 FIP.ERIGUCHI END
+echo   "入力ファイルＡ：$IN_FA"
+echo   "出力ファイル名：$OT_F2"
+setenv IQTS800    $IN_FA
+setenv OQTS800    $OT_F2
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006600.exe QTS800
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU A RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006600 A RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+set    MODULE     = compress                           # モジュール名
+compress -f       $IN_FA
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+# add 20110522 1102086 FIP.ERIGUCHI START
+#------------------------------------------------------#
+#　 機  能       ： 会員基本属性　配信用ファイル作成
+set    OT_F5      = ($HULFT_DIR3/qtab_s008000.6datB)
+echo   "入力ファイルＡ：$OT_F2"
+echo   "出力ファイル名：$OT_F5"
+setenv INFILE    $OT_F2
+setenv OTFILE    $OT_F5
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006800.exe
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006800 B RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+# add 20110522 1102086 FIP.ERIGUCHI END
+#------------------------------------------------------#
+compress -f       $OT_F2
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+# add 20110522 1102086 FIP.ERIGUCHI START
+#------------------------------------------------------#
+compress -f       $OT_F5
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+# add 20110522 1102086 FIP.ERIGUCHI END
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+#　 機  能       ： コンバート変換（利用明細伝票）
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#set    OT_F3      = ($HULFT_DIR2/qtab_s008300.6datB)
+set    OT_F3      = ($HULFT_DIR3/qtab_s008300.6datB)
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+echo   "入力ファイルＡ：$IN_FB"
+echo   "出力ファイル名：$OT_F3"
+setenv IQTS830    $IN_FB
+setenv OQTS830    $OT_F3
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006600.exe QTS830
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006600 B RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+set    MODULE     = compress                           # モジュール名
+compress -f       $IN_FB
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+compress -f       $OT_F3
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#-------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+#　 機  能       ： コンバート変換（当月サマリ集計）
+# mod by IMZ.YOSHIDA 2005/11/25 00001 ==>
+#set    OT_F4      = ($HULFT_DIR2/qtab_s008500.6datB)
+set    OT_F4      = ($HULFT_DIR3/qtab_s008500.6datB)
+# mod by IMZ.YOSHIDA 2005/11/25 00001 <==
+echo   "入力ファイルＡ：$OT_F"
+echo   "出力ファイル名：$OT_F4"
+setenv IQTS850    $OT_F
+setenv OQTS850    $OT_F4
+#-------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006600.exe QTS850
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU B RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006600 B RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+set    MODULE     = compress                           # モジュール名
+compress -f       $OT_F
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+compress -f       $OT_F4
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+exit 0                                                 # 正常終了

@@ -1,0 +1,146 @@
+#!/bin/csh
+#
+#  ‚g‚t‚k‚e‚sŠOŽš•ÏŠ·ƒvƒƒZƒXÄƒRƒ“ƒpƒCƒ‹•Ä‹N“® [ƒIƒ“ƒ‰ƒCƒ“ŠJŽn‘O]  (QSOJS2UX)
+#
+#     ‹@  ”\F1. ‚g‚t‚k‚e‚sŠOŽš•ÏŠ·ƒ‹[ƒ`ƒ“ÄƒRƒ“ƒpƒCƒ‹•ƒŠƒ“ƒN
+#             2. ‚g‚t‚k‚e‚sí’“ƒvƒƒZƒX‚ð’âŽ~‚·‚éB
+#             3. ‚g‚t‚k‚e‚síŠOŽš•ÏŠ·ƒ‚ƒWƒ…[ƒ‹‚ð“ü‘Ö‚¦‚éB
+#             4. ‚g‚t‚k‚e‚sí’“ƒvƒƒZƒX‚ð‹N“®‚·‚éB
+#     ˆø  ”F
+#
+#     EXIT’lF0 --- ³í
+#             1 --- ƒGƒ‰[”­¶
+#    C³—š—ðF YYYY.MM.DD @C@@@³@@@“à@@@—e@@@C³ŽÒ
+#            F 2004.08.30 ‚g‚t‚k‚e‚sƒo[ƒWƒ‡ƒ“ƒAƒbƒv‚É”º‚¤@ã@Œ´
+#            F            ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+#            F 000002 0807073   ”ñŒÝŠ·‘Î‰ž                  NBC.ishida  2009/06/08
+#
+set  SHELL_NAME = $0                                    # ƒVƒFƒ‹–¼
+set  MODULE   =  $SHELL_NAME:t                          # ƒ‚ƒWƒ…[ƒ‹–¼
+set  LOGFILE  = $USER_LOG_DIR/db_ope.log                # ƒƒOƒtƒ@ƒCƒ‹–¼
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ƒƒOo—Í—p‹¤’ÊƒVƒFƒ‹
+#20040830ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+#set  HULFT_DIR = /usr/local/HULFT
+#set  HULFT_OBJ = ${HULFT_DIR}/obj
+#set  GAIJI_SUBSRC = jef_sjis.c
+#set  GAIJI_MKFILE = TCC_makefile
+#20040830ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+
+$LOGWRITE  "‚g‚t‚k‚e‚sŠOŽš•ÏŠ·ƒvƒƒZƒXÄƒRƒ“ƒpƒCƒ‹•Ä‹N“® [ƒIƒ“ƒ‰ƒCƒ“ŠJŽn‘O]" >> $LOGFILE
+
+#20040830ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+######################################################
+## 1. ‚g‚t‚k‚e‚sŠOŽš•ÏŠ·ƒ‹[ƒ`ƒ“ÄƒRƒ“ƒpƒCƒ‹•ƒŠƒ“ƒN	#
+######################################################
+#cd ${HULFT_OBJ}
+#if ( ! -e $GAIJI_SUBSRC ||  -z $GAIJI_SUBSRC ) then
+#	$LOGWRITE  "ŠOŽš•ÏŠ·ƒ‹[ƒ`ƒ“‚È‚µ: [${HULFT_OBJ}/${GAIJI_SUBSRC}] ˆÙíI—¹" >> $LOGFILE
+#	exit 1
+#endif
+#	
+####################################
+## 1.1 ŠOŽš•ÏŠ·ƒ‹[ƒ`ƒ“ƒRƒ“ƒpƒCƒ‹B#
+####################################
+#cc -c ${GAIJI_SUBSRC}
+#set RC = $status
+#if ( $RC != 0 ) then
+#	$LOGWRITE  "ŠOŽš•ÏŠ·ƒ‹[ƒ`ƒ“ƒRƒ“ƒpƒCƒ‹ƒGƒ‰[: [RC:$RC]" >> $LOGFILE
+#	exit 1
+#endif
+#
+##################################
+## 1.2 ŽÀsƒ‚ƒWƒ…[ƒ‹ƒNƒŠƒAB	#
+##################################
+#/usr/ccs/bin/make -f ${GAIJI_MKFILE} clean
+#set RC = $status
+#if ( $RC != 0 ) then
+#	$LOGWRITE  "ŠOŽš•ÏŠ·ƒ‹[ƒ`ƒ“ƒƒCƒN CLEAN : [RC:$RC]" >> $LOGFILE
+#	exit 1
+#endif
+#
+##################################
+## 1.2 ŽÀsƒ‚ƒWƒ…[ƒ‹ƒŠƒ“ƒN		#
+##################################
+#/usr/ccs/bin/make -f ${GAIJI_MKFILE} all
+#set RC = $status
+#if ( $RC != 0 ) then
+#	$LOGWRITE  "ŠOŽš•ÏŠ·ƒ‹[ƒ`ƒ“ƒƒCƒN ALL: [RC:$RC]" >> $LOGFILE
+#	exit 1
+#endif
+#
+#20040830ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+
+#########################################
+# 2.0 ‚g‚t‚k‚e‚sí’“ƒvƒƒZƒX’âŽ~		#
+#########################################
+${EXE_DIR}/QUAJ_HULSTOP.BAT
+if ( $status != 0 ) then
+	exit 1
+endif
+
+#20040830ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+######################################################
+## 3. ‚g‚t‚k‚e‚sŠOŽš•ÏŠ·ƒ‚ƒWƒ…[ƒ‹‚ð“ü‘Ö‚¦‚éB		#
+######################################################
+#/usr/ccs/bin/make -f ${GAIJI_MKFILE} install
+#set RC = $status
+#if ( $RC != 0 ) then
+#	$LOGWRITE  "ŠOŽš•ÏŠ·ƒ‹[ƒ`ƒ“ƒƒCƒN ALL: [RC:$RC]" >> $LOGFILE
+#	exit 1
+#endif
+#
+#20040830ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+
+# ‚·‚®‹N“®‚·‚é‚Æí’“ƒvƒƒZƒX‹N“®‚ªƒGƒ‰[I—¹‚·‚éˆ×B
+sleep 30
+
+# 0807073 ”ñŒÝŠ·‘Î‰ž NBC.ishida  2009/06/08 DEL-START
+
+#####################################
+# 4.0 ‚g‚t‚k‚e‚sí’“ƒvƒƒZƒX‹N“®	#
+#####################################
+#${EXE_DIR}/QUAJ_HULSTART.BAT
+#if ( $status != 0 ) then
+#	exit 1
+#endif
+
+#20040830ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+# ‚g‚t‚k‚e‚s‹N“®‘Ò‚¿
+#sleep 20
+
+# 0807073 ”ñŒÝŠ·‘Î‰ž NBC.ishida  2009/06/08 DEL-END
+
+#####################################################
+# 5.0 ‚g‚t‚k‚e‚sŠOŽšƒe[ƒuƒ‹“WŠJ					#
+#####################################################
+utlgtfextd -i sj
+if ( $status != 0 ) then
+	$LOGWRITE  "SJIS¨JEFŠOŽšƒe[ƒuƒ‹“WŠJƒGƒ‰[: [RC:$RC]" >> $LOGFILE
+	exit 1
+endif
+
+utlgtfextd -i js
+if ( $status != 0 ) then
+	$LOGWRITE  "JEF¨SJISŠOŽšƒe[ƒuƒ‹“WŠJƒGƒ‰[: [RC:$RC]" >> $LOGFILE
+	exit 1
+endif
+#20040830ŠOŽš“o˜^•û–@•ÏX‘Î‰ž
+
+# 0807073 ”ñŒÝŠ·‘Î‰ž NBC.ishida  2009/06/08 ADD-START
+
+#####################################
+# 6.0 ‚g‚t‚k‚e‚sí’“ƒvƒƒZƒX‹N“®	#
+#####################################
+${EXE_DIR}/QUAJ_HULSTART.BAT
+if ( $status != 0 ) then
+	exit 1
+endif
+
+# ‚g‚t‚k‚e‚s‹N“®‘Ò‚¿
+sleep 20
+
+# 0807073 ”ñŒÝŠ·‘Î‰ž NBC.ishida  2009/06/08 ADD-END
+
+$LOGWRITE  "‚g‚t‚k‚e‚sŠOŽš•ÏŠ·ƒvƒƒZƒXÄƒRƒ“ƒpƒCƒ‹•Ä‹N“® [ƒIƒ“ƒ‰ƒCƒ“ŠJŽn‘O] ³íI—¹" >> $LOGFILE
+
+exit 0

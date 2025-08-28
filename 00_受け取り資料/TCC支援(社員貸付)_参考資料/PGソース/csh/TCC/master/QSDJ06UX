@@ -1,0 +1,162 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJ06UX
+#　 機  能       ： コードテーブル更新（全件置換）
+#　 作成者       ： FIP
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSD021UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSDJ06UX'                         # ユーザキー
+set    KINOU      = 'コードテーブル更新（全件置換）'
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qtab_s002700.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_codetbl.hft
+    setenv OTFILE $QJ_DATA_DIR/qt/data/svr/dat/qtaf_codetbl.dat
+    #
+    rm $QJ_DATA_DIR/qt/data/svr/dat/qtaf_codetbl.dat
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    #
+    #
+    rm $QJ_DATA_DIR/qt/data/svr/dat/qtaf_codetbl.dat
+    #
+    #
+    $PROGRAM                                     # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-2                                #
+#########################################
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+
+#外字を含むﾎｽﾄﾃﾞｰﾀを従来型ﾊﾟｽﾛｰﾄﾞでﾛｰﾄﾞ
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+### SQL*LOADERの実行 ###
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                \
+   control=$LDR_CTRL_DIR/qtad_codetbl.sql               \
+   data=$QJ_DATA_DIR/qt/data/svr/dat/qtaf_codetbl.dat  \
+   log=$LDR_LOG_DIR/qt/qtaf_codetbl.log                \
+             > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+
+#外字を含むﾎｽﾄﾃﾞｰﾀを従来型ﾊﾟｽﾛｰﾄﾞでﾛｰﾄﾞ
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+
+### 2000/04/19 処理追加　口座ステータス([S01],[0000])をﾌﾞﾗﾝｸに更新する　#######
+#########################################
+# STEP-2.1                              #
+#########################################
+set MODULE = 'PL/SQL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QSAP_CEnt001PKG.codeTupdate( '$JOBNET_ID', '$JOB_ID')"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                  # 異常終了
+endif
+
+###############################################################################
+### 2003/05/12 処理追加　コードテーブルに限度額を追加・更新する
+set MODULE = 'COBOL'
+setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_codetbl.hft
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qxtb_sdbt060.exe
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ( $rc != 0 ) then
+   echo "***<< ABNORMAL END > RC=[$rc] >>***"
+   $LOGWRITE "$MODULE " W "WARNING : エラー有[qxtb_sdbt060]" "$USERKEY"
+endif
+### 2003/05/12 処理追加　コードテーブルにＰＯＳコードを追加・更新する
+set MODULE = 'COBOL'
+setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_codetbl.hft
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qbab_sdbt170.exe
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ( $rc != 0 ) then
+   echo "***<< ABNORMAL END > RC=[$rc] >>***"
+   $LOGWRITE "$MODULE " W "WARNING : エラー有[qbab_sdbt170]" "$USERKEY"
+endif
+### 2004/02/04 処理追加　コードテーブルに提携先コードを追加・更新する
+set MODULE = 'COBOL'
+setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_codetbl.hft
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qbab_sdbt180.exe
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ( $rc != 0 ) then
+   echo "***<< ABNORMAL END > RC=[$rc] >>***"
+   $LOGWRITE "$MODULE " W "WARNING : エラー有[qbab_sdbt180]" "$USERKEY"
+endif
+set MODULE = 'PL/SQL'
+###############################################################################
+
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+
+
+exit 0                                           # 正常終了

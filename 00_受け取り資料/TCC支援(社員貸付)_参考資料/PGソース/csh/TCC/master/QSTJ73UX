@@ -1,0 +1,64 @@
+#!/bin/csh
+#   スクリプト名 ： QSTJ73UX
+#   機  能       ： 利用・入金最古データファイル削除処理
+#   作成者       ： imz.Yoshida
+#   作成日       ： 2006/06/18
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID    'QST191UX'                         # ジョブネット名
+setenv USERKEY      'QSTJ73UX'                         # ユーザキー 
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    KINOU      = '利用・入金最古データファイル削除処理'
+set    MODULE     = 'SHELL'
+set WK_DATA4_DIR  = '/d370/UFS/data/qt/shift'          # データファイル保存場所
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+##########################################################################
+# 削除対象年月を取得                                                     #
+##########################################################################
+set year     = `date +%Y`      # 処理年 (システム日付より)
+set month    = `date +%m`      # 処理月 (システム日付より)
+set bfmonth  = 4               # 4ヶ月前のファイルを削除
+set oldmonth = 12
+
+@ month -= $bfmonth
+
+# 引いた値が０以下の場合、前年度に変換
+if ( $month < 1 ) then
+   @ year --
+   @ oldmonth  += $month
+   set month =  $oldmonth
+endif
+
+# 2桁文字列に変換
+if ( $month < 10 ) then
+   set month = 0$month
+endif
+
+##########################################################################
+# ファイル削除処理                                                       #
+##########################################################################
+ls -l $WK_DATA4_DIR/qtaf_*$year$month*
+set rc = $status
+if ( $rc == 0 ) then
+   rm -f $WK_DATA4_DIR/qtaf_*$year$month*
+   set rc = $status
+   if ( $rc != 0 ) then
+      set MSG = "失敗:$KINOU RC=[$rc]"
+      $LOGWRITE "$MODULE" E "$MSG" $USERKEY
+      exit 1
+   endif
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+exit 0                                                 # 正常終了
+

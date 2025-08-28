@@ -1,0 +1,59 @@
+#!/bin/csh
+#　スクリプト名  ： QPTJB3UX
+#　 機  能       ： 控除データ送信（給与分）
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPDIXXUX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPTJB3UX'                         # ユーザキー
+set    KINOU      = '社員貸付：控除データ送信（給与分）'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv        #TMP FILE DIR
+
+#######################################################
+#抽出データレイアウト変更に伴う追加　2005/6/5　START  #
+#######################################################
+#################################################
+# STEP-1控除データ改行コード削除                #
+#################################################
+set MODULE = 'utllf'
+$LOGWRITE "$MODULE" I "開始:社員貸付控除データ改行コード削除（給与分）" "$USERKEY"     # 開始メッセージの出力
+
+utllf  -d -i  $QP_DATA_DIR/kyuuyohiki.dat -o  $QP_HUL_DIR/kyuuyohiki.dat -r
+set rc = $status
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:社員貸付控除データ改行コード削除（給与分）" "$USERKEY"     # 終了メッセージの出力
+#######################################################
+#抽出データレイアウト変更に伴う追加　2005/6/5　END    #
+#######################################################
+
+#################################################
+# STEP-2控除データ送信 （ＴＣＣ→新人事サーバ） #
+#################################################
+
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:社員貸付控除データ送信（給与分）" "$USERKEY"     # 開始メッセージの出力
+
+### 送信の実行 ###
+utlsend  -f OFQY02 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:社員貸付控除データ送信（給与分）" "$USERKEY"     # 終了メッセージの出力
+
+exit 0                                           # 正常終了
+

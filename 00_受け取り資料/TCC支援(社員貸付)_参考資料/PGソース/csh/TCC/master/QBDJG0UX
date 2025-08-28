@@ -1,0 +1,105 @@
+#!/bin/csh
+#set SHELL_NAME  = $0
+setenv JOBNET_ID   QBDG00UX
+setenv JOB_ID      QBDJG0UX
+setenv USERKEY     QBDJG0UX
+set    MODULE    = QBDJG0UX
+set    LOGWRITE  = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    datdir    = $QB_DATA_DIR
+set    huldir    = $QJ_DATA_DIR/qt/data/host/merge
+#set    huldir    = (/s010/fromHOST)
+set    qbwdir    = (/d041/UFS/data/qb/QBWORK)
+#set    oradir    = (/d041/UFS/data/qb/ORAWRK)
+#set    logdir    = (/d041/UFS/data/qb/FLOLOG)
+set    date      = `date +%y%m%d`
+
+$LOGWRITE "$MODULE" I "START : ブラック更新処理" "$USERKEY"
+#--------------------------------------------------#
+#   ブラック情報コピー     99.08.05 削除
+#--------------------------------------------------#
+#cp $huldir/qtaf_black1.hft  $datdir/Black.rcv
+#cp $huldir/XCQWD13      $datdir/Black.rcv
+#set rc = $status
+#if ($rc != 0 ) then
+#    $LOGWRITE "$MODULE" E "ERROR : ブラック情報コピー RC=[$rc]" "$USERKEY"
+#    echo "FILECOPY(Black) ABNORMAL ENDED : RC=[$rc]"
+#    exit(1)
+#endif
+#
+#-----------------------------------------------------#
+#   SDBT091   ブラック更新処理
+#-----------------------------------------------------#
+setenv DDBLACK   $datdir/Black.rcv
+setenv DDFURIF   $datdir/sdbt091o01_$date.txt
+setenv DDKYAKKA  $qbwdir/sdbt091o02.txt
+setenv DDCANCEL  $datdir/sdbt091o03.txt
+setenv DDHENKAK  $qbwdir/sdbt091o04.txt
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qbab_sdbt091.exe
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : ブラック更新処理 RC=[$rc]" "$USERKEY"
+    echo "SDBT091 ABNORMAL ENDED : RC=[$rc]"
+    exit (1)
+endif
+
+#-- 99/12/7 BlackData Backup & Clear ADD --#
+cp    $datdir/Black.rcv $datdir/Black_$date.rcv
+rm -f $datdir/Black.rcv
+touch $datdir/Black.rcv
+
+#-----------------------------------------------------#
+#   SDBT143   却下状作成
+#-----------------------------------------------------#
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qbap_sdbt143pkg.qbap_sdbt143('$JOBNET_ID','$JOB_ID','$qbwdir','sdbt091o02.txt')"
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 却下状作成 RC=[$rc]" "$USERKEY"
+    echo "SDBT143 ABNORMAL ENDED : RC=[$rc]"
+    exit (1)
+endif
+
+#-----------------------------------------------------#
+#   SDBT142  申込書返却指示リスト作成
+#-----------------------------------------------------#
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.qbap_sdbt142pkg.qbap_sdbt142('$JOBNET_ID','$JOB_ID','$qbwdir','sdbt091o04.txt')"
+set rc = $status
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 申込書返却指示リスト作成 RC=[$rc]" "$USERKEY"
+    echo "SDBT142 ABNORMAL ENDED : RC=[$rc]"
+    exit (1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+# 2004/09/01 ＦｌｏＷａｒｅ削除の処理 -->
+##-----------------------------------------------------#
+##  Move2 (QB090010 --> QB100010)
+##-----------------------------------------------------#
+#setenv FW_HostName         sueswc
+#setenv IF_MIFAM_NAME       mifam
+#setenv FW_Operation        Move2
+#setenv FW_UserID           ifam
+#setenv DBPASSWORD          ifam
+#setenv FW_MapName          TCCMAP01
+#setenv FW_ActivityName     QB090010
+#setenv FW_WorkReturnStatus QB100010
+#setenv FW_CourierEntry     '*'
+#setenv FW_CourierDelete    '*'
+#setenv FW_LogPath          $logdir/
+#setenv FW_CourierMove      $datdir/sdbt091o01_$date.txt
+#setenv FW_CourierResult    $oradir/sdbt091Dmy.txt
+#setenv FW_ErrLogFile       $logdir/sdbt091Err.txt
+#
+#$EXE_DIR/qbwc_sfw0001
+#set rc = $status
+#if ($rc != 0 ) then
+#    $LOGWRITE "$MODULE" E "ERROR : クーリア返却 RC=[$rc]" "$USERKEY"
+#    echo "SFW0001(MOVE2) ABNORMAL ENDED : RC=[$rc]"
+#    exit(1)
+#endif
+# 2004/09/01 ＦｌｏＷａｒｅ削除の処理 <--
+
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)
+

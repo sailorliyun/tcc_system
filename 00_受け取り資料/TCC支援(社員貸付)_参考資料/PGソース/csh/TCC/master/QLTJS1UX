@@ -1,0 +1,323 @@
+#!/bin/csh
+# 　スクリプト名 ： QLTJS1UX
+#　 機  能       ： 各データの期日管理を行う
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID        $SHELL_NAME:t                 # ジョブ名
+#20030120ｼﾞｮﾌﾞ名誤り修正対応
+#setenv JOBNET_ID     'QLTK02UX'                    # ジョブネット名
+setenv JOBNET_ID     'QLTK03UX'                    # ジョブネット名
+#20030120
+set    LOGFILE       = $USER_LOG_DIR/${JOB_ID}.log # ログファイル名
+#set    LOGFILE       = /home/batch/qh/log/new/${JOB_ID}.log # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+#20030120ﾕｰｻﾞｰｷｰ誤り修正対応
+#setenv USERKEY       'QLTJR3UX'                    # ユーザキー
+setenv USERKEY       'QLTJS1UX'                    # ユーザキー
+#20030120
+set    KINOU         = '事務手数料算出期日管理'
+##################################
+setenv QVX_SAVE_DIR    /d051/UFS/data/qv/data  #ＳＡＶＥ領域
+setenv GKKBN          1               #外部パラメータ・概況決算区分(1:通常,2:期末)
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set year  = `date +%Y`                     # 処理年 (システム日付より)
+set month = `date +%m`                     # 処理月 (システム日付より)
+
+# 処理月Leading Zero Suppress
+@ month ++
+@ month --
+
+set year  = `date +%Y`                     # 処理年 (システム日付より)
+set month = `date +%m`                     # 処理月 (システム日付より)
+
+# 処理月Leading Zero Suppress
+@ month ++
+@ month --
+
+###########################################
+# STEP-1 カード種類別取扱高データ期日管理 #
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001100'
+set STEPKINOU = 'カード種類別取扱高データ期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_cardsyu.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001100.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-2 店間決済データ期日管理 　　　　　#
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001200'
+set STEPKINOU = '店間決済データ期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_tenkan.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001200.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-3 Ａ１帳票期日管理 　　　　　　　　#
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001300'
+set STEPKINOU = 'Ａ１帳票期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_printa1.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001300.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-4 Ｂ１帳票期日管理 　　　　　　　　#
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001400'
+set STEPKINOU = 'Ｂ１帳票期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_printb1.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001400.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-5 Ｂ２帳票期日管理 　　　　　　　　#
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001500'
+set STEPKINOU = 'Ｂ２帳票期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_printb2.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001500.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-6 Ｃ１帳票期日管理 　　　　　　　　#
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001600'
+set STEPKINOU = 'Ｃ１帳票期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_printc1.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001600.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-7 Ｃ２帳票期日管理 　　　　　　　　#
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001700'
+set STEPKINOU = 'Ｃ２帳票期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_printc2.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001700.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-8 Ｄ１帳票期日管理 　　　　　　　　#
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001800'
+set STEPKINOU = 'Ｄ１帳票期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_printd1.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001800.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+###########################################
+# STEP-9 Ｅ１帳票期日管理 　　　　　　　　#
+###########################################
+STEP_KIJITSU_KANRI_PROC:
+
+set MODULE = 'qvxb_s001900'
+set STEPKINOU = 'Ｅ１帳票期日管理'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv OT1FILE $QVX_SAVE_DIR/qvxf_printe1.dat.$year$month
+
+set PROGRAM = $EXE_DIR/qvxb_s001900.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                # プログラム起動
+    set rc = $status                           # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+    exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1                                    # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+exit 0

@@ -1,0 +1,38 @@
+#!/bin/csh
+#　スクリプト名  ： QYDJI1UX
+#　 機  能       ： 発券Ｇ対応オーソリログ期日管理
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                           # シェル名
+setenv JOB_ID       $SHELL_NAME:t                # ジョブ名
+setenv JOBNET_ID   'QYDE01UX'                    # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log  # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT     # ログ出力モジュール
+setenv USERKEY      'QYDJI1UX'                   # ユーザキー 
+set    KINOU      = '発券Ｇ対応オーソリログ期日管理'       # 機能
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:オーソリログ期日管理" $USERKEY
+
+$LOGWRITE "$MODULE" I "終了:オーソリログ期日管理" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0
+

@@ -1,0 +1,86 @@
+#!/bin/csh
+#　スクリプト名  ： QPTJG5UX
+#　 機  能       ： 社員マスタデータファイル作成
+#　 作成者       ： FIP
+#
+#-------------------------------------------------------------------------
+#          修  正  履  歴
+# 管理No              修正内容                    担当者      修正日付
+#-------------------------------------------------------------------------
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME   = $0                                 # シェル名
+setenv JOB_ID         $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID      'QPTGA1UX'                         # ジョブネット名
+set    LOGFILE      = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE     = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY        'QPTJG5UX'                         # ユーザキー
+set    KINOU        = '社員マスタデータファイル作成'
+set    QP_DATA_DIR  = $QV_DATA_DIR/qp                    #TMP FILE DIR
+set    MODULE       = 'SHELL'
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"           # 開始メッセージの出力
+
+#####################################################
+# STEP-1 社員マスタデータ抽出ファイル作成           #
+#####################################################
+set    MODULE       = 'COBOL'
+set    STEPKINOU    = '社員貸付・社員マスタデータ抽出'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"       # 開始メッセージの出力
+set PROGRAM = $EXE_DIR/qpab_s000110.exe
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv OTFILE   $QP_DATA_DIR/prezinzim.dat           #  社員マスタデータファイル
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS              # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                               # プログラム起動
+    set rc = $status                                     # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC               # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE "$MODULE" E "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                               # 異常終了
+endif
+
+if ( $rc != 0 ) then                                     # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE "$MODULE" E "$MSG" $USERKEY
+    exit 1                                               # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"       # 終了メッセージの出力
+
+#########################################
+# STEP-2 社員マスタデータファイルソート #
+#########################################
+set    STEPKINOU    = '社員貸付・社員マスタデータファイルソート'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" "$USERKEY"      # 開始メッセージの出力
+set PROGRAM = $EXE_DIR/qpab_s000120.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv INFILE   $QP_DATA_DIR/prezinzim.dat           # 社員マスタデータファイル１
+    setenv OTFILE   $QP_DATA_DIR/prezinzisort.dat        # ソートファイル
+    setenv SORTWK   $QP_DATA_DIR/prezinzisort.sort_wk    # テンポラリ領域
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS              # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                               # プログラム起動
+    set rc = $status                                     # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC               # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE "$MODULE" E "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                               # 異常終了
+endif
+
+if ( $rc != 0 ) then                                     # リターンステータス判定
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+    $LOGWRITE "$MODULE" E "$MSG" $USERKEY
+    exit 1                                               # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" "$USERKEY"       # 終了メッセージの出力
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"           # 終了メッセージの出力
+
+exit 0                                                   # 正常終了
+

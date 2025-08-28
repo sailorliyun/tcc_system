@@ -1,0 +1,10 @@
+CREATE OR REPLACE VIEW QUA2_USERIDV AS
+select NVL(QUA1_USERID,'Null Value') QUA1_USERID,
+     QUA1_USERMEI,
+           QUA1_TOUZAIKBN,
+           a.QUA1_BUSHOCD,
+           QUA1_BUSHOMEI
+   from QUA1_SECURITYT@link_secuf a,
+        QUA1_BUSHOM@link_secuf b
+ WHERE a.QUA1_BUSHOCD (+) = b.QUA1_BUSHOCD
+;

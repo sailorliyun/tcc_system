@@ -1,0 +1,95 @@
+--DROP   VIEW QBA1_NEWMOSHIKOMIV;
+CREATE VIEW QBA1_NEWMOSHIKOMIV (
+ QBA1_UKETSUKENO     --受付番号--
+,QBA1_COURIERID      --クーリアＩＤ--
+,QBA1_CARDKBN        --カード区分--
+,QBA1_HONKJNAME      --申込者氏名--
+,QBA1_CTLCANS        --キャンセルＳ--
+,QBA1_CTLCANRIYU     --キャンセル理由--
+,QBA1_CTLCANTUIKI    --キャンセル追記--
+,QBA1_CTLSEISADATE   --入会受付処理日--
+,QBA1_CTLFSTSGDATE   --属性累積処理日--
+,QBA1_CTLSCDSNSDATE  --最終判定処理日--
+,QBA1_CTLRONEDATE    --決裁締め日--
+,QBA7_JDSJ004        --審査自社マスタ--
+,QBA7_JDSJ005        --審査自社ブラック--
+,QBA7_JDSJ006        --審査名寄せ--
+,QBA7_WSID           --手紙作成日--
+,QBA7_OPID           --委託先判定--
+,QBA7_JDSKEKKA       --自動審査結果--
+,QBA7_JDSYOSINRANK   --審査初期与信ランク--
+,QBA7_JDSCASHLIMIT   --審査初期ｷｬｯｼﾝｸﾞ限度額--
+,QBA7_JDSDATE        --自動審査処理日--
+,QBA7_AESKEKKA       --確定審査結果--
+,QBA7_AESKESSAITANTO --確定決裁担当者--
+,QBA7_AESRESULTCD    --確定審査却下理由ＣＤ--
+,QBA7_AESRESULTMEMO  --確定審査理由追記--
+,QBA7_AESYOSINRANK   --確定与信ランク--
+,QBA7_AESCASHLIMIT   --確定ｷｬｯｼﾝｸﾞ限度額--
+--,QBA7_AESCENTERKBN   --キャンセル処理日--
+,QBA7_AESCENTERKBN   --保留区分--
+,QBM5_MAKEDATE       --キャンセルメモ登録日--
+,QBM8_MAKEDATE       --至急メモ登録日--
+) AS
+Select /*+ INDEX(QBA1_MOSHIKOMIT,XIE6QBA1_MOSHIKOMIT) */
+   QBA1_UKETSUKENO
+  ,QBA1_COURIERID
+  ,QBA1_CARDKBN
+  ,QBA1_HONKJNAME
+  ,QBA1_CTLCANS
+  ,QBA1_CTLCANRIYU
+  ,QBA1_CTLCANTUIKI
+  ,QBA1_CTLSEISADATE
+  ,QBA1_CTLFSTSGDATE
+  ,QBA1_CTLSCDSNSDATE
+  ,QBA1_CTLRONEDATE
+  ,QBA7_JDSJ004
+  ,QBA7_JDSJ005
+  ,QBA7_JDSJ006
+  ,QBA7_WSID
+  ,QBA7_OPID
+  ,QBA7_JDSKEKKA
+  ,QBA7_JDSYOSINRANK
+  ,QBA7_JDSCASHLIMIT
+  ,QBA7_JDSDATE
+  ,QBA7_AESKEKKA
+  ,QBA7_AESKESSAITANTO
+  ,QBA7_AESRESULTCD
+  ,QBA7_AESRESULTMEMO
+  ,QBA7_AESYOSINRANK
+  ,QBA7_AESCASHLIMIT
+  ,QBA7_AESCENTERKBN
+  ,CAN_MAKEDATE
+-- 2004/03/12 至急メモの対応 IMZ.YAMADA -->
+--  ,SIK_MAKEDATE
+  ,Decode(QBA1_CARDHAKKOKEITAI,1,SYSDATE,SIK_MAKEDATE)
+-- 2004/03/12 至急メモの対応 IMZ.YAMADA <--
+ from QSA3_CODEV,
+      QBA1_MoshikomiT,
+      QBA7_SHINSAKEKKAT,
+     (Select QBM1_UKETSUKENO    CAN_UKETSUKENO, 
+             '01300001'         CAN_MEMOCD,     -- キャンセルメモコード
+             Min(QBM1_MAKEDATE) CAN_MAKEDATE    -- キャンセルメモ登録日
+        From QBM1_MEMOT,QBA1_MoshikomiT
+       WHERE QBM1_UKETSUKENO = QBA1_UKETSUKENO
+         AND QBM1_MEMOCD     = '01300001'
+         AND QBM1_DELDATE    IS Null
+       Group by QBM1_UKETSUKENO) CAN,
+     (Select QBM1_UKETSUKENO    SIK_UKETSUKENO, 
+             '01600001'         SIK_MEMOCD,   -- 至急メモコード
+             MAX(QBM1_MAKEDATE) SIK_MAKEDATE  -- 至急メモ登録日
+        From QBM1_MEMOT,QBA1_MoshikomiT
+       WHERE QBM1_UKETSUKENO = QBA1_UKETSUKENO
+         AND QBM1_MEMOCD     = '01600001'
+         AND QBM1_DELDATE    IS Null
+       Group by QBM1_UKETSUKENO) SIK
+ where QSA3_PRMCODEKBN   =  'DHQ'
+   and QSA3_PRMCODENO    =  'KEY'
+   and QBA1_CTLMSTSTRDATE  is null
+   and QBA1_CTLFSTSGDATE   is not null
+   and QBA1_UKETSUKENO   =  QBA7_UKETSUKENO
+   and QBA1_COURIERID    >= To_Number(QSA3_MEI)
+   and QBA7_KANKEIKBN    =  '1'
+   and QBA1_UKETSUKENO   =  CAN_UKETSUKENO(+)
+   and QBA1_UKETSUKENO   =  SIK_UKETSUKENO(+)
+;

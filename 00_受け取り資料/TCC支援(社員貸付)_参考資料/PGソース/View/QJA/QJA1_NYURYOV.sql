@@ -1,0 +1,67 @@
+CREATE VIEW QJA1_NYURYOV ( 
+QTAL_PRMKIGYOUCD
+,QTAL_PRMSUBRANJEKEY
+,QTAL_PRMNAIBUKAIINNO
+,QTAL_PRMMEISAINO
+,QTAL_PRMKEIJYOUTUUBAN
+,QTAL_NYUKINBI
+,QTAL_NYUKINHASSEIRIYU
+,QTAL_NYUKINKEIRO
+,QTAL_KNG
+,QTAL_TOUZAIKBN
+,QTAL_DENPYOUSHUBETSU
+,QJA3_PRMRYOUSHUNO
+,QJA3_HAKKOUKBN
+,QJA3_TORIKESHIKBN
+,QJA3_HAKKOUBI
+,QJA3_MOTORYOSHUNO
+,QJA3_RYJYUBINNO
+,QJA3_RYJJYUSYO1
+,QJA3_RYJJYUSYO2
+,QJA3_RYJJYUSYO3
+,QJA3_RYJJYUSYO4
+,QJA3_RYJATENA
+,QJA3_RYJMEIGI1
+,QJA3_RYJMEIGI2
+,QJA3_RYJKENMEICD
+,QJA3_RYJKENMEI
+,QJA3_RYJNYUUKINBI
+,QJA3_RYJRYOUSHUKNG
+ ) AS 
+SELECT N.QTAL_PRMKigyouCd,
+        N.QTAL_PRMSubRanjeKey,
+        N.QTAL_PRMNaibuKaiinNo,
+        N.QTAL_PRMMeisaiNo,
+	N.QTAL_PRMKeijyouTuuBan,
+        N.QTAL_NyukinBi,
+        N.QTAL_NyukinHasseiriyu,
+        N.QTAL_NyukinKeiro,
+        N.QTAL_Kng,
+        N.QTAL_TouzaiKbn,
+        N.QTAL_DenpyouShubetsu,
+        R.QJA3_PRMRyoushuNo,
+        R.QJA3_HakkouKbn,
+        R.QJA3_TorikeshiKbn,
+        R.QJA3_HakkouBi,
+        R.QJA3_MotoRyoshuNo,
+        R.QJA3_RYJYubinNo,
+        R.QJA3_RYJJyusyo1,
+        R.QJA3_RYJJyusyo2,
+        R.QJA3_RYJJyusyo3,
+        R.QJA3_RYJJyusyo4,
+        R.QJA3_RYJAtena,
+        R.QJA3_RYJMeigi1,
+        R.QJA3_RYJMeigi2,
+        R.QJA3_RYJKenmeiCd,
+        R.QJA3_RYJKenmei,
+        R.QJA3_RYJNyuukinBi,
+        R.QJA3_RYJRyoushuKng
+  FROM  QTAL_NyukinKJT N, QJA3_RyoushushoT R
+  WHERE N.QTAL_PRMKigyouCd = R.QJA3_KigyouCd(+)
+    AND N.QTAL_PRMSubRanjeKey = R.QJA3_SubRangeKey(+)
+    AND N.QTAL_PRMNaibuKaiinNo = R.QJA3_NaibuKaiinNo(+)
+    AND N.QTAL_PRMMeisaiNo = R.QJA3_NyukinMeisai(+)
+    AND N.QTAL_PRMKeijyouTuuBan = R.QJA3_ShoriNo(+)
+    AND R.QJA3_PRMAkaKuroKbn(+) = '0'
+
+;

@@ -1,0 +1,29 @@
+#!/bin/csh
+# 
+#  随時日次バッチ終了時ＢＣＶリカバリー２ (QSEJREUX)
+#
+#     機  能：1.ＢＣＶからデータベースを復元する。
+#             2.REDOログファイル、REDOアーカイブログファイルを復元する。
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+set  SHELL_NAME = $0                                    # シェル名
+set  MODULE   =  $SHELL_NAME:t                          # モジュール名
+set  LOGFILE  =  $USER_LOG_DIR/db_ope.log               # ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ログ出力用共通シェル
+set  DEVICE_FILE = /usr/symmapps/tcc1.bcv                # ﾃﾞﾊﾞｲｽファイル名
+
+$LOGWRITE  "随時日次バッチ終了時ＢＣＶリカバリー２開始" >> $LOGFILE
+
+###############################
+# 1. データベース復元         #
+###############################
+$LOGWRITE  "BCVからﾎﾞﾘｭｰﾑ復元開始" >> $LOGFILE
+
+$LOGWRITE  "BCVからﾎﾞﾘｭｰﾑ復元正常終了" >> $LOGFILE
+
+$LOGWRITE  "随時日次バッチ終了時ＢＣＶリカバリー２ 終了" >> $LOGFILE
+
+exit 0

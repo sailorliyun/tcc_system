@@ -1,0 +1,40 @@
+#!/bin/csh
+# 　スクリプト名 ： QSDJI8UX
+#　 機  能       ： 日次配信1・利用明細歩引更新データ作成
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSOJS2UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = '0KEN-HAISIN'                      # ユーザキー 
+set    KINOU      = '日次配信1・利用明細歩引更新データ作成'  # 機能
+
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+### 0件ファイル生成 ###
+rm     $FROMHOST1_DIR/qt/rcv/qtaf_bubiki2.jsn
+touch  $FROMHOST1_DIR/qt/rcv/qtaf_bubiki2.jsn
+
+### 送信の実行 ###
+utlsend  -f OFQW39 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+

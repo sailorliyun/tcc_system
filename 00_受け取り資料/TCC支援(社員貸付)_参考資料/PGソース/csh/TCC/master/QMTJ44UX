@@ -1,0 +1,99 @@
+#!/bin/csh
+#　スクリプト名  ： QMTJ44UX
+#　 プロセス     ： ポイント付与候補者抽出
+#　 機  能       ： 抽選キャンペーン抽出
+#　 作成者       ： FIP
+#　 更新者       ： 
+##########################################
+#         共通環境設定                   #
+##########################################
+set    SHELL_NAME = $0                                      # シェル名
+setenv JOB_ID       $SHELL_NAME:t                           # ジョブ名
+setenv JOBNET_ID    'QMT403UX'                              # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log             # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT                # ログ出力モジュール
+setenv USERKEY      'QMTJ44UX'                              # ユーザキー
+set    KINOU      = 'ポイント付与・抽選キャンペーン抽出'
+
+##########################################
+#         固有環境設定                   #
+##########################################
+set    DATDIR     = /d321/UFS/data/qma
+setenv OUTFILE1     $DATDIR/qmab_s000300_OT1.dat
+
+##########################################
+#         処理開始メッセージ             #
+##########################################
+set MODULE        = 'SHELL'                                 # モジュール
+$LOGWRITE "$MODULE" I "開始：$KINOU" "$USERKEY"             # 開始メッセージの出力
+
+##########################################
+# STEP-1  抽選キャンペーン抽出           #
+##########################################
+STEP_1:
+set MODULE = 'QMAB_S000300'
+set STEPKINOU = '抽選キャンペーン抽出'
+$LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"         #開始メッセージの出力
+
+set PROGRAM       = $EXE_DIR/qmab_s000300.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG  Japanese_Japan.JA16SJIS                #文字コード体系をSJISにする
+    $PROGRAM        >&  $LOGFILE                            #プログラム起動
+    set rc = $status                                        #リターンステータス退避
+    setenv NLS_LANG  Japanese_Japan.JA16EUC                 #文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit (1)                                                #異常終了
+endif
+
+if ($rc != 0) then                                          #リターンステータス判定
+    set MSG = "失敗：$STEPKINOU RC=[$rc]"
+
+    $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+
+$LOGWRITE  "$MODULE" I "終了：$STEPKINOU" "$USERKEY"        #終了メッセージの出力
+
+##########################################
+#         固有環境設定                   #
+##########################################
+setenv INFILE1      $DATDIR/qmab_s000300_OT1.dat
+setenv OTFILE1      $DATDIR/qmab_s000400_OT1.dat
+setenv OTFILE2      $DATDIR/qmab_s000400_OT2.dat
+
+##########################################
+# STEP-2  抽出条件Ｆ作成                 #
+##########################################
+STEP_2:
+set MODULE        = 'QMAB_S000400'
+set STEPKINOU     = '抽出条件Ｆ作成'
+ $LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+set PROGRAM       = $EXE_DIR/qmab_s000400.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG  Japanese_Japan.JA16SJIS                #文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                             #プログラム起動
+    set rc = $status                                        #リターンステータス退避
+     setenv NLS_LANG  Japanese_Japan.JA16EUC                #文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit (1)                                                #異常終了
+endif
+
+if ($rc != 0) then                                          #リターンステータス判定
+    set MSG = "失敗：$STEPKINOU RC=[$rc]"
+
+     $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+
+  $LOGWRITE  "$MODULE" I "終了：$STEPKINOU" "$USERKEY"      #終了メッセージの出力
+
+##################################
+# STEP-99  終了メッセージ出力    #
+##################################
+STEP_99:
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了：$KINOU" "$USERKEY"             # 終了メッセージの出力
+
+exit(0)

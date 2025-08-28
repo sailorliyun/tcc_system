@@ -1,0 +1,38 @@
+#!/bin/csh
+# 　スクリプト名 ： QLDJU4UX
+#　 機  能       ： 信用情報ファイルTCC支援取込・HULFT集信要求
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 	# シェル名
+setenv JOB_ID       $SHELL_NAME:t                      	# ジョブ名
+setenv JOBNET_ID   'QLD041UX'                		# ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        	# ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           	# ログ出力モジュール
+set    USERKEY    = 'QLDJU4UX'                   	# ユーザキー
+set    KINOU      = '信用情報ファイルTCC支援取込・HULFT集信要求' # 機能
+set    HULFT_NAME = 'OFQA84'				# HULFTファイル名
+
+#########################################
+# STEP-1  HULFT集信                     #
+#########################################
+
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   	# 開始メッセージの出力
+
+### 送信要求の実行 ###
+utlrecv  -f $HULFT_NAME -sync
+set rc = $status
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+
+#########################################
+# STEP-99  終了処理                     #
+#########################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了

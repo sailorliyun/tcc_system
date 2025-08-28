@@ -1,0 +1,38 @@
+#!/bin/csh
+#　スクリプト名  ： QSEJ0OUX
+#　 機  能       ： 日次受信ファイル作成（会員変更履歴テーブルデータ）
+#　 作成者       ： G.O
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSER01UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QSEJ0OUX'
+set    KINOU      = '日次受信ファイル作成（会員変更履歴テーブルデータ）'
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+### 受信ファイルを繰越ファイルにコピーする ###
+
+cp $QJ_DATA_DIR/qt/data/host/merge/qtaf_kaiinrireki.hft $QJ_DATA_DIR/qt/data/host/zen/qtaf_kaiinrireki.kur
+
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+
+

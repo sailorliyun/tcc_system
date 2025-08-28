@@ -1,0 +1,349 @@
+#!/bin/csh
+#　 スクリプト名 ： QTTJE4UX
+#　 機  能       ： 顧客分析データ会員ｽﾃｰﾀｽﾌｧｲﾙ取得４
+#　 作成者       ： FIP
+#　修　正　履　歴： サブレンジ追加に伴う修正 IMZ.YAMADA 2004/09/28
+#                   6分割対応                imz.Yoshida 2005/06/10
+#------------------------------------------------------#
+# 環境設定                                             #
+#------------------------------------------------------#
+setenv JOBNET_ID    QTT4B4UX                           # ジョブネット名
+setenv JOB_ID       QTTJE4UX                           # ジョブ名
+setenv USERKEY      QTTJE4UX                           # ユーザキー
+set    KINOU      = '顧客分析データ会員ｽﾃｰﾀｽﾌｧｲﾙ取得４'  # 機能
+set    HULFT_DIR1 = (/d290/UFS/data/qta)               # HULFT受信ＤＩＲ１
+set    HULFT_DIR2 = (/d311/UFS/data/qta)               # HULFT受信ＤＩＲ２
+#et    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+#------------------------------------------------------#
+# STEP-1                                               #
+#------------------------------------------------------#
+set    MODULE     = COBOL                              # モジュール名
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#Deleted by imz.Yoshida 6分割対応 2005/06/10 ==>
+## 2004/09/28 サブレンジ追加に伴う修正 IMZ.YAMADA -->
+##  約 2,431,656 件分の分割に対応する
+##------------------------------------------------------#
+##　 機  能       ： 会員ステータスファイル振分１
+#echo "*** qtab_s006701 No1 ***"
+#set    IN_F       = ($HULFT_DIR2/O.F.QA10.hft)
+#set    OT_FA      = ($HULFT_DIR2/qtab_s006701.datA)
+#set    OT_FB      = ($HULFT_DIR2/qtab_s006701.datB)
+#echo   "入力ファイル名：$IN_F"
+#echo   "出力ファイルＡ：$OT_FA"
+#echo   "出力ファイルＢ：$OT_FB"
+#setenv INFILE     $IN_F
+#setenv OTFILE1    $OT_FA
+#setenv OTFILE2    $OT_FB
+##-------------------------------------------------------#
+#echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#$EXE_DIR/qtab_s006701.exe
+#
+#set rc = $status
+#
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU No1 RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END qtab_s006701 No1 RC=[$rc] >>***"
+#    exit(1)
+#endif
+#echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+##------------------------------------------------------#
+#set    MODULE     = mv                                 # モジュール名
+#mv     $IN_F      $HULFT_DIR2/qtab_OFQA10
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END mv RC=[$rc] >>***"
+#    exit(1)
+#endif
+##------------------------------------------------------#
+#set    MODULE     = compress                           # モジュール名
+#compress -f       $HULFT_DIR2/qtab_OFQA10
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+#    exit(1)
+#endif
+##------------------------------------------------------#
+##　 機  能       ： 会員ステータスファイル振分２
+#echo "*** qtab_s006701 No2 ***"
+#set    IN_F       = ($HULFT_DIR2/qtab_s006701.datB)
+#set    OT_FA      = ($HULFT_DIR2/qtab_s006701.datC)
+#set    OT_FB      = ($HULFT_DIR2/qtab_s006701.datD)
+#echo   "入力ファイル名：$IN_F"
+#echo   "出力ファイルＡ：$OT_FA"
+#echo   "出力ファイルＢ：$OT_FB"
+#setenv INFILE     $IN_F
+#setenv OTFILE1    $OT_FA
+#setenv OTFILE2    $OT_FB
+##-------------------------------------------------------#
+#echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#$EXE_DIR/qtab_s006701.exe
+#
+#set rc = $status
+#
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU No2 RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END qtab_s006701 No2 RC=[$rc] >>***"
+#    exit(1)
+#endif
+#echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+##------------------------------------------------------#
+#set    MODULE     = mv                                 # モジュール名
+#mv     $IN_F      $HULFT_DIR2/qtab_OFQA10B
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoB RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END mv NoB RC=[$rc] >>***"
+#    exit(1)
+#endif
+##------------------------------------------------------#
+#set    MODULE     = compress                           # モジュール名
+#compress -f       $HULFT_DIR2/qtab_OFQA10B
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoB RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL compress NoB RC=[$rc] >>***"
+#    exit(1)
+#endif
+##------------------------------------------------------#
+##　 機  能       ： 会員ステータスファイル変換
+##echo "*** qtab_s006700 ***"
+##set    IN_F       = ($HULFT_DIR2/O.F.QA10.hft)
+## 2004/09/28 サブレンジ追加に伴う修正 IMZ.YAMADA <--
+#echo "*** qtab_s006700 No1 ***"
+#set    IN_F       = ($HULFT_DIR2/qtab_s006701.datA)
+#set    OT_FA      = ($HULFT_DIR2/qtab_s006700.4datA)
+#set    OT_FB      = ($HULFT_DIR2/qtab_s006700.4datB)
+#echo   "入力ファイル名：$IN_F"
+#echo   "出力ファイルＡ：$OT_FA"
+#echo   "出力ファイルＢ：$OT_FB"
+#setenv INFILE     $IN_F
+#setenv OTFILE1    $OT_FA
+#setenv OTFILE2    $OT_FB
+##-------------------------------------------------------#
+#echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#$EXE_DIR/qtab_s006700.exe
+#
+#set rc = $status
+#
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END qtab_s006700 RC=[$rc] >>***"
+#    exit(1)
+#endif
+#echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+##------------------------------------------------------#
+#set    MODULE     = mv                                 # モジュール名
+##mv     $IN_F      $HULFT_DIR2/qtab_OFQA10
+#mv     $IN_F      $HULFT_DIR2/qtab_OFQA10A
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoA RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END mv NoA RC=[$rc] >>***"
+#    exit(1)
+#endif
+##------------------------------------------------------#
+#set    MODULE     = compress                           # モジュール名
+##compress -f       $HULFT_DIR2/qtab_OFQA10
+#compress -f       $HULFT_DIR2/qtab_OFQA10A
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoA RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL compress NoA RC=[$rc] >>***"
+#    exit(1)
+#endif
+# 2004/09/28 サブレンジ追加に伴う修正 IMZ.YAMADA -->
+#------------------------------------------------------#
+#　 機  能       ： 会員ステータスファイル変換
+#echo "*** qtab_s006700 No2 ***"
+#set    IN_F       = ($HULFT_DIR2/qtab_s006701.datC)
+#set    OT_FA      = ($HULFT_DIR2/qtab_s006700.5datA)
+#set    OT_FB      = ($HULFT_DIR2/qtab_s006700.5datB)
+#echo   "入力ファイル名：$IN_F"
+#echo   "出力ファイルＡ：$OT_FA"
+#echo   "出力ファイルＢ：$OT_FB"
+#setenv INFILE     $IN_F
+#setenv OTFILE1    $OT_FA
+#setenv OTFILE2    $OT_FB
+##-------------------------------------------------------#
+#echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#$EXE_DIR/qtab_s006700.exe
+#
+#set rc = $status
+#
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoC RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END qtab_s006700 NoC RC=[$rc] >>***"
+#    exit(1)
+#endif
+#echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+##------------------------------------------------------#
+#set    MODULE     = mv                                 # モジュール名
+#mv     $IN_F      $HULFT_DIR2/qtab_OFQA10C
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoC RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END mv NoC RC=[$rc] >>***"
+#    exit(1)
+#endif
+##------------------------------------------------------#
+#set    MODULE     = compress                           # モジュール名
+#compress -f       $HULFT_DIR2/qtab_OFQA10C
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoC RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL compress NoC RC=[$rc] >>***"
+#    exit(1)
+#endif
+##------------------------------------------------------#
+##　 機  能       ： 会員ステータスファイル変換
+#echo "*** qtab_s006700 No3 ***"
+#set    IN_F       = ($HULFT_DIR2/qtab_s006701.datD)
+#set    OT_FA      = ($HULFT_DIR2/qtab_s006700.6datA)
+#set    OT_FB      = ($HULFT_DIR2/qtab_s006700.6datB)
+#echo   "入力ファイル名：$IN_F"
+#echo   "出力ファイルＡ：$OT_FA"
+#echo   "出力ファイルＢ：$OT_FB"
+#setenv INFILE     $IN_F
+#setenv OTFILE1    $OT_FA
+#setenv OTFILE2    $OT_FB
+##-------------------------------------------------------#
+#echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#$EXE_DIR/qtab_s006700.exe
+#
+#set rc = $status
+#
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoD RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END qtab_s006700 NoD RC=[$rc] >>***"
+#    exit(1)
+#endif
+#echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+##------------------------------------------------------#
+#set    MODULE     = mv                                 # モジュール名
+#mv     $IN_F      $HULFT_DIR2/qtab_OFQA10D
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoD RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL END mv NoD RC=[$rc] >>***"
+#    exit(1)
+#endif
+##------------------------------------------------------#
+#set    MODULE     = compress                           # モジュール名
+#compress -f       $HULFT_DIR2/qtab_OFQA10D
+#
+#set rc = $status
+#
+#if ( $rc != 0 ) then
+#    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU NoD RC=[$rc]"  "$USERKEY"
+#    echo "***<< ABNORMAL compress NoD RC=[$rc] >>***"
+#    exit(1)
+#endif
+#
+## 2004/09/28 サブレンジ追加に伴う修正 IMZ.YAMADA <--
+##------------------------------------------------------#
+#Deleted by imz.Yoshida 6分割対応 2005/06/10 <==
+
+#Added by imz.Yoshida 6分割対応 2005/06/10 ==>
+#　 機  能       ： 会員ステータスファイル変換
+echo "*** qtab_s006700 ***"
+set    IN_F       = ($HULFT_DIR2/O.F.QA10.hft)
+set    OT_FA      = ($HULFT_DIR2/qtab_s006700.4datA)
+set    OT_FB      = ($HULFT_DIR2/qtab_s006700.4datB)
+echo   "入力ファイル名：$IN_F"
+echo   "出力ファイルＡ：$OT_FA"
+echo   "出力ファイルＢ：$OT_FB"
+setenv INFILE     $IN_F
+setenv OTFILE1    $OT_FA
+setenv OTFILE2    $OT_FB
+#-------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qtab_s006700.exe
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END qtab_s006700 RC=[$rc] >>***"
+    exit(1)
+endif
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#------------------------------------------------------#
+set    MODULE     = mv                                 # モジュール名
+mv     $IN_F      $HULFT_DIR2/qtab_OFQA10
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL END mv RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+set    MODULE     = compress                           # モジュール名
+compress -f       $HULFT_DIR2/qtab_OFQA10
+
+set rc = $status
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    echo "***<< ABNORMAL compress RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+#Added by imz.Yoshida 6分割対応 2005/06/10 <==
+
+set    MODULE     = COBOL                              # モジュール名
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+exit 0                                                 # 正常終了

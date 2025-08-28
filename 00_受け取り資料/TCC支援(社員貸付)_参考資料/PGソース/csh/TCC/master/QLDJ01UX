@@ -1,0 +1,1272 @@
+#!/bin/csh
+#　 スクリプト名 ： QLDJ01UX
+#　 業務         ： クレジット帳票
+#　 機  能       ： バッチ前処理
+#　 作成者       ： FIP
+#　 修正履歴     ： YYYY.MM.DD 　修　　　正　　　内　　　容　　修正者
+#　              ： 2003.09.26 年会費徴求指示者一覧表追加対応　上　原
+#　              ： 2005/09/20 imz.Yoshida ログ出力修正
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000002 1006060     ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減 FIP.ERIGUCHI  2011/07/21
+# 000003 1608002     帳票廃止対応            FIP.TSUJI      2017/03/13
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名 file 名=job名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLD011UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = $JOBNET_ID                         # ユーザキー
+
+#20020325ロールバックセグメント障害対応
+#        ワークテーブルの削除をPKG(DELETE文)からSHELL(TRUNCATE TABLE文)に変更
+#set    PRM_JOBNET =  "'"$JOBNET_ID"'"
+#set    PRM_JOB    = "'"$JOB_ID"'"
+####################################################################
+## STEP-1     実行LOGファイルの削除                                #
+####################################################################
+#
+####################################################################
+## STEP-2     ストアド・プロシジャの実行                           #
+####################################################################
+#set   MODULE = 'qusc_sspexec.exe'
+#
+#########################################################################
+## STEP-2.1   ストアド・プロシジャの実行   ホスト受け取りＴＢＬクリヤー #
+#########################################################################
+#set    KINOU      = 'クレジット帳票：全受け取り用ＴＢＬ（LOADERの出力先）をDELETEする'
+#$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+#setenv NLS_LANG Japanese_Japan.JA16SJIS
+#
+#$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QVSP_S003100Pkg.QVSP_S003100( $PRM_JOBNET, $PRM_JOB)"
+#
+#set rc = $status
+#setenv NLS_LANG Japanese_Japan.JA16EUC
+#
+#if ( $rc != 0 ) then
+#        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+#        exit  1                                  # 異常終了
+#endif
+#
+#$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#
+###################################################################
+# STEP-1     ホスト受け取りＴＢＬのクリア                         #
+###################################################################
+set    KINOU      = 'クレジット帳票：全受け取り用ＴＢＬ（LOADERの出力先）を削除する'
+set    MODULE     = 'SQL*PLUS'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"  # 開始メッセージの出力
+########################################################################
+# STEP-1.01  事故カードデータクリア                                    #
+########################################################################
+#20010815削除
+
+########################################################################
+# STEP-1.02  返品確認リストデータクリア                                #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:返品確認リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+
+TRUNCATE TABLE QVE2_HenpinT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:返品確認リストデータクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:返品確認リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.03  返品消し込み未処理リストデータクリア                      #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:返品消し込み未処理リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVE3_HenpinKesiT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:返品消し込み未処理リストデータクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:返品消し込み未処理リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.04  入金相殺結果リストデータクリア                            #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:入金相殺結果リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVE4_SousaiT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:入金相殺結果リストデータクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:入金相殺結果リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.05  請求留置指示者データクリア                                #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:請求留置指示者データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVE5_TomeokiT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:請求留置指示者データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:請求留置指示者データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.06  自振上乗指示者データクリア                                #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:自振上乗指示者データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVE6_UwanoseT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:自振上乗指示者データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:自振上乗指示者データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.07  残一括請求指示者データクリア                              #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:残一括請求指示者データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVE7_ZanIkkatuT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:残一括請求指示者データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:残一括請求指示者データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#20030926年会費徴求指示者一覧表追加対応
+########################################################################
+# STEP-1.075 年会費徴求指示者データクリア                              #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:年会費徴求指示者データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVEL_NENKAIHIT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:年会費徴求指示者データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:年会費徴求指示者データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#20030926
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減  20110721 FIP.Eriguchi Start
+#########################################################################
+## STEP-1.08  月分ずらしプルーフリストデータクリア                      #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:月分ずらしプルーフリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVE8_ZurasiT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:月分ずらしプルーフリストデータクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:月分ずらしプルーフリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減    20110721 FIP.Eriguchi End
+########################################################################
+# STEP-1.09  赤黒非表示追加プルーフリストデータクリア                  #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:赤黒非表示追加プルーフリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVE9_AkakuroT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:赤黒非表示追加プルーフリストデータクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:赤黒非表示追加プルーフリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.10  同口座預り金結果リストデータクリア                        #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:同口座預り金結果リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#MOD 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減       20110721 FIP.Eriguchi Start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVE0_DouAzukariT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#MOD 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減       20110721 FIP.Eriguchi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:同口座預り金結果リストデータクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:同口座預り金結果リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減  20110721 FIP.Eriguchi Start
+#########################################################################
+## STEP-1.11  職員月賦天引修正ログデータクリア                          #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:職員月賦天引修正ログデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEA_GeppuT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:職員月賦天引修正ログデータクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:職員月賦天引修正ログデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減    20110721 FIP.Eriguchi End
+########################################################################
+# STEP-1.12  依頼返却ログデータクリア                                  #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:依頼返却ログデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVEB_HenkyakuT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:依頼返却ログデータクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:依頼返却ログデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.13  自振データ修正ログデータクリア(入力）                     #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:自振データ修正ログデータクリア(入力）" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVEC_JifuriT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:自振データ修正ログデータクリア(入力） RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:自振データ修正ログデータクリア(入力）" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.14  他口座預り金結果リストデータクリア                        #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:他口座預り金結果リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVED_TaAzukariT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:他口座預り金結果リストデータクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:他口座預り金結果リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.15  返金登録依頼データクリア                                  #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:返金登録依頼データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVEE_HenkinT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:返金登録依頼データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:返金登録依頼データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減  20110721 FIP.Eriguchi Start
+#########################################################################
+## STEP-1.16  賞与差引額修正ログデータクリア                            #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:賞与差引額修正ログデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEF_SyouyoT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:賞与差引額修正ログデータクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:賞与差引額修正ログデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.17  自振入金合計表データクリア                                #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:自振入金合計表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEG_NyukinT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:自振入金合計表データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:自振入金合計表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減    20110721 FIP.Eriguchi End
+########################################################################
+# STEP-1.18  銀行引落不能変更データデータクリア                        #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:銀行引落不能変更データデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVEH_FunouT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:銀行引落不能変更データデータクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:銀行引落不能変更データデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減  20110721 FIP.Eriguchi Start
+#########################################################################
+## STEP-1.19  売掛金銀行別集計表データクリア                            #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:売掛金銀行別集計表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEI_UrikakeKeiT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:売掛金銀行別集計表データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:売掛金銀行別集計表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減    20110721 FIP.Eriguchi End
+########################################################################
+# STEP-1.20  自振修正対象者データクリア（ＭＴ）                        #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:自振修正対象者データクリア（ＭＴ）" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVEJ_JifuriSyuseiT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:自振修正対象者データクリア（ＭＴ） RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:自振修正対象者データクリア（ＭＴ）" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減  20110721 FIP.Eriguchi Start
+#########################################################################
+## STEP-1.21  管理店別引落依頼表データクリア                            #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:管理店別引落依頼表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEK_HikiotosiT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:管理店別引落依頼表データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:管理店別引落依頼表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減    20110721 FIP.Eriguchi End
+########################################################################
+# STEP-1.22  請求書件数表データクリア                                  #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:請求書件数表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVEM_SeiKensuT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:請求書件数表データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:請求書件数表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.23  ローン謝絶状データクリア                                  #
+########################################################################
+#19990703削除
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減  20110721 FIP.Eriguchi Start
+#########################################################################
+## STEP-1.24  償還明細件数表日次データクリア                            #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:償還明細件数表日次データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEO_SyoukanKensuT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:償還明細件数表日次データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:償還明細件数表日次データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.25  償還明細書データクリア                                    #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:償還明細書データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEP_SyoukanT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:償還明細書データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:償還明細書データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.26  償還明細書月別データクリア                                #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:償還明細書月別データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEQ_SyoukanTukiT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:償還明細書月別データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:償還明細書月別データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.27  キャッシング取消追加リストデータクリア                    #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:キャッシング取消追加リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVER_CashT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:キャッシング取消追加リストデータクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:キャッシング取消追加リストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.28  ショッピング約定チェックリストデータクリア                #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:ショッピング約定チェックリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVES_ShopT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:ショッピング約定チェックリストデータクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:ショッピング約定チェックリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.29  目的ローン約定チェックリストデータクリア                  #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:目的ローン約定チェックリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVET_YakujyouT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:目的ローン約定チェックリストデータクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:目的ローン約定チェックリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.30  ローン承認実行チェックリストデータクリア                  #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:ローン承認実行チェックリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEU_SyouninT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:ローン承認実行チェックリストデータクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:ローン承認実行チェックリストデータクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.31  総振台帳データクリア                                      #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:総振台帳データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEV_SoufuriT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:総振台帳データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:総振台帳データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減    20110721 FIP.Eriguchi End
+########################################################################
+# STEP-1.32  ローン完済通知書データクリア                              #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:ローン完済通知書データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVEW_KansaiT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:ローン完済通知書データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:ローン完済通知書データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減  20110721 FIP.Eriguchi Start
+#########################################################################
+## STEP-1.33  ローン実行一覧表データクリア                              #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:ローン実行一覧表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEX_JikkouT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:ローン実行一覧表データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:ローン実行一覧表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.34  ローン融資実行一覧表データクリア                          #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:ローン融資実行一覧表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEY_YuusiT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:ローン融資実行一覧表データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:ローン融資実行一覧表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#########################################################################
+## STEP-1.35  ローン未承認一覧表データクリア                            #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:ローン未承認一覧表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVEZ_MisyouninT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:ローン未承認一覧表データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:ローン未承認一覧表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減    20110721 FIP.Eriguchi End
+########################################################################
+# STEP-1.36  店間決済データクリア(受託分）                             #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:店間決済データクリア(受託分）" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE                    #DEL 1006060 20110721 FIP.Eriguchi
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVF1_TenKessaiJMT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:店間決済データクリア(受託分） RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:店間決済データクリア(受託分）" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.37  店間決済データクリア（総合斡旋分）                        #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:店間決済データクリア（総合斡旋分）" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVF3_TenKessaiAMT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:店間決済データクリア（総合斡旋分） RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:店間決済データクリア（総合斡旋分）" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.38  店間決済合計データクリア                                  #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:店間決済合計データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVF4_TenKessaiGMT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:店間決済合計データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:店間決済合計データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.39  関係会社決済データクリア                                  #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:関係会社決済データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVF5_KkessaiMT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:関係会社決済データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:関係会社決済データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.40  事務手数料算出表データクリア                              #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:事務手数料算出表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVF7_JimuteMT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:事務手数料算出表データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:事務手数料算出表データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.41  債権業務手数料データクリア                                #
+#20000322ＪＲ東海対応　新規ﾃｰﾌﾞﾙ分追加                                 #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:債権業務手数料データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVF8_JimuteMTJR;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:債権業務手数料データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:債権業務手数料データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1608002 廃止帳票対応 20170414 FIP.辻 start
+########################################################################
+# STEP-1.42  カード取扱高日計データクリア                              #
+########################################################################
+#$LOGWRITE "$MODULE" I "開始:カード取扱高日計データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+#-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+#
+#TRUNCATE TABLE QVG1_CardNikkeiDT;
+#quit SQL.SQLCODE
+#EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:カード取扱高日計データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:カード取扱高日計データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.43  カード取扱高月計データクリア                              #
+########################################################################
+#$LOGWRITE "$MODULE" I "開始:カード取扱高月計データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+#-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+#
+#TRUNCATE TABLE QVG2_CardGekkeiDT;
+#quit SQL.SQLCODE
+#EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:カード取扱高月計データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:カード取扱高月計データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1608002 廃止帳票対応 20170414 FIP.辻 end
+
+########################################################################
+# STEP-1.44  異動会員データクリア                                      #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:異動会員データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVG3_IdouDT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:異動会員データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:異動会員データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+########################################################################
+# STEP-1.45  売掛金残高データクリア                                    #
+########################################################################
+$LOGWRITE "$MODULE" I "開始:売掛金残高データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+-- #2005/09/20 modified by imz.Yoshida ログ出力修正 <==                  --DEL 1006060 20110721 FIP.Eriguchi
+
+TRUNCATE TABLE QVG4_UriZanDT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+        set MSG = "失敗:売掛金残高データクリア RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+$LOGWRITE "$MODULE" I "終了:売掛金残高データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減  20110721 FIP.Eriguchi Start
+#########################################################################
+## STEP-1.46  ローン立替金決済データクリア                              #
+#########################################################################
+#$LOGWRITE "$MODULE" I "開始:ローン立替金決済データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+##2005/09/20 modified by imz.Yoshida ログ出力修正 ==>
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+##sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+#sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+##2005/09/20 modified by imz.Yoshida ログ出力修正 <==
+#
+#TRUNCATE TABLE QVH0_LoanDT;
+#quit SQL.SQLCODE
+#EOF
+##MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+##MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+#
+#set rc = $status
+#if ( $rc != 0 ) then
+#        set MSG = "失敗:ローン立替金決済データクリア RC=[$rc]"
+#        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#        exit  1
+#endif
+#$LOGWRITE "$MODULE" I "終了:ローン立替金決済データクリア" "$USERKEY"  #2005/09/20 added by imz.Yoshida ログ出力
+#DEL 1006060 ｸﾚｼﾞｯﾄｼｽﾃﾑ再構築帳票削減    20110721 FIP.Eriguchi End
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"  # 終了メッセージの出力
+#20020325
+###################################################################
+#                           終 了                                 #
+###################################################################
+exit 0                                           # 正常終了
+

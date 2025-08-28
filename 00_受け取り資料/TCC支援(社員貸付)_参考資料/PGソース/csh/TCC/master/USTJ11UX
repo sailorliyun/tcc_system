@@ -1,0 +1,14 @@
+#!/bin/csh
+#---------------------------------------------------------------------#
+#  autolog
+#
+#
+#  make : 2009/01/10  BY  Watanabe
+#
+#---------------------------------------------------------------------#
+source /usr/local/auto/autoenv.csh
+source /usr/local/auto/aplenv.csh
+#
+cp autolog_ug1 autolog_ug2
+rm autolog_ug1
+#

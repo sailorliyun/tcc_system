@@ -1,0 +1,58 @@
+#!/bin/csh
+# 　スクリプト名 ： QBDJ71UX
+#　 機  能       ： JR旧Gイメージデータ移動
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 	# シェル名
+setenv JOB_ID       $SHELL_NAME:t                      	# ジョブ名
+setenv JOBNET_ID   'QBD701UX'							# ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        	# ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           	# ログ出力モジュール
+set    USERKEY    = 'QBDJ71UX'                   	# ユーザキー
+set    KINOU      = 'JR旧Gイメージデータ移動' 	# 機能
+
+set    FTP_FILE_FOLDER		= '/d360/UFS/imgkanri2/img'		# FTP画像ファイル格納フォルダー
+
+set    WORK_DIR     = '/d360/UFS/imgkanri2/tmp'        		# 移動ファイル一覧格納フォルダー
+set    WORK_NAME    = 'ImageTorikomiWorkFile.txt'			# 移動ファイル一覧ファイル名
+set    WORK_FILE    = $WORK_DIR/$WORK_NAME
+set IMAGE_DIR1 = "/samba/eter1/ImageData/OK" 						# 移動後フォルダ名１
+
+set    MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#################################################
+# STEP-1  画像ファイルを移動                    #
+#################################################
+set IMAGE_BEFORENAME = ''							# 移動前ファイル名
+set IMAGE_AFTERNAME = ''							# 移動後ファイル名
+set IMAGE_DIR2 = ''									# 移動後フォルダ名２(内々会員番号6桁から2桁)
+set IMAGE_DIR3 = ''									# 移動後フォルダ名３(内々会員番号8桁から2桁)
+set IMAGE_DIR = ''									# 画像ファイル格納先フォルダ名
+set i = 1
+while ( `awk {NR==$i} $WORK_FILE | sed 's/[ ]//g'` != "" )										# 処理対象行が空白になるまでループ
+    set IMAGE_BEFORENAME = `awk {NR==$i} $WORK_FILE | cut -b1-104 | sed -e 's/[ ]$//g'`			# 移動前ファイル名(行末スペース削除)
+    set IMAGE_AFTERNAME  = `awk {NR==$i} $WORK_FILE | cut -b106-145 | sed -e 's/[ ]$//g'`		# 移動後ファイル名(行末スペース削除)
+    @ i++
+    set IMAGE_DIR2 = `echo $IMAGE_AFTERNAME | cut -b10-11`
+    set IMAGE_DIR3 = `echo $IMAGE_AFTERNAME | cut -b12-13`
+    set IMAGE_DIR = $IMAGE_DIR1/$IMAGE_DIR2/$IMAGE_DIR3
+    mv "$FTP_FILE_FOLDER/$IMAGE_BEFORENAME" "$IMAGE_DIR/$IMAGE_AFTERNAME"	# ファイル移動
+    set rc = $status
+    if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E \
+                   "失敗:JR旧Gイメージデータ移動  RC=[$rc] 移動前:[$IMAGE_BEFORENAME] / 移動後:[$IMAGE_AFTERNAME]" \
+                   "$USERKEY"
+        exit  1
+    endif                                      			# 異常終了
+end
+
+######################################################
+# STEP-99  終了処理                                  #
+######################################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了

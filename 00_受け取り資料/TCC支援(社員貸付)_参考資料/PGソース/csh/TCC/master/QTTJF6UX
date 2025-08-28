@@ -1,0 +1,87 @@
+#!/bin/csh
+#　スクリプト名  ： QTTJF6UX
+#　 機  能       ： ＨＵＬＦＴ処理（当月利用行情報ファイル）
+#　 作成者       ： FIP
+#　修　正　履　歴： 終了ログ出力追加        IMZ.YOSHIDA 2005/08/02
+#　　　　　　　　： ディレクトリ変更        IMZ.YOSHIDA 2005/10/26
+#                   1102086 顧客分析用の会員属性データのレイアウト変更 imz.Yoshida 2011/05/26
+#------------------------------------------------------#
+# 環境設定                                             #
+#------------------------------------------------------#
+setenv JOBNET_ID    QTT4C6UX                           # ジョブネット名
+setenv JOB_ID       QTTJF6UX                           # ジョブ名
+setenv USERKEY      QTTJF6UX                           # ユーザキー
+# mod by IMZ.YOSHIDA 2005/10/26 ==>
+#set    HULFT_DIR1 = (/d290/UFS/data/qta)               # HULFT受信ＤＩＲ１
+set    HULFT_DIR1 = (/d371/UFS/data/qta)               # HULFT受信ＤＩＲ１
+# mod by IMZ.YOSHIDA 2005/10/26 <==
+set    HULFT_DIR2 = (/d311/UFS/data/qta)               # HULFT受信ＤＩＲ２
+#et    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+#------------------------------------------------------#
+##1  ＨＵＬＦＴ送信（会員基本情報ファイル）      s008000#OFQY38
+##2  ＨＵＬＦＴ送信（会員家族情報ファイル）      s008100#OFQY39
+##3  ＨＵＬＦＴ送信（入会管理ファイル）          s008200#OFQY40
+##4  ＨＵＬＦＴ送信（当月利用サマリファイル）    s008500#OFQY41
+##5  ＨＵＬＦＴ送信（当月利用伝票情報ファイル）  s008300#OFQY42
+##6○ＨＵＬＦＴ送信（当月利用行情報ファイル）    s008400#OFQY43
+#1  ＨＵＬＦＴ送信（会員基本情報ファイル）      s008000#OFQY61～64
+#2  ＨＵＬＦＴ送信（会員家族情報ファイル）      s008100#OFQY67
+#3  ＨＵＬＦＴ送信（当月利用サマリファイル）    s008500#OFQY68
+#4  ＨＵＬＦＴ送信（当月利用伝票情報ファイル）  s008300#OFQY69
+#5○ＨＵＬＦＴ送信（当月利用行情報ファイル）    s008400#OFQY70
+##------------------------------------------------------#
+# STEP-1                                               #
+#------------------------------------------------------#
+set    MODULE     = HULFT                              # モジュール名
+set    KINOU      = 'ＨＵＬＦＴ送信（当月利用行情報ファイル）'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+#------------------------------------------------------#
+echo "***<< STR > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+ls -l  $HULFT_DIR1/qtab_s008400.dat
+#------------------------------------------------------#
+# mod 2011/05/26 1102086 レイアウト変更対応 Start
+#mv     $HULFT_DIR1/qtab_s008400.dat    $HULFT_DIR1/O.F.QY43.hft
+mv     $HULFT_DIR1/qtab_s008400.dat    $HULFT_DIR1/O.F.QY70.hft
+# mod 2011/05/26 1102086 レイアウト変更対応 End
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU mv1 RC=[$rc]"  "$USERKEY"
+    echo "***<< mv1 ABNORMAL END RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+# mod 2011/05/26 1102086 レイアウト変更対応 Start
+#utlsend -f OFQY43 -sync
+utlsend -f OFQY70 -sync
+# mod 2011/05/26 1102086 レイアウト変更対応 End
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU utlsend RC=[$rc]"  "$USERKEY"
+    echo "***<< utlsend ABNORMAL END RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+# mod 2011/05/26 1102086 レイアウト変更対応 Start
+#mv     $HULFT_DIR1/O.F.QY43.hft        $HULFT_DIR1/qtab_s008400.dat
+mv     $HULFT_DIR1/O.F.QY70.hft        $HULFT_DIR1/qtab_s008400.dat
+# mod 2011/05/26 1102086 レイアウト変更対応 End
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU mv2 RC=[$rc]"  "$USERKEY"
+    echo "***<< mv2 ABNORMAL END RC=[$rc] >>***"
+    exit(1)
+endif
+#------------------------------------------------------#
+compress     -f    $HULFT_DIR1/qtab_s008400.dat
+set rc = $status
+if $rc != 0 then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU compress RC=[$rc]"  "$USERKEY"
+    echo "***<< compress ABNORMAL END RC=[$rc] >>***"
+    exit(1)
+endif
+#-------------------------------------------------------#
+echo "***<< END > (`date +%y%m%d`/`date +%H%M%S`) >>***"
+#Added by IMZ.YOSHIDA 2005/08/02 終了ログ出力追加 ==>
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+#Added by IMZ.YOSHIDA 2005/08/02 終了ログ出力追加 <==
+exit(0)

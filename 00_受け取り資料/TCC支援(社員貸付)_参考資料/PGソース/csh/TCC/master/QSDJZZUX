@@ -1,0 +1,19 @@
+#!/bin/csh
+#　 スクリプト名 ： QSDJZZUX
+#　 機  能       ： ＤＵＭＭＹ処理
+#　 作成者       ： FIP
+#------------------------------------------------------#
+# 環境設定                                             #
+#------------------------------------------------------#
+setenv JOBNET_ID    QUDZZZUX                           # ジョブネット名
+setenv JOB_ID       QSDJZZUX                           # ジョブ名
+setenv USERKEY      QSDJZZUX                           # ユーザキー
+set    KINOU      = 'ＤＵＭＭＹ処理'                   # 機能
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+#------------------------------------------------------#
+set    MODULE     = DUMMY                              # モジュール名
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+#------------------------------------------------------#
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+exit 0                                                 # 正常終了

@@ -1,0 +1,93 @@
+#!/bin/csh
+#　スクリプト名  ： QPTJG2UX
+#　 機  能       ： 部門情報ファイル作成処理
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QPTGA2UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QPTJG2UX'                         # ユーザキー
+set    KINOU      = '部門情報ファイル作成処理'
+set    QP_DATA_DIR  = /d051/UFS/data/qp                #TMP FILE DIR
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:" "$KINOU " "$USERKEY"             # 開始メッセージの出力
+
+#############################################
+# STEP-1 人事マスタソートファイル作成処理   #
+#############################################
+
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:人事マスタソートファイル作成処理" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qpab_s001000.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv INFILE   $QP_DATA_DIR/zinzihftnew.dat
+    setenv OTFILE   $QP_DATA_DIR/zinzisort2.dat
+    setenv SORTWK   $QP_DATA_DIR/zinzisort.sort2_wk
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                       # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+
+    set MSG = "失敗:人事マスタソートファイル作成処理 RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+    exit  1                                      # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:人事マスタソートファイル作成処理" "$USERKEY"     # 終了メッセージの出力
+
+##########################################
+# STEP-2 部門情報抽出処理                #
+##########################################
+
+$LOGWRITE "$MODULE" I "開始:部門情報抽出処理" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qpab_s001010.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv INFILE   $QP_DATA_DIR/zinzisort2.dat
+    setenv OTFILE   $QP_DATA_DIR/bumoninfo.dat
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM > &  $LOGFILE                       # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                                   # 異常終了
+endif
+
+if ( $rc != 0 ) then                             # リターンステータス判定
+
+    set MSG = "失敗:部門情報抽出処理 RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:部門情報抽出処理" "$USERKEY"     # 終了メッセージの出力
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:" "$KINOU" "$USERKEY"            # 終了メッセージの出力
+
+exit 0                                                       # 正常終了
+

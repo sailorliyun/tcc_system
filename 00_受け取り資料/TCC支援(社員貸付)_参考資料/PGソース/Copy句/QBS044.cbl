@@ -1,0 +1,39 @@
+      *****************************************************************
+      * êMópèÓïÒÇs (QBS044)    ÉåÉRÅ[Éhí∑ÅFÇQÇSÇWÇaÇôÇîÇÖ
+      *****************************************************************
+            03  QBS044-SNJOHOT.
+              05  QBS044-TABANO                   PIC  X(006).
+              05  QBS044-UKETSUKENO               PIC  X(008).
+              05  QBS044-INQKBN                   PIC  X(001).
+              05  QBS044-KAZOKURENBAN             PIC  X(001).
+              05  QBS044-SAIIRAIKBN               PIC  X(001).
+              05  QBS044-SAIIRAICNT               PIC  X(003).
+              05  QBS044-CICINQREQ                PIC  X(001).
+              05  QBS044-CICINQRESULT             PIC  X(001).
+              05  QBS044-JISHAINQREQ              PIC  X(001).
+              05  QBS044-JISHAINQRESULT           PIC  X(001).
+              05  QBS044-BLACKINQREQ              PIC  X(001).
+              05  QBS044-BLACKINQRESULT           PIC  X(001).
+              05  QBS044-NGRIYU                   PIC  X(004).
+              05  QBS044-RECORDKBN                PIC  X(001).
+              05  QBS044-RECORDSKB1               PIC  X(001).
+              05  QBS044-RENBAN1                  PIC  X(002).
+              05  QBS044-RECORDSKB2               PIC  X(001).
+              05  QBS044-RENBAN2                  PIC  X(002).
+              05  QBS044-TYPE                     PIC  X(002).
+              05  QBS044-NAME                     PIC  X(030).
+              05  QBS044-SYMD                     PIC  X(007).
+              05  QBS044-YUBIN                    PIC  X(005).
+              05  QBS044-CHIBAN                   PIC  X(003).
+              05  QBS044-ADD                      PIC  X(060).
+              05  QBS044-TEL                      PIC  X(014).
+              05  QBS044-TELKBN                   PIC  X(001).
+              05  QBS044-SEX                      PIC  X(001).
+              05  QBS044-HOJIN                    PIC  X(001).
+              05  QBS044-JYUKYO                   PIC  X(001).
+              05  QBS044-HAIGU                    PIC  X(001).
+              05  QBS044-STRDATE                  PIC  X(019).
+              05  QBS044-UPDDATE                  PIC  X(019).
+              05  QBS044-DELDATE                  PIC  X(019).
+              05  QBS044-OPID                     PIC  X(008).
+              05  QBS044-WSID                     PIC  X(020).

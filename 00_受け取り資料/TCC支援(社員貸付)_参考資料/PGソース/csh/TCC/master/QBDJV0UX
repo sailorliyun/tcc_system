@@ -1,0 +1,52 @@
+#!/bin/csh
+setenv JOBNET_ID  QBDV00UX
+setenv JOB_ID     QBDJV0UX
+setenv USERKEY    QBDJV0UX
+set    MODULE   = QBDJV0UX
+set    LOGWRITE = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    datdir   = $QB_DATA_DIR
+set    huldir   = $FROMHOST2_DIR/qb/rcv
+
+echo  `date +%y%m%d%H%M%S` >! $datdir/QBDV00UX.txt
+set    key      = `cut -b1-12 $datdir/QBDV00UX.txt`
+
+$LOGWRITE "$MODULE" I "START : ＨＯＳＴ入会データ取込" "$USERKEY"
+#-----------------------------------------------------#
+#   rm        作業ファイルクリア
+#-----------------------------------------------------#
+touch $datdir/sdbt360zen.txt
+touch $datdir/sdbt370temp.txt
+rm -f $datdir/sdbt370temp.txt
+#-----------------------------------------------------#
+#   cp        ＨＯＳＴ入会データコピー
+#-----------------------------------------------------#
+cp    $huldir/O.F.QA36     $datdir/sdbt370temp.txt
+set rc = $status
+
+if ( $rc != 0 ) then 
+   $LOGWRITE "$MODULE" E "ERROR : ＨＯＳＴ入会データコピー RC=[$rc]" "$USERKEY"
+   echo "cp ABNORMAL ENDED : RC=[$rc]" 
+   exit(1) 
+endif 
+#-----------------------------------------------------#
+#   cat       前日累積分とコンカチ
+#-----------------------------------------------------#
+cat   $datdir/sdbt360zen.txt  $datdir/sdbt370temp.txt > $datdir/sdbt370i01_$key.txt
+set rc = $status
+
+if ( $rc != 0 ) then 
+   $LOGWRITE "$MODULE" E "ERROR : ＨＯＳＴ入会データコピー RC=[$rc]" "$USERKEY"
+   echo "cat ABNORMAL ENDED : RC=[$rc]" 
+   exit(1) 
+endif 
+rm -f  $datdir/sdbt360zen.txt
+cp     $datdir/sdbt370i01_$key.txt   $datdir/sdbt360zen.txt
+if ( $rc != 0 ) then 
+   $LOGWRITE "$MODULE" E "ERROR : ＨＯＳＴ入会データコピー RC=[$rc]" "$USERKEY"
+   echo "cp ABNORMAL ENDED : RC=[$rc]" 
+   exit(1) 
+endif 
+
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+
+exit(0)

@@ -1,0 +1,36 @@
+#!/bin/csh
+# 　スクリプト名 ： QSDJYBUX
+#　 機  能       ： 日次配信要求1・ブラック削除データ作成
+#　 作成者       ： 高橋
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSDHY1UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'HAISIN-YOUKYUU'                   # ユーザキー 
+set    KINOU      = '日次配信要求1・ブラック削除データ作成'  # 機能
+
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+### 送信要求の実行 ###
+utlrecv  -f OFQW07 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+

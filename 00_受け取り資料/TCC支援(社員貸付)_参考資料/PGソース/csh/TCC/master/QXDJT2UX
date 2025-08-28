@@ -1,0 +1,25 @@
+#!/bin/csh
+#set   SHELL_NAME = $0
+setenv JOBNET_ID    QXDT00UX
+setenv JOB_ID       QXDJT2UX
+setenv USERKEY      QXDJT2UX
+set    MODULE     = QXDJT2UX
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+
+$LOGWRITE "$MODULE" I "START : 事故受付期日管理" "$USERKEY"
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+#----------------------------------------------------#
+#   SDBT020   事故受付期日管理
+#----------------------------------------------------#
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "TCCUSER.QXSP_SDBT020PKG.QXSP_SDBT020('$JOBNET_ID','$JOB_ID')"
+set rc = $status
+if ($rc != 0) then
+   $LOGWRITE "$MODULE" E "ERROR : 事故受付期日管理 RC=[$rc]" "$USERKEY"
+   echo "SDBT020 ABNORMAL ENDED : RC=[$rc]"
+   exit (1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+$LOGWRITE "$MODULE" I " END  : 事故受付期日管理" "$USERKEY"
+exit(0)
+

@@ -1,0 +1,72 @@
+#!/bin/csh
+# 　スクリプト名 ： QSDJL7UX
+#　 機  能       ： Ｎｅｔｗｏｒｋｅｒログファイルの整理
+#   実行USER     ： root
+#　 作成者       ： FIP(藤川)
+#
+# 開発マシンパス
+#set  NETW_EXE_DIR  = /nsr/logs
+set  MODULE   = QSDJL7UX                          	# モジュール名
+set  OPELOG  = $USER_LOG_DIR/db_ope.log                # ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ログ出力用共通シェル
+set  NETW_EXE_DIR  = /export/home/nsr/logs
+set  MSGFILE      = ${NETW_EXE_DIR}/messages
+set  LOGFILE      = ${NETW_EXE_DIR}/daemon.log
+set  SAVE_LOGFILE = ${LOGFILE:r}_
+set  SAVE_MSGFILE = ${MSGFILE:r}_
+set  SUFFIX       = ${LOGFILE:e}
+set YOUBI = `date +%u`
+switch ( $YOUBI )
+	case  1:
+		set OSIRI = sun
+		breaksw
+	case  2:
+		set OSIRI = mon
+		breaksw
+	case  3:
+		set OSIRI = tue
+		breaksw
+	case  4:
+		set OSIRI = wed
+		breaksw
+	case  5:
+		set OSIRI = thu
+		breaksw
+	case  6:
+		set OSIRI = fri
+		breaksw
+	case  7:
+		set OSIRI = sat
+		breaksw
+	default:
+		set OSIRI = xxx
+		breaksw
+endsw
+
+$LOGWRITE  "Ｎｅｔｗｏｒｋｅｒログファイルの整理＿開始" >> $OPELOG
+
+set SAVE_MSGFILE = ${SAVE_MSGFILE}${OSIRI}
+if ( -e $MSGFILE ) then
+	su  root -c "mv  $MSGFILE $SAVE_MSGFILE"
+	set RCD = $status
+	$LOGWRITE  "$SAVE_MSGFILE 退避(mv)復帰値 [$RCD]" >> $OPELOG
+
+	su  root -c "touch $MSGFILE"
+	set RCD = $status
+	$LOGWRITE  "$MSGFILE 生成(touch)復帰値 [$RCD]" >> $OPELOG
+endif
+
+set SAVE_LOGFILE = ${SAVE_LOGFILE}${OSIRI}.${SUFFIX}
+if ( -e $LOGFILE ) then
+	su  root -c "mv  $LOGFILE $SAVE_LOGFILE"
+	set RCD = $status
+	$LOGWRITE  "$SAVE_LOGFILE 退避(mv)復帰値 [$RCD]" >> $OPELOG
+
+	su  root -c "touch $LOGFILE; chgrp root $LOGFILE"
+	set RCD = $status
+	$LOGWRITE  "$LOGFILE 生成(touch)復帰値 [$RCD]" >> $OPELOG
+endif
+
+$LOGWRITE  "Ｎｅｔｗｏｒｋｅｒログファイルの整理＿終了" >> $OPELOG
+exit 0
+

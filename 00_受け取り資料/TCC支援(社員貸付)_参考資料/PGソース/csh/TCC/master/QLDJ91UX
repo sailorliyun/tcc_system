@@ -1,0 +1,103 @@
+#!/bin/csh
+#　スクリプト名  ： QLDJ91UX
+#　 機  能       ： CIC金融情報ファイル期日管理
+#                   保有期限（13ヵ月）が過ぎたデータを削除する
+#　 作成者       ： FIP.Eriguchi
+#   作成日       ： 2009/07/23
+#   修正履歴
+#   項番   管理番号    修正内容                修正者         修正日
+#   001    0911035     ＣＩＣ伝送化に伴う修正  ALPHA.YOKOYAMA 2010/06/23
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID   'QLD911UX'                      # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QLDJ91UX'                     # ユーザキー 
+set    KINOU      = 'CIC金融情報ファイル期日管理'
+
+set    DELETE_DAYS = 40						# 削除日数
+
+set    H_FILE_KEEP_DIR = $QV_DATA_DIR'/qv/qvz/rcv'			# 報告ファイル保管用フォルダー
+set    COBOL_WORK_DIR = $QV_DATA_DIR'/qv/data'				# COBOLファイル出力フォルダー
+set    FILE1_NAME = "qldj91_deleteHoukokuFileList"			# 報告削除対象一覧ファイル名
+
+set    OT_FILE1   = $COBOL_WORK_DIR/$FILE1_NAME				# 報告削除対象一覧ファイル
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     		# 開始メッセージの出力
+
+############################################################
+# STEP-1  管理テーブル削除 ＆削除対象一覧ファイル作成      #
+############################################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:管理テーブル削除 ＆削除対象一覧ファイル作成 " "$USERKEY"     # 開始メッセージの出力
+set PROGRAM = $EXE_DIR/qvzb_s000600.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv OTFILE1 $OT_FILE1
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM $DELETE_DAYS                        # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    $LOGWRITE  "$MODULE"  E  "失敗:管理テーブル削除 ＆削除対象一覧ファイル作成 RC=[$rc]" "$USERKEY"
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:管理テーブル削除 ＆削除対象一覧ファイル作成 " "$USERKEY"     # 終了メッセージの出力
+
+#########################################
+# STEP-2  ファイル削除                  #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:ファイル削除 " "$USERKEY"    		# 開始メッセージの出力
+
+if (-e $OT_FILE1) then
+	if(! -z $OT_FILE1) then
+		foreach f (`cat $OT_FILE1`)
+			set fileName = $H_FILE_KEEP_DIR/$f
+			if (-f $fileName) then
+				rm $fileName
+				set rc = $status
+				if ( $rc != 0 ) then
+			    	$LOGWRITE  "$MODULE"  E  "失敗:報告ファイル削除  RC=[$rc]"  "$USERKEY"
+			   		exit  1                                      			# 異常終了
+				endif
+			endif
+		end
+	endif
+endif
+
+
+#########################################
+# STEP-4  一覧ファイル削除              #
+#########################################
+if (-e $OT_FILE1) then
+	rm $OT_FILE1
+	set rc = $status
+	if ( $rc != 0 ) then
+		$LOGWRITE  "$MODULE"  E  "失敗:報告削除対象一覧ファイル削除  RC=[$rc]"  "$USERKEY"
+		exit  1                                      			# 異常終了
+	endif
+endif
+
+$LOGWRITE "$MODULE" I "終了:ファイル削除" "$USERKEY"    		# 終了メッセージの出力
+
+
+#########################################
+# STEP-99  終了処理                     #
+#########################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     				# 終了メッセージの出力
+exit 0                                           				# 正常終了

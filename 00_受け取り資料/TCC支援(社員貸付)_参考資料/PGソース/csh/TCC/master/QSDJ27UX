@@ -1,0 +1,91 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJ27UX
+#　 機  能       ： 利用明細歩引ファイル更新（追加登録）
+#　 作成者       ： FIP
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSD183UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSDJ27UX'                         # ユーザキー 
+set    KINOU      = '利用明細歩引ファイル更新（追加登録）'
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qtab_s001400.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv INFILE $QJ_DATA_DIR/qt/data/host/merge/qtaf_bubiki1.hft
+    setenv OTFILE $QJ_DATA_DIR/qt/data/svr/dat/qtaf_bubiki1.dat
+    #
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    #
+    #
+    rm $OTFILE
+    #
+    #
+    $PROGRAM                                     # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-2                                #
+#########################################
+
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+
+#外字を含むﾎｽﾄﾃﾞｰﾀを従来型ﾊﾟｽﾛｰﾄﾞでﾛｰﾄﾞ
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+### SQL*LOADERの実行 ###
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                           \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                \
+   control=$LDR_CTRL_DIR/qtad_bubiki.sql               \
+   data=$OTFILE  \
+   log=$LDR_LOG_DIR/qt/qtaf_bubiki1.log                \
+             > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+
+#外字を含むﾎｽﾄﾃﾞｰﾀを従来型ﾊﾟｽﾛｰﾄﾞでﾛｰﾄﾞ
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+exit 0                                           # 正常終了
+

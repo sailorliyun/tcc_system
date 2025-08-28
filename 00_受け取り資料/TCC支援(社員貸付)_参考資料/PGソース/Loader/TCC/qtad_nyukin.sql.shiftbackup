@@ -1,0 +1,52 @@
+UNRECOVERABLE
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QTAL_NYUKINKJT
+fields terminated by "q"
+(
+ QTAL_PRMKigyouCd              CHAR, -- CHAR(4) NOT NULL,
+ QTAL_PRMSubRanjeKey           CHAR, -- CHAR(4) NOT NULL,
+ QTAL_PRMNaibuKaiinNo          CHAR, -- CHAR(8) NOT NULL,
+ QTAL_PRMMeisaiNo              CHAR, -- NUMBER(7) NOT NULL,
+ QTAL_PRMKeijyouTuuBan         CHAR, -- NUMBER(9) NOT NULL,
+ QTAL_RogSequence              CHAR, -- NUMBER(3) NOT NULL,
+ QTAL_TouzaiKbn                CHAR, -- CHAR(1) NOT NULL,
+ QTAL_JigyouHonbuCd            CHAR, -- CHAR(2) NOT NULL,
+ QTAL_SaikenKanriTen           CHAR, -- CHAR(2) NOT NULL,
+ QTAL_NyukinHasseiTen          CHAR, -- CHAR(2) NOT NULL,
+ QTAL_CardKbn                  CHAR, -- CHAR(6) NOT NULL,
+ QTAL_AtukaiBukakakari         CHAR, -- CHAR(6) NOT NULL,
+ QTAL_GaibuKaiinNo             CHAR, -- CHAR(16) NOT NULL,
+ QTAL_BunkaiBi                 DATE NULLIF (QTAL_BunkaiBi="00000000"), -- DATE NULL,
+ QTAL_KeijyouBi                DATE NULLIF (QTAL_KeijyouBi="00000000"), -- DATE NULL,
+ QTAL_NyukinBi                 DATE NULLIF (QTAL_NyukinBi="00000000"), -- DATE NULL,
+ QTAL_YosinRank                CHAR, -- CHAR(1) NOT NULL,
+ QTAL_MinasiFlg                CHAR, -- CHAR(1) NOT NULL,
+ QTAL_YukouKigen               CHAR, -- NUMBER(4) NOT NULL,
+ QTAL_ShoriBi                  DATE NULLIF (QTAL_ShoriBi="00000000"), -- DATE NULL,
+ QTAL_NyuryokuTen              CHAR, -- CHAR(2) NOT NULL,
+ QTAL_NyukinHasseiRiyu         CHAR, -- CHAR(1) NOT NULL,
+ QTAL_NyukinKeiro              CHAR, -- CHAR(1) NOT NULL,
+ QTAL_DenpyouShubetsu          CHAR, -- CHAR(4) NOT NULL,
+ QTAL_BatchNo                  CHAR, -- NUMBER(4) NOT NULL,
+ QTAL_GNOBatchNo               CHAR, -- NUMBER(4) NOT NULL,
+ qTAL_GNOSequence              CHAR, -- NUMBER(3) NOT NULL,
+ QTAL_DenpyouNo                CHAR, -- CHAR(11) NOT NULL,
+ QTAL_AzukarikinBetu           CHAR, -- CHAR(1) NOT NULL,
+ QTAL_Kng                      CHAR, -- NUMBER(11) NOT NULL,(12)
+ QTAL_SousaiKamoku             CHAR, -- CHAR(3) NOT NULL,
+ QTAL_TKZJigyouHonbuCd         CHAR, -- CHAR(2) NOT NULL,
+ QTAL_TKZKanriTen              CHAR, -- CHAR(2) NOT NULL,
+ QTAL_TKZEtokuTen              CHAR, -- CHAR(2) NOT NULL,
+ QTAL_TKZCardKbn               CHAR, -- CHAR(6) NOT NULL,
+ QTAL_TKZGaibuKaiinNo          CHAR, -- CHAR(16) NOT NULL,
+ QTAL_NKEErrRiyu               CHAR, -- VARCHAR2(20) NULL,
+ QTAL_NKEErrKaiinNo            CHAR, -- CHAR(16) NOT NULL,
+ QTAL_SohusakiRyuchi           CHAR, -- CHAR(2) NOT NULL,
+ QTAL_KeiroHonyakuchi          CHAR, -- VARCHAR2(10) NULL,
+ QTAL_HostShoriYmd             CHAR, -- CHAR(8) NOT NULL,
+ QTAL_HostShoriTime            CHAR, -- CHAR(6) NOT NULL,
+ QTAL_SvrKoushinYmd            DATE NULLIF (QTAL_SvrKoushinYmd="00000000") -- DATE NULL,
+)

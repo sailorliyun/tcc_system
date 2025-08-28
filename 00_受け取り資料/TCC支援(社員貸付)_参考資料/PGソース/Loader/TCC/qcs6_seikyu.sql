@@ -1,0 +1,47 @@
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QCS6_RIYOUKISAIT
+FIELDS TERMINATED BY "q"
+(
+    QCS6_PRMKIGYOUCD         CHAR,  --CHAR(04)   NOT NULL,企業コード
+    QCS6_PRMSUBRANGEKEY      CHAR,  --CHAR(04)   NOT NULL,サブレンジキー
+    QCS6_PRMNAIBUKAIINNO     CHAR,  --CHAR(08)   NOT NULL,内部会員番号
+    QCS6_PRMSHIMEYMD         CHAR,  --NUMBER(06) NOT NULL,【ポイント情報・締年月日から取得】
+    QCS6_CARDKBN             CHAR,  --CHAR(06)   ,        カード区分
+    QCS6_TOUZAIKBN           CHAR,  --CHAR(01)   ,        東西区分
+    QCS6_KANRITEN            CHAR,  --CHAR(02)   ,        管理店
+    QCS6_KAKUTOKUTEN         CHAR,  --CHAR(02)   ,        獲得店
+    QCS6_NONEMASTERFLAG      CHAR,  --CHAR(01)   ,        ノンマスタフラグ
+    QCS6_FUSEIGOUFLAG        CHAR,  --CHAR(01)   ,        不整合識別フラグ
+    QCS6_KISAISKB            CHAR,  --CHAR(01)   ,        請求記載データ識別フラグ
+    QCS6_NYUKAIJIPOINT       CHAR,  --NUMBER(11) ,        入会時ポイント
+    QCS6_BONUSPOINT          CHAR,  --NUMBER(11) ,        ボーナスポイント
+    QCS6_POINTSBTFLAG        CHAR,  --CHAR(01)   ,        ポイント識別フラグ
+    QCS6_SEIKYUTENNAI        CHAR,  --NUMBER(11) ,        請求額（店内）
+    QCS6_SEIKYUCS            CHAR,  --NUMBER(11) ,        請求額（加盟店）
+    QCS6_RECORDKBN           CHAR,  --CHAR(01)   ,        レコード区分
+    QCS6_TAKASHIMAYANO       CHAR,  --CHAR(09)   ,        高島屋管理番号
+    QCS6_CARDNO              CHAR,  --CHAR(16)   ,        カード番号
+    QCS6_SHIMEYMD            DATE   "YYYYMMDD",         --ポイント情報・締年月日
+    QCS6_TUMITATEKGN         CHAR,  --NUMBER(06) ,        ポイント情報・積立期限
+    QCS6_KOUKANKGN           CHAR,  --NUMBER(06) ,        ポイント情報・交換期限
+    QCS6_KOUKANMAIZEN        CHAR,  --NUMBER(03) ,        ポイント情報・前期交換枚数
+    QCS6_ZENGETUZANP         CHAR,  --NUMBER(11) ,        ポイント情報・前月残ポイント
+    QCS6_TOUGETUKOUP         CHAR,  --NUMBER(11) ,        ポイント情報・当月交換ポイント
+    QCS6_TENNAIHASSEIP       CHAR,  --NUMBER(11) ,        ポイント情報・店内発生ポイント
+    QCS6_TUIKAPKUBUN         CHAR,  --CHAR(02)   ,        ポイント情報・追加Ｐ句分
+    QCS6_TUIKAPOINT          CHAR,  --NUMBER(11) ,        ポイント情報・追加ポイント
+    QCS6_BONUSRUIKEI         CHAR,  --NUMBER(13) ,        ポイント情報・ボーナス累積額
+    QCS6_KOUKANNO            CHAR,  --NUMBER(04) ,        クレディセゾン編集・交換番号
+    QCS6_KOUKANMAISUU        CHAR,  --NUMBER(03) ,        クレディセゾン編集・交換枚数（計）
+    QCS6_KAMEITENHP          CHAR,  --NUMBER(11) ,        クレディセゾン編集・発生ポイント
+    QCS6_GENZAIHOYUUP        CHAR,  --NUMBER(11) ,        クレディセゾン編集・保有ポイント
+    QCS6_RIYOUKINGOUKEI      CHAR,  --NUMBER(11) ,        クレディセゾン編集・加盟店利用額
+    QCS6_SEIDO               CHAR,  --CHAR(02)   ,        データ管理・制度
+    QCS6_KOKYAKUKBN          CHAR,  --CHAR(02)   ,        データ管理・顧客区分
+    QCS6_HOSTSHORIYMD        CHAR,  --CHAR(08)   ,
+    QCS6_HOSTSHORITIME       CHAR,  --CHAR(06)   ,
+    QCS6_SVRKOUSHINYMD       DATE NULLIF(QCS6_SVRKOUSHINYMD="00000000")
+)

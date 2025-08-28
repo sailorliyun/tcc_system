@@ -1,0 +1,29 @@
+#!/bin/csh
+#set   SHELL_NAME = $0
+setenv JOBNET_ID    QBDH10UX
+setenv JOB_ID       QBDJH1UX
+setenv USERKEY      QBDJH1UX
+set    MODULE     = QBDJH1UX
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    datdir     = $QB_DATA_DIR
+
+$LOGWRITE "$MODULE" I "START : 発券情報更新" "$USERKEY"
+#-----------------------------------------------#
+#   SDBT120  発券情報更新
+#-----------------------------------------------#
+setenv DDHAKKEN $datdir/Hakken.rcv
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qbab_sdbt120.exe
+
+set rc = $status
+if ($rc != 0) then
+   $LOGWRITE "$MODULE" E "ERROR : 発券情報更新 RC=[$rc]" "$USERKEY"
+   echo "SDBT120 ABNORMAL ENDED : RC=[$rc]"
+   exit(1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+$LOGWRITE "$MODULE" I "END" "$USERKEY"
+exit(0)
+

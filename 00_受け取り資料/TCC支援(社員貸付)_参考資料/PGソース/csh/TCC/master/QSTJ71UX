@@ -1,0 +1,185 @@
+#!/bin/csh
+#   スクリプト名 ： QSTJ71UX
+#   機  能       ： 利用明細ファイル最古データ抽出 &
+#                   利用明細歩引ファイル最古データ抽出
+#   作成者       ： imz.Yoshida
+#   作成日       ： 2006/06/18
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+#   000001  2007/01/18   imz.Yoshdia    利用明細合計最古データの件数が出力ファイルの
+#                                       容量を越えてしまったため出力ファイルを追加する
+#   000002  2008/05/09   NBC.ishida     workディレクト変更
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID    'QST191UX'                         # ジョブネット名
+setenv USERKEY      'QSTJ71UX'                         # ユーザキー
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    STEP_F     = $DATA4_DIR/${JOB_ID}_step.tmp
+set    KINOU      = '利用明細(合計・歩引）テーブル吸上げ（最古）'
+# 000002 mod NBC.ishida 2008/05/09 start
+#set WK_DATA4_DIR  = '/d370/UFS/data/qt/shift'
+set WK_DATA5_DIR  = '/d370/UFS/data/qt/shift'          #保存ディスク
+set WK_DATA4_DIR  = '/d360/UFS/data/qt/shift'          #本番用workディスク
+# 000002 mod NBC.ishida 2008/05/09 end
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#########################################
+# STEP-1 締め日取得                     #
+#########################################
+set sime  = 15                                         # 締日
+set year  = `date +%Y`                                 # 処理年 (システム日付より)
+set month = `date +%m`                                 # 処理月 (システム日付より)
+set day   = `date +%d`                                 # 処理日 (システム日付より)
+
+# 処理月Leading Zero Suppress 
+@ month ++
+@ month --
+
+if ( $month < 10 ) then
+   set month = 0$month
+endif
+
+# 処理日Leading Zero Suppress 
+@ day ++
+@ day --
+
+if ( $day < 10 ) then
+   set day = 0$day
+endif
+
+set wk_sime = $sime
+@ wk_sime ++                                           # 締の翌日
+
+if ( $wk_sime < 10 ) then
+   set wk_sime = 0$wk_sime
+endif
+
+
+#########################################
+# STEP-2 利用明細ファイル最古データ抽出 #
+#########################################
+set STEPKINOU = "利用明細ファイル最古データ抽出"
+$LOGWRITE "COBOL" I "開始:$STEPKINOU" "$USERKEY"        # 開始メッセージの出力
+
+# 000002 mod NBC.ishida 2008/05/09 start
+#rm -f $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.1.Z
+#rm -f $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.2.Z
+#rm -f $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.3.Z
+#rm -f $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.4.Z
+## 000001 add imz.Yoshida 削除ファイルの追加 2007/01/18 start
+#rm -f $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.5.Z
+## 000001 add imz.Yoshida 削除ファイルの追加 2007/01/18 end
+rm -f $WK_DATA5_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.1.Z
+rm -f $WK_DATA5_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.2.Z
+rm -f $WK_DATA5_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.3.Z
+rm -f $WK_DATA5_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.4.Z
+rm -f $WK_DATA5_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.5.Z
+# 000002 mod NBC.ishida 2008/05/09 end
+
+setenv OTFILE   $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.1
+setenv OTFILE2  $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.2
+setenv OTFILE3  $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.3
+setenv OTFILE4  $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.4
+# 000001 add imz.Yoshida 出力ファイルの追加 2007/01/18 start
+setenv OTFILE5  $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.5
+# 000001 add imz.Yoshida 出力ファイルの追加 2007/01/18 end
+setenv SIMEYOKU $wk_sime
+
+set PROGRAM = $EXE_DIR/qtab_s001140.exe
+if ( -x $PROGRAM ) then
+   setenv NLS_LANG Japanese_Japan.JA16SJIS         # 文字コード体系をSJISにする
+   $PROGRAM | sjtoeuc >& $LOGFILE                  # プログラム起動
+   set rc = $status                                # リターンステータス待避
+   setenv NLS_LANG Japanese_Japan.JA16EUC          # 文字コード体系をEUCに戻す
+else
+   $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+   exit 1                                          # 異常終了
+endif
+if ( $rc != 0 ) then                               # リターンステータス判定
+   set MSG = "失敗:$STEPKINOU RC=[$rc]"
+   $LOGWRITE  "COBOL"  E  "$MSG" $USERKEY
+   exit 1                                          # 異常終了
+endif
+
+# 000002 mod NBC.ishida 2008/05/10 start
+#compress $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.?
+compress -f $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.?
+# 000002 mod NBC.ishida 2008/05/10 end
+
+$LOGWRITE "COBOL" I "終了:$STEPKINOU" "$USERKEY"   # 終了メッセージの出力
+
+# 000002 mod NBC.ishida 2008/05/09 start
+####ファイル移動#####
+mv $WK_DATA4_DIR/qtaf_riyou.dat.cidatacenter.$year$month$day.?.Z $WK_DATA5_DIR/
+set rc = $status                                   # リターンステータス待避
+if ( $rc != 0 ) then                               # リターンステータス判定
+   set MSG = "失敗:ファイル移動(qtaf_riyou) RC=[$rc]"
+   $LOGWRITE  "$MODULE" E "$MSG" $USERKEY
+   exit 1                                          # 異常終了
+endif
+
+# 000002 mod NBC.ishida 2008/05/09 end
+
+#############################################
+# STEP-3 利用明細歩引ファイル最古データ抽出 #
+#############################################
+set STEPKINOU = "利用明細歩引ファイル最古データ抽出"
+$LOGWRITE "COBOL" I "開始:$STEPKINOU" "$USERKEY"   # 開始メッセージの出力
+
+# 000002 mod NBC.ishida 2008/05/09 start
+#rm -f $WK_DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day.Z
+rm -f $WK_DATA5_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day.Z
+# 000002 mod NBC.ishida 2008/05/09 end
+
+setenv OTFILE   $WK_DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day
+setenv SIMEYOKU $wk_sime
+
+set PROGRAM = $EXE_DIR/qtab_s001540.exe
+if ( -x $PROGRAM ) then
+   setenv NLS_LANG Japanese_Japan.JA16SJIS         # 文字コード体系をSJISにする
+   $PROGRAM | sjtoeuc >& $LOGFILE                  # プログラム起動
+   set rc = $status                                # リターンステータス待避
+   setenv NLS_LANG Japanese_Japan.JA16EUC          # 文字コード体系をEUCに戻す
+else
+   $LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'
+   exit 1                                          # 異常終了
+endif
+if ( $rc != 0 ) then                               # リターンステータス判定
+   set MSG = "失敗:$STEPKINOU RC=[$rc]"
+   $LOGWRITE  "COBOL"  E  "$MSG" $USERKEY
+   exit 1                                          # 異常終了
+endif
+
+# 000002 mod NBC.ishida 2008/05/10 start
+#compress $WK_DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day
+compress -f $WK_DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day
+# 000002 mod NBC.ishida 2008/05/10 end
+
+$LOGWRITE "COBOL" I "終了:$STEPKINOU" "$USERKEY"   # 終了メッセージの出力
+
+# 000002 add NBC.ishida 2008/05/09 start
+####ファイル移動####
+mv $WK_DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day.Z $WK_DATA5_DIR/
+set rc = $status                                   # リターンステータス待避
+if ( $rc != 0 ) then                               # リターンステータス判定
+   set MSG = "失敗:ファイル移動(qtaf_riyougyou) RC=[$rc]"
+   $LOGWRITE  "$MODULE" E "$MSG" $USERKEY
+   exit 1                                          # 異常終了
+endif
+
+# 000002 add NBC.ishida 2008/05/09 end
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+exit 0
+

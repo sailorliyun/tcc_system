@@ -1,0 +1,25 @@
+#!/bin/csh
+#set   SHELL_NAME = $0
+setenv JOBNET_ID    QXDT00UX
+setenv JOB_ID       QXDJT1UX
+setenv USERKEY      QXDJT1UX
+set    MODULE     = QXDJT1UX
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT
+
+$LOGWRITE "$MODULE" I "START : ‚e‚`‚w‘—Mæ‰Šúİ’è" "$USERKEY"
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+#----------------------------------------------------#
+#   SDBT010   ‚e‚`‚w‘—Mæ‰Šúİ’è
+#----------------------------------------------------#
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "TCCUSER.QXSP_SDBT010PKG.QXSP_SDBT010('$JOBNET_ID','$JOB_ID')"
+set rc = $status
+if ($rc != 0) then
+   $LOGWRITE "$MODULE" E "ERROR : ‚e‚`‚w‘—Mæ‰Šúİ’è RC=[$rc]" "$USERKEY"
+   echo "SDBT010 ABNORMAL ENDED : RC=[$rc]"
+   exit (1)
+endif
+setenv NLS_LANG Japanese_Japan.JA16EUC
+
+$LOGWRITE "$MODULE" I " END  : ‚e‚`‚w‘—Mæ‰Šúİ’è" "$USERKEY"
+exit(0)
+

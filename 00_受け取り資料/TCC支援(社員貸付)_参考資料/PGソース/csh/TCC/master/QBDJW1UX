@@ -1,0 +1,224 @@
+#!/bin/csh
+#   スクリプト名 ： QBDJW1UX
+#   機  能       ： イメージ管理会員データ取込
+#   作成者       ： FIP
+#
+#   0001   20050830  ＦＩＰ高橋     パス変更
+#   0002   20050830  ＦＩＰ高橋     ステータス変更
+#   0003   20050905  ＦＩＰ高橋     メッセージ整理
+#     修正履歴
+# 項番   管理番号    修正内容                 修正者         修正日
+# 000004             日次アベンドリカバリ対応 NBC.Saitoh    2007/03/05
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBD601UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QBDJW1UX'                         # 
+#   0001 HSTDIR更新 IDXDIR追加 ==>
+# set    HSTDIR     = /s050/UFS/imagekanri/image/imgkanri/image_buffer
+set    IDXDIR     = /d360/UFS/imgkanri/image_buffer
+set    HSTDIR     = /d360/UFS/imgkanri/tmp/image_buffer
+#   0001 更新  <==
+set    SMBDIR     = /samba/sunua4/image_buffer
+set    KINOU      = 'イメージ管理 会員データ取込'
+
+# 000004 add NBC.Saitoh 2007/03/05 start
+set    BRNFIL     = /d360/UFS/imgkanri/image_buffer/badfile.dat
+# 000004 add NBC.Saitoh 2007/03/05 end
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+cp /dev/null $HSTDIR/001/index.txt
+cp /dev/null $HSTDIR/XXX/index.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA01.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA02.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA03.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA04.txt
+cp /dev/null $HSTDIR/fromhost/O.F.QA05.txt
+
+##################################
+#  データロード                  #
+##################################
+
+#   0003 メッセージ削除  ==>
+#$LOGWRITE "$MODULE" I "イメージ管理 インデックスデータ取込" "$USERKEY"     # 画像転送メッセージの出力
+#   0003                <==
+#rm /s050/UFS/imagekanri/image/imgkanri/image_buffer/001/index.txt
+rm $HSTDIR/001/index.txt 
+
+#cp /samba/sunua4/image_buffer/001/index.txt /s050/UFS/imagekanri/image/imgkanri/image_buffer/001
+#   0001 更新  ==>
+# cp -p $SMBDIR/001/index.txt $HSTDIR/001
+cp -p $IDXDIR/001/index.txt $HSTDIR/001
+#   0001 更新  <==
+set rc = $status
+if ( $rc != 0 ) then
+# 000004 add NBC.Saitoh 2007/03/05 start
+		touch $BRNFIL
+# 000004 add NBC.Saitoh 2007/03/05 end
+# 000004 mod NBC.Saitoh 2007/03/05 start
+#        $LOGWRITE  "$MODULE"  E  "失敗:イメージ管理 インデックスデータ取込 RC=[$rc]" $USERKEY
+        $LOGWRITE  "$MODULE"  W  "警告:イメージ管理 インデックスデータ取込 RC=[$rc]" $USERKEY
+#   0002 更新  ==>
+#        exit  0
+#        exit  1
+        exit  0
+#   0002 更新  <==
+# 000004 mod NBC.Saitoh 2007/03/05 end
+endif
+
+#rm /s050/UFS/imagekanri/image/imgkanri/image_buffer/XXX/index.txt
+rm $HSTDIR/XXX/index.txt 
+
+
+#cp /samba/sunua4/image_buffer/XXX/index.txt /s050/UFS/imagekanri/image/imgkanri/image_buffer/XXX
+#   0001 更新  ==>
+# cp -p $SMBDIR/XXX/index.txt $HSTDIR/XXX
+cp -p $IDXDIR/XXX/index.txt $HSTDIR/XXX
+#   0001 更新  <==
+set rc = $status
+
+if ( $rc != 0 ) then
+# 000004 add NBC.Saitoh 2007/03/05 start
+		touch $BRNFIL
+# 000004 add NBC.Saitoh 2007/03/05 end
+# 000004 mod NBC.Saitoh 2007/03/05 start
+#        $LOGWRITE  "$MODULE"  E  "失敗:イメージ管理 インデックスデータ取込 RC=[$rc]" $USERKEY
+        $LOGWRITE  "$MODULE"  W  "警告:イメージ管理 インデックスデータ取込 RC=[$rc]" $USERKEY
+#   0002 更新  ==>
+#        exit  0
+#        exit  1
+        exit  0
+#   0002 更新  <==
+# 000004 mod NBC.Saitoh 2007/03/05 end
+endif
+
+#   0003 メッセージ削除  ==>
+#$LOGWRITE "$MODULE" I "終了:イメージ管理 インデックスデータ取込" $USERKEY
+#   0003                <==
+
+
+##################################
+#  データロード                  #
+##################################
+
+
+#   0003 メッセージ削除  ==>
+#$LOGWRITE "$MODULE" I "イメージ管理 ＨＯＳＴデータ取込" "$USERKEY"     # 画像転送メッセージの出力
+#   0003                <==
+
+#cp /samba/sunua4/image_buffer/O.F.QA01.txt /s050/UFS/imagekanri/image/imgkanri/image_buffer/fromhost
+cp -p $SMBDIR/O.F.QA01.txt $HSTDIR/fromhost
+set rc = $status
+if ( $rc != 0 ) then
+# 000004 add NBC.Saitoh 2007/03/05 start
+		touch $BRNFIL
+# 000004 add NBC.Saitoh 2007/03/05 end
+# 000004 mod NBC.Saitoh 2007/03/05 start
+#        $LOGWRITE  "$MODULE"  E  "失敗:イメージ管理 ＨＯＳＴデータ取込 1 RC=[$rc]" $USERKEY
+        $LOGWRITE  "$MODULE"  W  "警告:イメージ管理 ＨＯＳＴデータ取込 1 RC=[$rc]" $USERKEY
+#   0002 更新  ==>
+#        exit  0
+#        exit  1
+        exit  0
+#   0002 更新  <==
+# 000004 mod NBC.Saitoh 2007/03/05 end
+endif
+
+
+#cp /samba/sunua4/image_buffer/O.F.QA02.txt /s050/UFS/imagekanri/image/imgkanri/image_buffer/fromhost
+cp -p $SMBDIR/O.F.QA02.txt $HSTDIR/fromhost
+set rc = $status
+
+if ( $rc != 0 ) then
+# 000004 add NBC.Saitoh 2007/03/05 start
+		touch $BRNFIL
+# 000004 add NBC.Saitoh 2007/03/05 end
+# 000004 mod NBC.Saitoh 2007/03/05 start
+#        $LOGWRITE  "$MODULE"  E  "失敗:イメージ管理 ＨＯＳＴデータ取込 2 RC=[$rc]" $USERKEY
+        $LOGWRITE  "$MODULE"  W  "警告:イメージ管理 ＨＯＳＴデータ取込 2 RC=[$rc]" $USERKEY
+#   0002 更新  ==>
+#        exit  0
+#        exit  1
+        exit  0
+#   0002 更新  <==
+# 000004 mod NBC.Saitoh 2007/03/05 end
+endif
+
+#cp /samba/sunua4/image_buffer/O.F.QA03.txt /s050/UFS/imagekanri/image/imgkanri/image_buffer/fromhost
+cp -p $SMBDIR/O.F.QA03.txt $HSTDIR/fromhost
+set rc = $status
+
+if ( $rc != 0 ) then
+# 000004 add NBC.Saitoh 2007/03/05 start
+		touch $BRNFIL
+# 000004 add NBC.Saitoh 2007/03/05 end
+# 000004 mod NBC.Saitoh 2007/03/05 start
+#        $LOGWRITE  "$MODULE"  E  "失敗:イメージ管理 ＨＯＳＴデータ取込 3 RC=[$rc]" $USERKEY
+        $LOGWRITE  "$MODULE"  W  "警告:イメージ管理 ＨＯＳＴデータ取込 3 RC=[$rc]" $USERKEY
+#   0002 更新  ==>
+#        exit  0
+#        exit  1
+        exit  0
+#   0002 更新  <==
+# 000004 mod NBC.Saitoh 2007/03/05 end
+endif
+
+#cp /samba/sunua4/image_buffer/O.F.QA04.txt /s050/UFS/imagekanri/image/imgkanri/image_buffer/fromhost
+cp -p $SMBDIR/O.F.QA04.txt $HSTDIR/fromhost
+set rc = $status
+
+if ( $rc != 0 ) then
+# 000004 add NBC.Saitoh 2007/03/05 start
+		touch $BRNFIL
+# 000004 add NBC.Saitoh 2007/03/05 end
+# 000004 mod NBC.Saitoh 2007/03/05 start
+#        $LOGWRITE  "$MODULE"  E  "失敗:イメージ管理 ＨＯＳＴデータ取込 4 RC=[$rc]" $USERKEY
+        $LOGWRITE  "$MODULE"  W  "警告:イメージ管理 ＨＯＳＴデータ取込 4 RC=[$rc]" $USERKEY
+#   0002 更新  ==>
+#        exit  0
+#        exit  1
+        exit  0
+#   0002 更新  <==
+# 000004 mod NBC.Saitoh 2007/03/05 end
+endif
+
+#cp /samba/sunua4/image_buffer/O.F.QA05.txt /s050/UFS/imagekanri/image/imgkanri/image_buffer/fromhost
+cp -p $SMBDIR/O.F.QA05.txt $HSTDIR/fromhost
+set rc = $status
+
+if ( $rc != 0 ) then
+# 000004 add NBC.Saitoh 2007/03/05 start
+		touch $BRNFIL
+# 000004 add NBC.Saitoh 2007/03/05 end
+# 000004 mod NBC.Saitoh 2007/03/05 start
+#        $LOGWRITE  "$MODULE"  E  "失敗:イメージ管理 ＨＯＳＴデータ取込 5 RC=[$rc]" $USERKEY
+        $LOGWRITE  "$MODULE"  W  "警告:イメージ管理 ＨＯＳＴデータ取込 5 RC=[$rc]" $USERKEY
+#   0002 更新  ==>
+#        exit  0
+#        exit  1
+        exit  0
+#   0002 更新  <==
+# 000004 mod NBC.Saitoh 2007/03/05 end
+endif
+
+#   0003 メッセージ削除  ==>
+#$LOGWRITE "$MODULE" I "終了:イメージ管理 ＨＯＳＴデータ取込" $USERKEY
+#   0003                <==
+
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

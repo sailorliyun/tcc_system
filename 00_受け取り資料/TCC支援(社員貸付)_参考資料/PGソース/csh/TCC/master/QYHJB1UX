@@ -1,0 +1,447 @@
+#!/bin/csh
+#　スクリプト名  ： QYHJB1UX
+#　機  能        ： 随時処理　発券、抜取データ登録
+#　作成者        ： FIP
+#
+#　修正          ：2003/06/02
+#                  前Verでは発券データ、抜取データ
+#                  両ファイルの取得タイミングが同時だった為
+#                  発券、抜取データをマッチングし
+#                  抜取情報を付加してから発券データのロードを
+#                  行なっていたが
+#                  発券、抜取データの取得タイミングが異なる場合には
+#                  抜取情報が付加できない為修正
+#
+#                  発券、抜取データをテーブルに登録後
+#                  抜取テーブルの内容を元に発券テーブルの
+#                  抜取情報の更新を行なうよう修正
+#
+#                  2004/01/23
+#                  抜取データの削除処理を追加
+#                  発券テーブルの更新方法をパッケージに修正
+#
+#  修正番号 修正者   修正日時   修正内容
+#  000001   hayashi  2007/07/13 ﾛｰﾀﾞｰ後ｲﾝﾃﾞｯｸｽﾁｪｯｸ追加
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000002 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000002 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                           # シェル名
+setenv JOB_ID       $SHELL_NAME:t                # ジョブ名
+setenv JOBNET_ID   'QYH201UX'                    # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log  # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT     # ログ出力モジュール
+setenv USERKEY      'QYHJB1UX'                   # ユーザキー
+set    KINOU      = '抜取データ・発券データ登録' # 機能
+
+
+set MODULE = 'SHELL'                             #
+set year  = `date +%Y`                           # 処理年 (システム日付より)本番
+set month = `date +%m`                           # 処理月 (システム日付より)本番
+set day   = `date +%d`                           # 処理日 (システム日付より)本番
+
+# 開始メッセージの出力
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"
+
+#_______________________________________________________________________________________________________
+#
+#  STEP-1 随時 発券データ編集
+#_______________________________________________________________________________________________________
+STEP_1:
+
+set MODULE = 'qyab_s000600'
+$LOGWRITE "$MODULE" I "開始:随時発券データ編集" $USERKEY
+
+set PROGRAM = $EXE_DIR/qyab_s000600.exe
+
+if ( -x $PROGRAM ) then
+    #  ファイル識別子の設定
+    setenv INFILE   $FROMHOST1_DIR/qy/rcv/qyaf_hakkenzuiji.hulft             #随時発券データ
+    setenv OUTFILE  $QY_DATA_DIR/hakken_daily/qyaf_hakkendata01.zuiji.edit   #随時発券データ編集後
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then
+   set MSG = "失敗:随時発券データ編集 RC=[$rc]"
+   $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+   exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:随時発券データ編集" $USERKEY
+
+
+
+#_______________________________________________________________________________________________________
+#
+# STEP-2 随時 発券データロード      #
+#_______________________________________________________________________________________________________
+STEP_2:
+
+set MODULE = 'SQL*LOADER'
+# 000001 hayashi add 2007/07/13 start
+set TABLE_NAME = QYA1_HAKKENDATAT            # 対象テーブル名
+# 000001 hayashi add 2007/07/13 end
+$LOGWRITE "$MODULE" I "開始:QYA1 随時発券データロード" $USERKEY
+
+ setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする Added by imz.Yoshida 2004/01/23
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                                 \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                      \
+   control=$LDR_CTRL_DIR/qyad_hakkendatat.sql                  \
+   data=$QY_DATA_DIR/hakken_daily/qyaf_hakkendata01.zuiji.edit \
+   log=$LDR_LOG_DIR/qyad_hakkendatat_daily.log                 \
+   direct=true                                                 \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す  Added by imz.Yoshida 2004/01/23
+
+if ( $rc != 0 ) then
+        set MSG = "失敗:QYA1 随時発券データロード RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1
+endif
+# 000001 hayashi add 2007/07/13 start
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:データロード(sqlplus) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+    set MSG = "失敗:データロード(grep) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+# 000001 hayashi add 2007/07/13 end
+$LOGWRITE "$MODULE" I "終了:QYA1 随時発券データロード" $USERKEY
+
+#2004/01/23 Added by imz.Yoshida ==>
+#_______________________________________________________________________________________________________
+#
+# STEP-3.0 随時 抜取データ削除
+#_______________________________________________________________________________________________________
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QYA0 随時 抜取データ削除'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+   Truncate Table QYA0_NUKITORIT;
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+   set MSG = "失敗:$STEPKINOU RC=[$rc]"
+   exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+#<== 2004/01/23 Added by imz.Yoshida
+
+#_______________________________________________________________________________________________________
+#
+# STEP-3 随時 抜取データロード
+#_______________________________________________________________________________________________________
+STEP_3:
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = 'QYA0 随時 抜取データロード'
+# 000001 hayashi add 2007/07/13 start
+set TABLE_NAME = QYA0_NUKITORIT            # 対象テーブル名
+# 000001 hayashi add 2007/07/13 end
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする Added by imz.Yoshida 2004/01/23
+cp $FROMHOST1_DIR/qy/rcv/qyaf_nukitori.hulft $QY_DATA_DIR/hakken/nukitori_data.dat
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID         \
+   control=$LDR_CTRL_DIR/qyad_nukitorit.sql       \
+   data=$QY_DATA_DIR/hakken/nukitori_data.dat     \
+   log=$LDR_LOG_DIR/qyad_nukitorit.log            \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す  Added by imz.Yoshida 2004/01/23
+if ( $rc != 0 ) then
+   set MSG = "失敗:$STEPKINOU RC=[$rc]"
+   $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+   exit  1
+endif
+# 000001 hayashi add 2007/07/13 start
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:データロード(sqlplus) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+    set MSG = "失敗:データロード(grep) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+# 000001 hayashi add 2007/07/13 end
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+#_______________________________________________________________________________________________________
+#
+# STEP-4 随時 発券データ抜取情報付与
+#_______________________________________________________________________________________________________
+STEP_4:
+
+set MODULE = 'SQL*LOADER'
+set STEPKINOU = '随時 発券データ抜取情報付与'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+#2004/01/23 Modfied by imz.Yoshida ==>
+#
+#sqlplus $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+# UPDATE QYA1_HakkenDataT SET
+#  QYA1_NukitoriFlg = '1'
+# ,QYA1_NukitoriYMD = TO_DATE('$year$month$day','YYYYMMDD')
+# WHERE EXISTS (SELECT * FROM QYA0_NUKITORIT
+#                   WHERE QYA0_PrmKouzaBangou   = QYA1_PrmKouzaBangou
+#                     AND QYA0_PrmKakitomeBarCD = QYA1_PrmKakitomeBarCD);
+# COMMIT;
+#
+#quit SQL.SQLCODE
+#EOF
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "qyap_hakkenupdpkg.qyap_hakkenupd('$JOBNET_ID','$JOB_ID')"
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : 随時 発券データ抜取情報付与 RC=[$rc]" "$USERKEY"
+   echo "QYHJB1UX ABNORMAL ENDED : RC=[$rc]"
+   exit(1)
+endif
+#<== 2004/01/23 Modfied by imz.Yoshida
+
+set rc = $status
+if ( $rc != 0 ) then
+   set MSG = "失敗:$STEPKINOU RC=[$rc]"
+   exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+
+
+#_______________________________________________________________________________________________________
+#
+# STEP-99      後処理
+#_______________________________________________________________________________________________________
+STEP_99:
+set MODULE = 'SHELL'
+
+#データロード、更新終了後随時データを退避(次回実行時のデータ重複回避)
+cp $FROMHOST1_DIR/qy/rcv/qyaf_hakkenzuiji.hulft $FROMHOST1_DIR/qy/rcv/qyaf_hakkenzuiji.hulft_$year$month$day
+cp $FROMHOST1_DIR/qy/rcv/qyaf_nukitori.hulft    $FROMHOST1_DIR/qy/rcv/qyaf_nukitori.hulft_$year$month$day
+
+#クリア
+cp /dev/null $FROMHOST1_DIR/qy/rcv/qyaf_hakkenzuiji.hulft
+cp /dev/null $FROMHOST1_DIR/qy/rcv/qyaf_nukitori.hulft
+
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+########  旧shell  ############################################################################################################
+#############################################
+##### STEP-1                                #
+#############################################
+####STEP_01:
+####
+####set MODULE = 'qyab_s001200'
+####$LOGWRITE "$MODULE" I "開始:発券データファイルソート" $USERKEY
+####
+####set PROGRAM = $EXE_DIR/qyab_s001200.exe
+####
+####if ( -x $PROGRAM ) then
+####    #  ファイル識別子の設定
+####    setenv INFIL1   $FROMHOST1_DIR/qy/rcv/qyaf_hakkenzuiji.hulft
+####    setenv OUTFIL1  $QY_DATA_DIR/hakken_daily/qyaf_hakkendata01.zuiji.edit
+####    setenv SORTWK01 $QY_DATA_DIR/hakken_daily/SORT.sort_wk
+#####
+####    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+####    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+####    set rc = $status                             # リターンステータス待避
+####    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+####else
+####    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+####    exit 1                                       # 異常終了
+####endif
+####
+####if ( $rc != 0 ) then
+####        set MSG = "失敗:発券データファイルソート RC=[$rc]"
+####        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+####        exit  1                                      # 異常終了
+####endif
+####
+####
+####
+#############################################
+##### STEP-2                                #
+#############################################
+####STEP_02:
+#####rm -f /d14/ST1/SORT.sort_wk
+####set MODULE = 'qyab_s001300'
+####$LOGWRITE "$MODULE" I "開始:抜取データファイルソート" $USERKEY
+####
+####set PROGRAM = $EXE_DIR/qyab_s001300.exe
+####
+####if ( -x $PROGRAM ) then
+####    #  ファイル識別子の設定
+####    setenv INFIL1   $FROMHOST1_DIR/qy/rcv/qyaf_nukitori.hulft
+####    setenv OUTFIL1  $QY_DATA_DIR/hakken_daily/qyaf_nukitori01.edit
+####    setenv SORTWK01 $QY_DATA_DIR/hakken_daily/SORT.sort_wk
+####    #
+####    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+####    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+####    set rc = $status                             # リターンステータス待避
+####    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+####else
+####    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+####    exit 1                                       # 異常終了
+####endif
+####
+####if ( $rc != 0 ) then
+####        set MSG = "失敗:抜取データファイルソート RC=[$rc]"
+####        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+####        exit  1                                      # 異常終了
+####endif
+####
+####$LOGWRITE "$MODULE" I "終了:抜取データファイルソート" $USERKEY
+####
+#############################################
+##### STEP-3                                #
+#############################################
+####STEP_03:
+####
+####set MODULE = 'qyab_s001400'
+####$LOGWRITE "$MODULE" I "開始:抜取データ・発券データマッチ編集" $USERKEY
+####
+####set PROGRAM = $EXE_DIR/qyab_s001400.exe
+####
+####if ( -x $PROGRAM ) then
+####    #  ファイル識別子の設定
+####    setenv INFILE1   $QY_DATA_DIR/hakken_daily/qyaf_hakkendata01.zuiji.edit
+####    setenv INFILE2   $QY_DATA_DIR/hakken_daily/qyaf_nukitori01.edit
+####    setenv OUTFILE  $QY_DATA_DIR/hakken_daily/qyaf_hakkendata02.zuiji.edit
+####    #
+####    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+####    $PROGRAM       >&  $LOGFILE                  # プログラム起動
+####    set rc = $status                             # リターンステータス待避
+####    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+####else
+####    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+####    exit 1                                       # 異常終了
+####endif
+####
+####if ( $rc != 0 ) then
+####        set MSG = "失敗:抜取データ・発券データマッチ編集 RC=[$rc]"
+####        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+####        exit  1                                      # 異常終了
+####endif
+####
+####$LOGWRITE "$MODULE" I "終了:抜取データ・発券データマッチ編集" $USERKEY
+####
+######################################
+##### STEP-4 データロード            #
+######################################
+####STEP_4:
+#####rm -f /d14/ST1/qyaf_hakkendata01.edit
+####set MODULE = 'SQL*LOADER'
+####$LOGWRITE "$MODULE" I "開始:QYA1 データロード" $USERKEY
+####
+####sqlldr $DB_USERID/$DB_PASSWORD                         \
+####   control=$LDR_CTRL_DIR/qyad_hakkendatat.sql          \
+####   data=$QY_DATA_DIR/hakken_daily/qyaf_hakkendata02.zuiji.edit \
+####   log=$LDR_LOG_DIR/qyad_hakkendatat_daily.log         \
+####   direct=true                                         \
+####               > $LOGFILE
+####
+####set rc = $status
+####if ( $rc != 0 ) then
+####        set MSG = "失敗:QYA1 データロード RC=[$rc]"
+####        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+####        exit  1
+####endif
+####
+####$LOGWRITE "$MODULE" I "終了:QYA1 データロード" $USERKEY
+####
+##############################################
+##### STEP-99      後始末                    #
+##############################################
+####STEP_99:
+####
+####set MODULE = 'SHELL'
+####$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+####
+########  旧shell  ############################################################################################################
+
+exit 0
+

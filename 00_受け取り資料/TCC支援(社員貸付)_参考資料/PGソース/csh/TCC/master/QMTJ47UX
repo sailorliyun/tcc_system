@@ -1,0 +1,179 @@
+#!/bin/csh
+#　スクリプト名  ： QMTJ47UX
+#　 プロセス     ： ポイント付与候補者抽出
+#　 機  能       ： 抽出エントリー会員情報登録
+#　 作成者       ： FIP
+#　 更新者       ： 
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+##########################################
+#         共通環境設定                   #
+##########################################
+set    SHELL_NAME = $0                                      # シェル名
+setenv JOB_ID       $SHELL_NAME:t                           # ジョブ名
+setenv JOBNET_ID    'QMT403UX'                              # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log             # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT                # ログ出力モジュール
+setenv USERKEY      'QMTJ47UX'                              # ユーザキー
+set    KINOU      = 'ポイント付与・抽出エントリー会員情報登録'
+
+##########################################
+#         固有環境設定                   #
+##########################################
+set    DATDIR     = /d321/UFS/data/qma
+setenv INFILE1      $DATDIR/qmab_s000600_OT1.dat
+setenv INFILE2      $DATDIR/qmab_s000700_IN2.dat
+set    COMMIT     = 0001000
+
+##########################################
+#         処理開始メッセージ             #
+##########################################
+set MODULE        = 'SHELL'                                 # モジュール
+$LOGWRITE "$MODULE" I "開始：$KINOU" "$USERKEY"             # 開始メッセージの出力
+
+##########################################
+# STEP-1 主キー制約削除                  #
+##########################################
+STEP_1:
+
+set MODULE        = 'SQL*PLUS'
+set STEPKINOU     = '抽出エントリー会員情報・主キー制約削除'
+ $LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+ALTER TABLE QMA8_SELENTRYWT         drop primary key;
+QUIT SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ($rc != 0) then                                          #リターンステータス判定
+    set MSG = "失敗：$STEPKINOU RC=[$rc]"
+
+     $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+ $LOGWRITE "$MODULE" I "終了：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+
+##########################################
+# STEP-2 データ削除                      #
+##########################################
+STEP_2:
+
+set MODULE        = 'SQL*PLUS'
+set STEPKINOU     = '抽出エントリー会員情報・データ削除'
+ $LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+TRUNCATE TABLE QMA8_SELENTRYWT;
+QUIT SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ($rc != 0) then                                          #リターンステータス判定
+    set MSG = "失敗：$STEPKINOU RC=[$rc]"
+
+     $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+ $LOGWRITE "$MODULE" I "終了：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+
+##########################################
+# STEP-3 主キー制約付与                  #
+##########################################
+STEP_4:
+
+set MODULE        = 'SQL*PLUS'
+set STEPKINOU     = '抽出エントリー会員情報・主キー制約付与'
+ $LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+ALTER TABLE QMA8_SELENTRYWT ADD
+    PRIMARY KEY(QMA8_PRMENTRYKBN,
+                QMA8_PRMPCANID1,
+                QMA8_PRMPCANID2,
+                QMA8_PRMOYOKORENBAN,
+                QMA8_PRMKIGYOUCD,
+                QMA8_PRMSUBRANGEKEY,
+                QMA8_PRMNAIBUKAIINNO)
+        USING INDEX NOLOGGING
+        TABLESPACE   POINTHUY
+            STORAGE (
+                INITIAL      2365K
+                NEXT         238K
+                MINEXTENTS     1
+                MAXEXTENTS   100
+                PCTINCREASE    5
+                );
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ($rc != 0) then                                          #リターンステータス判定
+    set MSG = "失敗：$STEPKINOU RC=[$rc]"
+
+     $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+ $LOGWRITE "$MODULE" I "終了：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+
+##########################################
+# STEP-4  抽出エントリー会員情報登録     #
+##########################################
+STEP_3:
+set MODULE        = 'QMAB_S000700'
+set STEPKINOU     = '抽出エントリー会員情報登録'
+ $LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+set PROGRAM       = $EXE_DIR/qmab_s000700.exe
+if ( -x $PROGRAM ) then
+    setenv NLS_LANG  Japanese_Japan.JA16SJIS                #文字コード体系をSJISにする
+    $PROGRAM $COMMIT      >&  $LOGFILE                      #プログラム起動
+    set rc = $status                                        #リターンステータス退避
+     setenv NLS_LANG  Japanese_Japan.JA16EUC                #文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit (1)                                                #異常終了
+endif
+
+if ($rc != 0) then                                          #リターンステータス判定
+    set MSG = "失敗：$STEPKINOU RC=[$rc]"
+
+     $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+
+  $LOGWRITE  "$MODULE" I "終了：$STEPKINOU" "$USERKEY"      #終了メッセージの出力
+
+##########################################
+# STEP-5 中間ファイル削除                #
+##########################################
+STEP_5:
+rm $INFILE1
+cp  /dev/null  $INFILE2
+
+##########################################
+# STEP-99  終了メッセージ出力            #
+##########################################
+STEP_99:
+set MODULE        = 'SHELL'
+$LOGWRITE "$MODULE" I "終了：$KINOU" "$USERKEY"             # 終了メッセージの出力
+
+exit(0)

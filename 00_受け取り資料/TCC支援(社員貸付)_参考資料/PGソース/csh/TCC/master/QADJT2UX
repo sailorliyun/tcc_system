@@ -1,0 +1,97 @@
+#!/bin/csh
+#-------------------------------------------------------#
+#　スクリプト名  ： QADJT2UX
+#  機能          ： ETCﾃﾞｰﾀﾃｰﾌﾞﾙ洗替
+#  作成日        ： 2005/01/07
+#  作成者        ： FIP
+#-------------------------------------------------------#
+# 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.ISHIDA  2009/03/29
+# 000001 0808052     非互換対応              NBC.ISHIDA  2009/03/29
+
+########################################################
+#   環境設定
+########################################################
+set    SHELL_NAME = $0                                  # シェル名
+setenv JOBNET_ID    'QADQ01UX'                          # ジョブネット名
+setenv JOB_ID       'QADJT2UX'                          # ジョブ名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log         # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT            # ログ出力モジュール
+setenv USERKEY      'QADJT2UX'                          # ユーザキー
+set    DATDIR     = /d051/UFS/data/qa                   # データエリア（本番用）
+set    MODULE     = $JOB_ID
+set    QA_HUL_DIR = /s020/UFS/fromhost/qa/rcv           # ハルフトエリア（本番用）
+
+########################################################
+#   開始
+########################################################
+echo "***<< $MODULE STR (`date +%y%m%d`/`date +%H%M%S`) >>***"
+echo "***<< $MODULE STR (`date +%y%m%d`/`date +%H%M%S`) >>***" > $LOGFILE
+set    KINOU      = 'ETCﾃﾞｰﾀﾃｰﾌﾞﾙ洗替'
+$LOGWRITE  "$MODULE" I "ＪＯＢ開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+########################################################
+#   ＳＴＥＰ１：ETCﾃﾞｰﾀﾃｰﾌﾞﾙのｸﾘｱ
+########################################################
+set REC_CNT=`wc -l "$DATDIR/qapb_s020100out.dat" | awk '{print $1} '`
+set rc = $status
+
+if ( $REC_CNT > 0 ) then
+	set    KINOU      = 'ETCﾃﾞｰﾀﾃｰﾌﾞﾙのｸﾘｱ'
+	$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF >> $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF >> $LOGFILE
+TRUNCATE TABLE QAPF_ETCDATAT;
+quit SQL.SQLCODE
+EOF
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+	set rc = $status
+	if ( $rc != 0 ) then
+	        $LOGWRITE "$MODULE " E "ERROR :$KINOU RC=[$rc]" "$USERKEY"
+	        echo "ＥＴＣデータテーブルクリア失敗 : RC=[$rc]"
+	        exit(1)
+	endif
+    $LOGWRITE  "$MODULE" I "終了:$KINOU" "$USERKEY"          # 終了メッセージの出力
+
+	########################################################
+	#   ＳＴＥＰ２：ETCﾃﾞｰﾀﾃｰﾌﾞﾙのﾛｰﾄﾞ
+	########################################################
+	set    KINOU      = 'ETCﾃﾞｰﾀﾃｰﾌﾞﾙのﾛｰﾄﾞ'
+	$LOGWRITE  "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA start
+#	sqlldr $DB_USERID/$DB_PASSWORD                          \
+	sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID                          \
+	       control = $LDR_CTRL_DIR/Loader_QAPF.cntl         \
+	       data    = $QA_HUL_DIR/etctouroku.hft             \
+	       log     = $LDR_LOG_DIR/Loader_QAPF.log           \
+	       errors=999999                              >> $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 NBC.ISHIDA end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 NBC.ISHIDA end
+
+	set rc = $status
+	if $rc != 0 then
+	   $LOGWRITE "$MODULE " E "ERROR :$KINOU RC=[$rc]" "$USERKEY"
+	   echo "*****<< SQL*LOADER ERROR RC=[$rc] >>*****"
+	   exit(1)
+	endif
+    $LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"          # 終了メッセージの出力
+endif
+
+########################################################
+#   終了
+########################################################
+echo "***<< $MODULE END (`date +%y%m%d`/`date +%H%M%S`) >>***"
+echo "***<< $MODULE END (`date +%y%m%d`/`date +%H%M%S`) >>***" >> $LOGFILE
+set    KINOU      = 'ETCﾃﾞｰﾀﾃｰﾌﾞﾙ洗替'
+$LOGWRITE  "$MODULE" I "ＪＯＢ終了:$KINOU" "$USERKEY"         # 終了メッセージの出力
+
+exit(0)

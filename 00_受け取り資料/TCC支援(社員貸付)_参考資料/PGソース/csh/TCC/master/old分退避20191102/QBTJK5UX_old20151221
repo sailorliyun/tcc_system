@@ -1,0 +1,76 @@
+#!/bin/csh
+#　スクリプト名  ： QBTJK5UX
+#　 機  能       ： FAX送信BOX配信処理(旧G)
+#　 作成者       ： FIP
+#
+#   修正履歴
+#   項番   管理番号    修正内容                修正者         修正日
+#   
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                               			  	#シェル名
+setenv JOB_ID       $SHELL_NAME:t                     			 	#ジョブ名
+setenv JOBNET_ID   'QBTK50UX'										#ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/user.log	        				#ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT          			 	#ログ出力モジュール
+set    USERKEY    = 'QBTJK5UX'                   					#ユーザキー
+set    KINOU      = 'FAX送信BOX配信処理(旧G)'						#機能
+
+set    WORK_DIR   = $QB_DATA_DIR/qb/FAXWORK1						#WORKディレクトリ1
+set    MODULE     = 'SHELL'
+
+set    TCC        = '128.1.2.101'									#港北センター設置のFAX送信BOXのIPアドレス
+set    TMK        = '128.1.139.151'									#友の会事務所設置のFAX送信BOXのIPアドレス
+
+set    S_HAISHIN  = $EXE_DIR/qbkb_s000200.csh						#SFTP配信共通処理SHELL
+
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   					#開始メッセージの出力
+
+#################################################
+# STEP-1  SFTP配信共通処理SHELL起動処理         #
+#################################################
+$LOGWRITE "$MODULE" I "開始:SFTP配信共通処理SHELL起動" "$USERKEY"   #開始メッセージの出力
+
+set WORK_FILENAME = `ls -1 $WORK_DIR | head -1` 
+set FURI_KEY = `echo $WORK_FILENAME | awk -F_ '{print $3}' `
+
+switch ( $FURI_KEY )
+case TCC??:
+	set IP_ADDRESS = $TCC
+	breaksw
+
+case TMK??:
+	set IP_ADDRESS = $TMK
+	breaksw
+
+default:
+	$LOGWRITE "$MODULE" E "失敗:振分キーが異なります" "$USERKEY"	
+	exit 1
+
+endsw
+
+#SFTP配信共通処理SHELLを引数をFAX送付先IPアドレス、WORKディレクトリ名で起動
+$S_HAISHIN $IP_ADDRESS $WORK_DIR/
+
+#直前に実行したコマンドが成功したら0、失敗したら1をRCにセット
+set RC = $status
+if ( $RC != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗:SFTP配信共通処理SHELL起動 RC=[$RC]" "$USERKEY"
+	exit 1		# 異常終了
+endif
+
+
+$LOGWRITE "$MODULE" I "終了:SFTP配信共通処理SHELL起動" "$USERKEY"   #終了メッセージの出力
+
+#################################################
+# STEP-2  WORKディレクトリ内ファイル削除処理    #
+#################################################
+rm -f $WORK_DIR/*											#WORKディレクトリ内のファイルを全て削除する
+
+#################################################
+# STEP-99  終了処理                             #
+#################################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   			#終了メッセージの出力
+exit 0                                           			#正常終了

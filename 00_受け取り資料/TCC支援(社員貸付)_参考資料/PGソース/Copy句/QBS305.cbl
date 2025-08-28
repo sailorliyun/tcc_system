@@ -1,0 +1,39 @@
+      *****************************************************************
+      * ÇbÇqäÓñ{óvåèÇs (QBS305)    ÉåÉRÅ[Éhí∑ÅF163Byte
+      *****************************************************************
+            03  QBS305-CRBASEYKT.
+              05  QBS305-TABANO                   PIC  X(006).
+              05  QBS305-UKETSUKENO               PIC  X(008).
+              05  QBS305-INQKBN                   PIC  X(001).
+              05  QBS305-KAZOKURENBAN             PIC  X(001).
+              05  QBS305-SAIIRAIKBN               PIC  X(001).
+              05  QBS305-SAIIRAICNT               PIC  X(003).
+              05  QBS305-CICINQREQ                PIC  X(001).
+              05  QBS305-CICINQRESULT             PIC  X(001).
+              05  QBS305-JISHAINQREQ              PIC  X(001).
+              05  QBS305-JISHAINQRESULT           PIC  X(001).
+              05  QBS305-BLACKINQREQ              PIC  X(001).
+              05  QBS305-BLACKINQRESULT           PIC  X(001).
+              05  QBS305-NGRIYU                   PIC  X(004).
+              05  QBS305-RECORDKBN                PIC  X(001).
+              05  QBS305-RECORDSKB1               PIC  X(001).
+              05  QBS305-RENBAN1                  PIC  X(002).
+              05  QBS305-RECORDSKB2               PIC  X(001).
+              05  QBS305-RENBAN2                  PIC  X(002).
+              05  QBS305-TYPE                     PIC  X(002).
+              05  QBS305-SYMD                     PIC  X(007).
+              05  QBS305-YUBIN                    PIC  X(005).
+              05  QBS305-CHIBAN                   PIC  X(003).
+              05  QBS305-ADD                      PIC  X(011).
+              05  QBS305-TELKBN                   PIC  X(001).
+              05  QBS305-SEX                      PIC  X(001).
+              05  QBS305-HAIGU                    PIC  X(001).
+              05  QBS305-ZANSAI                   PIC  X(006).
+              05  QBS305-KOBETKN                  PIC  X(002).
+              05  QBS305-ZHANFLG1                 PIC  X(001).
+              05  QBS305-ZHANFLG2                 PIC  X(001).
+              05  QBS305-STRDATE                  PIC  X(019).
+              05  QBS305-UPDDATE                  PIC  X(019).
+              05  QBS305-DELDATE                  PIC  X(019).
+              05  QBS305-OPID                     PIC  X(008).
+              05  QBS305-WSID                     PIC  X(020).

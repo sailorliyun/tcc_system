@@ -1,0 +1,99 @@
+#!/bin/csh
+#
+#  オラクル開始[月次処理開始前]  (QSTJS1UX)
+#
+#     機  能：1.主データベースを起動する。
+#             2.コンスログライタを起動する。   ADD '99.05.11
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+# 修正履歴
+# 項番   管理番号    修正内容                         修正者         修正日
+# 00001              アーカイブログ削除スイッチ追加  NBC 斎藤      2006/11/15
+# 00002              アーカイブログ出力未設定        NBC 齋藤      2006/11/28
+#                    アーカイブログ削除スイッチ削除  NBC 齋藤      2006/11/28
+#
+set  SHELL_NAME = $0                                    			# シェル名
+set  MODULE   =  $SHELL_NAME:t                          			# モジュール名
+set  LOGFILE  = $USER_LOG_DIR/db_ope.log                			# ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  			# ログ出力用共通シェル
+
+# 002 START-DEL 2006/11/28
+# 001 START-ADD 2006/11/15
+#set PGRUNSW = /s020/UFS/data/pg_run_switch/arclogdel.sw 			# アーカイブログ削除スイッチファイル
+# 001 END-ADD 2006/11/15
+# 002 END-DEL 2006/11/28
+
+if ( $#argv == 1 ) then								# 引数が指定されていた場合
+    setenv ORACLE_SID   $1							# 環境変数ORACLE_SIDを設定
+endif
+
+$LOGWRITE  "オラクル開始\[月次処理\]" >> $LOGFILE
+
+#########################
+# 1. 主データベース開始 #
+#########################
+#$EXE_DIR/QUAJ_DBSTART.BAT  tcc
+#$EXE_DIR/QUAJ_DBSTART.BAT  PT1
+# 002 START-MOD 2006/11/28
+#$EXE_DIR/QUAJ_DBSTART.BAT  $ORACLE_SID						# 環境変数を用いてＤＢ起動
+$EXE_DIR/QUAJ_DBSTART_2.BAT  $ORACLE_SID						# 環境変数を用いてＤＢ起動
+# 002 END-MOD 2006/11/28
+set RC = $status
+if ( $RC != 0 ) then
+	exit 1
+endif
+
+$LOGWRITE  "オラクル開始\[月次処理\]正常終了" >> $LOGFILE
+
+####################################################
+# 2.   コンスログライタ起動(バックグランドシェル)  #
+####################################################
+$EXE_DIR/QUAJ_LWTRSTART.BAT  conslog  $ORACLE_SID &				# 非同期モードにてコンソールログライタの起動
+set RC = $status
+if ( $RC != 0 ) then
+	exit 1
+endif
+
+echo "ConslogWriter Normaly Started"
+
+$LOGWRITE  "ConslogWriter Normaly Started" >> $LOGFILE
+
+####################################################
+# 3.   ＴＥＭＰ表領域の圧縮            2000.08.15  #
+####################################################
+set  LOGFILE2  = $USER_LOG_DIR/${MODULE}.log                			# ログファイル名
+#sqlplus -S tccadmin/tccadmin << EOF > $LOGFILE2
+#alter tablespace TEMP coalesce;
+#quit SQL.SQLCODE
+#EOF
+set rc = $status
+if ( $rc != 0 ) then
+	$LOGWRITE  " 異常終了[圧縮] RC=[$rc]" >> $LOGFILE
+	exit 1
+endif
+$LOGWRITE  "Tablespace=TEMP Normaly coalesce" >> $LOGFILE
+
+# 002 START-DEL 2006/11/28
+# 001 START-ADD 2006/11/15
+############################################################
+# 4.  アーカイブログ削除用スイッチファイル作成 2006.11.15  #
+############################################################
+# DBに大量に登録・更新・削除を行った場合、アーカイブログ用ディスクが
+# パンクする為、アーカイブログ削除用スイッチファイルが存在する場合
+# 古いアーカイブログを削除するプログラムが実行される。
+#
+#touch $PGRUNSW
+#set rc = $status
+#if ( $rc != 0 ) then
+#	$LOGWRITE  "アーカイブログ削除スイッチファイルが作成できませんでした" >> $LOGFILE
+#else
+#	$LOGWRITE  "アーカイブログ削除スイッチファイル作成完了" >> $LOGFILE
+#endif
+#
+# 001 END-ADD 2006/11/15
+# 002 END-DEL 2006/11/28
+
+exit 0

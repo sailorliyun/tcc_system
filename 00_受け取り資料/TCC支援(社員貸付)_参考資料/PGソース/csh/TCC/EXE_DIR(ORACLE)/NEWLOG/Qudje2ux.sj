@@ -1,0 +1,49 @@
+#!/bin/csh
+#
+#  オラクル停止[日次処理終了後]  (QUDJE2UX)
+#
+#     機  能：0.ログライタを停止する。
+#             1.主データベースを停止する。
+#            
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+set  SHELL_NAME = $0                                    			# シェル名
+set  MODULE   =  $SHELL_NAME:t                          			# モジュール名
+set  LOGFILE  = $USER_LOG_DIR/db_ope.log                			# ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  			# ログ出力用共通シェル
+
+if ( $#argv == 1 ) then								# 引数が指定されていた場合
+    setenv ORACLE_SID	$1							# 環境変数ORACLE_SIDを設定
+endif
+
+#echo $MODULE " : " $ORACLE_SID
+
+$LOGWRITE  "オラクル停止\[日次処理\]" >> $LOGFILE
+
+#############################
+# 0. コンスログライタ停止   #
+#############################
+$EXE_DIR/QUAJ_LWTRSTOP.BAT conslog $ORACLE_SID					# コンソールログライタの停止
+set RC = $status
+if ( $RC != 0 ) then
+    $LOGWRITE  "ConslogWriter Stopping error occured[RC=$RC]" >> $LOGFILE 
+    exit 1
+endif
+
+#########################
+# 1. 主データベース停止 #
+#########################
+#$EXE_DIR/QUAJ_DBSTOP.BAT  tcc
+#$EXE_DIR/QUAJ_DBSTOP.BAT  PT1
+$EXE_DIR/QUAJ_DBSTOP.BAT  $ORACLE_SID						# 環境変数を用いてＤＢ停止
+set RC = $status
+if ( $RC != 0 ) then
+	exit 1
+endif
+
+$LOGWRITE  "オラクル停止\[日次処理\]正常終了" >> $LOGFILE
+
+exit 0

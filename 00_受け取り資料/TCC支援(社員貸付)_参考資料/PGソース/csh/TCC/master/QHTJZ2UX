@@ -1,0 +1,173 @@
+#!/bin/csh
+# 　スクリプト名 ： QHTJZ2UX
+#　 機  能       ： 請求配信・西分配信要求
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                           # シェル名
+setenv JOB_ID       $SHELL_NAME:t                # ジョブ名
+setenv JOBNET_ID   'QHTKY1UX'                    # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log  # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT     # ログ出力モジュール
+setenv USERKEY      'QHTJZ2UX'                   # ユーザキー 
+set    KINOU      = '請求配信・西分配信要求'     # 機能
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+#########################################
+# STEP-1                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:請求会員・配信要求５" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQ304 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:請求会員・配信要求５ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:請求会員・配信要求５" $USERKEY
+
+#########################################
+# STEP-2                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:請求会員・配信要求６" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQ305 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:請求会員・配信要求６ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:請求会員・配信要求６" $USERKEY
+
+#########################################
+# STEP-3                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:請求会員・配信要求７" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQ306 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:請求会員・配信要求７ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:請求会員・配信要求７" $USERKEY
+
+#########################################
+# STEP-4                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:請求会員・配信要求８" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQ307 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:請求会員・配信要求８ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:請求会員・配信要求８" $USERKEY
+
+#########################################
+# STEP-5                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:請求明細・配信要求５" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQ308 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:請求明細・配信要求５ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:請求明細・配信要求５" $USERKEY
+
+#########################################
+# STEP-6                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:請求明細・配信要求６" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQ309 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:請求明細・配信要求６ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:請求明細・配信要求６" $USERKEY
+
+#########################################
+# STEP-7                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:請求明細・配信要求７" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQ310 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:請求明細・配信要求７ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:請求明細・配信要求７" $USERKEY
+
+#########################################
+# STEP-8                                #
+#########################################
+set MODULE = 'utlrecv'
+$LOGWRITE "$MODULE" I "開始:請求明細・配信要求８" $USERKEY
+
+### 送信要求の実行 ###
+utlrecv  -f OFQ311 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:請求明細・配信要求８ RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:請求明細・配信要求８" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

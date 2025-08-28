@@ -1,0 +1,28 @@
+#!/bin/csh
+# set SHELL_NAME = $0
+setenv JOBNET_ID   QTD4D2UX
+setenv JOB_ID      QTDJG3UX
+setenv USERKEY     QTDJG3UX
+
+#------------------------------------------------------------#
+#   Delete   QTAX_GendenSumT Šú“úŠÇ—
+#------------------------------------------------------------#
+set    LOGWRITE = $EXE_DIR/QUAJ_MSGLOG.BAT
+set    MODULE   =  QTDJG3UX
+$LOGWRITE "$MODULE" I " START : ‰Á–¿“XŒ´“`WŒv‚sŠú“úŠÇ—" "$USERKEY"
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS
+
+$EXE_DIR/qusc_sspexec.exe $JOBNET_ID $JOB_ID "tccuser.QTAP_SDBT030PKG.QTAP_SDBT030('$JOBNET_ID','$JOB_ID')"
+
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC
+if ($rc != 0) then
+    $LOGWRITE "$MODULE" E "ERROR : ‰Á–¿“XŒ´“`WŒv‚sŠú“úŠÇ— RC=[$rc]" "$USERKEY"
+    echo "DELETE QTAX_GENDENSUMUT ABNORMAL ENDED : RC=[$rc]"
+    exit(1)
+endif
+
+$LOGWRITE "$MODULE" I " END   : ‰Á–¿“XŒ´“`WŒv‚sŠú“úŠÇ—" "$USERKEY"
+exit(0)
+

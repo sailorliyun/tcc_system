@@ -1,0 +1,156 @@
+#!/bin/csh
+# 　スクリプト名 ： QSTJ3AUX
+#　 機  能       ： 利用明細行ファイル最古データ抽出 &
+#                   利用明細行ファイル当月以降データ抽出
+#　 作成者       ： FIP
+#　 改造         ： ①2000/08/18 SQL*Loader入力ﾌｧｲﾙﾃﾞｨﾚｸﾄﾘ変更
+#　              ： ②2000/09/04 最古と当月以降抽出の分割(最古のみにする)
+#                                compressと出力ﾌｧｲﾙの追加
+#   項番     修正日      修正者         修正内容
+#   00001    2005/11/19  imz.Yoshida    ディスク容量不足による障害対応
+#                                       作業ディレクトリの変更
+#   00002    2006/06/18  imz.Yoshida    シフト処理時間短縮対応 NET ID 変更
+#   00003    2006/11/18  imz.Yoshida    出力ファイル件数オーバー障害対応
+#   00004    2006/12/12  imz.Yoshida    出力ファイル件数オーバー障害対応2
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+#setenv JOBNET_ID   'QST161UX'                          # ジョブネット名
+setenv JOBNET_ID   'QST191UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSTJ3AUX'                         # ユーザキー
+set    KINOU      = '利用明細行ファイル吸い上げ（最古）'
+
+set    STEP_F     = $DATA4_DIR/${JOB_ID}_step.tmp
+set    BKUP_DIR   = /d320/UFS/shift_work
+
+# 00004 mod by imz.Yoshida 20061212 start
+#ファイルサイズが大きいので、現在のワークディレクトリだと、容量不足になる。
+#一時的に別ディレクトリへファイルを作成して、最後に他のファイルと同じディレクトリに保管する
+## 00001 add by imz.Yoshida 2005/11/19 ==>
+## 作業ディレクトリは、環境変数で作成しているので、新規にディレクトリに変更する
+#set WK_DATA4_DIR  = '/d370/UFS/data/qt/shift'
+## 00001 add by imz.Yoshida 2005/11/19 <==
+set WK_DATA4_DIR  = '/d360/UFS/data/qt/shift'
+set WK_DATA5_DIR  = '/d370/UFS/data/qt/shift'
+# 00004 mod by imz.Yoshida 20061212 end
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+set sime  = 15                # 締日
+set year  = `date +%Y`        # 処理年 (システム日付より)
+set month = `date +%m`        # 処理月 (システム日付より)
+set day   = `date +%d`        # 処理日 (システム日付より)
+
+# 処理月Leading Zero Suppress 
+@ month ++
+@ month --
+
+if ( $month < 10 ) then
+	set month = 0$month
+endif
+
+# 処理日Leading Zero Suppress 
+@ day ++
+@ day --
+
+if ( $day < 10 ) then
+	set day = 0$day
+endif
+
+set wk_sime = $sime
+@ wk_sime ++    # 締の翌日
+
+if ( $wk_sime < 10 ) then
+	set wk_sime = 0$wk_sime
+endif
+
+###########################################
+# STEP-1 利用明細行ファイル最古データ抽出 #
+###########################################
+STEP_OLDEST_PROC:
+
+# 00001 mod by imz.Yoshida 2005/11/19 ==>
+#rm -f $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.1.Z
+#rm -f $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.2.Z
+#rm -f $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.3.Z
+#rm -f $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.4.Z
+#rm -f $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.5.Z
+
+#setenv OTFILE  $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.1
+#setenv OTFILE2 $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.2
+#setenv OTFILE3 $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.3
+#setenv OTFILE4 $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.4
+#setenv OTFILE5 $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.5
+
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.1.Z
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.2.Z
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.3.Z
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.4.Z
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.5.Z
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.6.Z          # 00003 add by imz.Yoshida 20061118
+# 00004 add by imz.Yoshida 20061212 start
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.7.Z
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.8.Z
+rm -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.9.Z
+# 00004 add by imz.Yoshida 20061212 end
+
+setenv OTFILE  $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.1
+setenv OTFILE2 $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.2
+setenv OTFILE3 $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.3
+setenv OTFILE4 $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.4
+setenv OTFILE5 $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.5
+setenv OTFILE6 $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.6   # 00003 add by imz.Yoshida 20061118
+# 00004 add by imz.Yoshida 20061212 start
+setenv OTFILE7 $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.7
+setenv OTFILE8 $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.8
+setenv OTFILE9 $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.9
+# 00004 add by imz.Yoshida 20061212 end
+# 00001 mod by imz.Yoshida 2005/11/19 <==
+
+setenv SIMEYOKU $wk_sime
+set PROGRAM = $EXE_DIR/qtab_s001340.exe        
+if ( -x $PROGRAM ) then        
+	setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+	$PROGRAM | sjtoeuc >& $LOGFILE             # プログラム起動
+	set rc = $status                           # リターンステータス待避
+	setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+	$LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'  
+	exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                               # リターンステータス判定
+	set MSG = "失敗:$KINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                    # 異常終了
+endif
+
+# 00001 mod by imz.Yoshida 2005/11/19 ==>
+#compress -f $DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.?
+compress -f $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.?
+# 00001 mod by imz.Yoshida 2005/11/19 <==
+
+# 00004 add by imz.Yoshida 20061212 start
+# ファイルの移動
+mv $WK_DATA4_DIR/qtaf_riyougyou.dat.cidatacenter.$year$month$day.*.Z $WK_DATA5_DIR/
+set rc = $status                                   # リターンステータス待避
+if ( $rc != 0 ) then                               # リターンステータス判定
+   set MSG = "失敗:ファイル移動 RC=[$rc]"
+   $LOGWRITE  "$MODULE" E "$MSG" $USERKEY
+   exit 1                                          # 異常終了
+endif
+# 00004 add by imz.Yoshida 20061212 end
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

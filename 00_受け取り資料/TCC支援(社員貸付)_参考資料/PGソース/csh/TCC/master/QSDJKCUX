@@ -1,0 +1,45 @@
+#!/bin/csh
+#　スクリプト名  ： QSDJKCUX
+#　 機  能       ： 日次受信後処理（対応履歴登録データ）
+#　 作成者       ： ＦＩＰ．横山
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSDJT1UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSDJKCUX'                         # ユーザキー
+set    KINOU      = '日次受信後処理（対応履歴登録データ）'
+set    QX_DATA_DIR = '/d321/UFS'
+
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"    # 開始メッセージの出力
+
+ls $QX_DATA_DIR/data/qt/QSA7_TOGOMEMOT.txt
+
+set rc = $status
+if ($rc != 0 ) then
+        $LOGWRITE "$MODULE" E "失敗:$KINOU  RC=[$rc]" "$USERKEY"   # 異常終了メッセージの出力
+        exit 1
+endif
+
+### ファイルを０件にする ###
+cp /dev/null  $QX_DATA_DIR/data/qt/QSA7_TOGOMEMOT.txt
+
+set rc = $status
+
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"    # 終了メッセージの出力
+exit 0                                           # 正常終了

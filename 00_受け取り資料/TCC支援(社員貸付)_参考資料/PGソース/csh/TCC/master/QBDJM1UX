@@ -1,0 +1,66 @@
+#!/bin/csh
+# 　スクリプト名 ： QBDJM1UX 
+#　 機  能       ： 申込Ｔの精査済データから口振Ｔに口座情報を取込む
+#　 作成者       ： FIP
+# 2004.03.15 取扱銀行アンマッチ抽出対応 IMZ.YAMADA
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QBDM01UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+set    USERKEY    = 'QBK1_KFURIT'                      # ユーザキー 
+set    KINOU      = '申込Ｔの精査済データから口振Ｔに口座情報を取込む'
+
+#########################################
+# STEP-1                                #
+#########################################
+
+set MODULE = 'qusc_sspexec.exe'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+setenv NLS_LANG Japanese_Japan.JA16SJIS  
+
+### ストアド・プロシジャの実行 ###
+set  PRM_JOBNET =  "'"$JOBNET_ID"'"
+set   PRM_JOB = "'"$JOB_ID"'"
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QBKP_PutKouzaPkG.QBKP_PutKouza( $PRM_JOB, $PRM_JOBNET )"
+
+set rc = $status
+
+setenv NLS_LANG Japanese_Japan.JA16EUC  
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+
+#2004.03.15 取扱銀行アンマッチ抽出 IMZ.YAMADA -->
+### ストアド・プロシジャの実行 ###
+setenv NLS_LANG Japanese_Japan.JA16SJIS  
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QBKP_SDBT210PKG.QBKP_SDBT21001( $PRM_JOB, $PRM_JOBNET )"
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC  
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+#2004.03.15 取扱銀行アンマッチ抽出 IMZ.YAMADA <--
+
+#2004.07.07 口振仮登録の口振情報更新 IMZ.YAMADA -->
+### ストアド・プロシジャの実行 ###
+setenv NLS_LANG Japanese_Japan.JA16SJIS  
+$EXE_DIR/qusc_sspexec.exe  $JOBNET_ID  $JOB_ID  "QBKP_SDBT210PKG.QBKP_SDBT21002( $PRM_JOB, $PRM_JOBNET )"
+set rc = $status
+setenv NLS_LANG Japanese_Japan.JA16EUC  
+if ( $rc != 0 ) then
+        $LOGWRITE  "$MODULE"  E  "失敗:$KINOU  RC=[$rc]"  "$USERKEY"
+        exit  1                                      # 異常終了
+endif
+#2004.07.07 口振仮登録の口振情報更新 IMZ.YAMADA <--
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了

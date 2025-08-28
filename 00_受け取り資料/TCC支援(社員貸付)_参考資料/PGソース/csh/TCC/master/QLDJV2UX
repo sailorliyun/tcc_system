@@ -1,0 +1,118 @@
+#!/bin/csh
+#　スクリプト名  ： QLDJV2UX
+#　 機  能       ： 金融新規ファイル登録
+#　 作成者       ： FIP
+#
+#   修正履歴
+#   項番   管理番号    修正内容                修正者         修正日
+#   001    0911035     ＣＩＣ伝送化に伴う修正  ALPHA.YOKOYAMA 2010/06/23
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QLD031UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QLDJV2UX'                         # ユーザキー
+set    KINOU      = '金融新規ファイル登録'
+
+set    HULFT_NAME = 'OFQA77'                      	   # HULFT名
+set    HULFT_DIR  = '/s030/UFS/fromhost/qv/rcv'        # HULFTファイル格納フォルダー
+set    KEEP_FOLDER = $QV_DATA_DIR'/qv/qvz/rcv'		   # 保管フォルダー
+set    COBOL_WORK_DIR = $QV_DATA_DIR'/qv/data'		   # COBOLファイル出力フォルダー
+set    FILENAME_FILE = 'qvz7_filename'			       # ファイル名格納ファイル名
+
+set    IN_FILE    = $HULFT_DIR/$HULFT_NAME		       # ハルフトファイル
+set    OT_FILE    = $COBOL_WORK_DIR/$FILENAME_FILE	   # ファイル名格納ファイル
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"         # 開始メッセージの出力
+
+#########################################
+# STEP-1  HULFT集信ファイルチェック     #
+#########################################
+if (! -e $IN_FILE) then
+	$LOGWRITE "$MODULE" E "集信ファイル存在なし" "$USERKEY"
+	exit  1                                                     # 異常終了
+endif
+
+if (-z $IN_FILE) then
+	$LOGWRITE "$MODULE" I "ファイルが0バイトのため処理を終了します" "$USERKEY"    	# メッセージの出力
+	goto end-shell
+endif
+
+#########################################
+# STEP-2  ファイルサイズ取得            #
+#########################################
+set fsize=`wc -c $IN_FILE | awk '{print $1}'`
+set rc = $status                             	# リターンステータス待避
+if ( $rc != 0 ) then                        	# リターンステータス判定
+    $LOGWRITE  "$MODULE"  E  "失敗:ファイルサイズ取得失敗" "$USERKEY"
+    exit  1                                     # 異常終了
+endif
+
+#############################################
+# STEP-3  管理テーブル登録 ＆ファイル名取得 #
+#############################################
+set MODULE = 'COBOL'
+$LOGWRITE "$MODULE" I "開始:管理テーブル登録＆ファイル名取得" "$USERKEY"     # 開始メッセージの出力
+
+set PROGRAM = $EXE_DIR/qvzb_s000500.exe
+if ( -x $PROGRAM ) then
+    #
+    #  ファイル識別子の設定
+    setenv OTFILE $OT_FILE
+    #
+    setenv NLS_LANG Japanese_Japan.JA16SJIS      # 文字コード体系をSJISにする
+    $PROGRAM $fsize $HULFT_NAME                  # プログラム起動
+    set rc = $status                             # リターンステータス待避
+    setenv NLS_LANG Japanese_Japan.JA16EUC       # 文字コード体系をEUCに戻す
+else
+    $LOGWRITE  "$MODULE"  E  "実行プログラム[$PROGRAM]が存在しない。" "$USERKEY"
+    exit 1                                       # 異常終了
+endif
+
+if ( $rc != 0 ) then                              # リターンステータス判定
+    $LOGWRITE  "$MODULE"  E  "失敗:管理テーブル登録＆ファイル名取得 RC=[$rc]" "$USERKEY"
+    exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:管理テーブル登録＆ファイル名取得" "$USERKEY"     # 終了メッセージの出力
+
+
+#########################################
+# STEP-4  報告ファイルコピー            #
+#########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:報告ファイルコピー" "$USERKEY"    		# 開始メッセージの出力
+
+if (! -e $OT_FILE) then
+    $LOGWRITE  "$MODULE"  E  "失敗:ファイル名格納ファイルが存在しない" "$USERKEY"
+    exit  1                                      				# 異常終了
+endif
+
+if (-z $OT_FILE) then
+    $LOGWRITE  "$MODULE"  E  "失敗:ファイル名格納ファイルにデータが存在しない" "$USERKEY"
+    exit  1                                      				# 異常終了
+endif
+
+set f = `cat $OT_FILE`
+cp $IN_FILE "$KEEP_FOLDER/$f"
+set rc = $status
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "失敗:報告ファイルコピー  RC=[$rc]"  "$USERKEY"
+	exit  1                                      			# 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:報告ファイルコピー" "$USERKEY"    		# 終了メッセージの出力
+
+#########################################
+# STEP-99  終了処理                     #
+#########################################
+end-shell:
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     				# 終了メッセージの出力
+exit 0                                           				# 正常終了

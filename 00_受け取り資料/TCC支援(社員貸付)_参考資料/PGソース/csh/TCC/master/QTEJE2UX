@@ -1,0 +1,44 @@
+#!/bin/csh
+#　 スクリプト名 ： QTEJE2UX
+#　 機  能       ： 家族マスタデータファイル作成処理
+#　 作成者       ： 江口
+#　 作成日       ： 2006/08/06
+#　 修正履歴
+# 項番 日付         修正内容                           修正者
+# 00001 2006.08.07 モジュールのログファイル名を修正  imz.Yoshida
+
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME    = $0                                  # シェル名
+setenv JOB_ID          $SHELL_NAME:t                       # ジョブ名
+setenv JOBNET_ID       'QTEIB1UX'                          # ジョブネット名
+set    USERKEY       = 'QTEJE2UX'                          # ユーザキー
+set    LOGFILE       = $USER_LOG_DIR/${JOB_ID}.log         # ログファイル名
+set    LOGWRITE      = $EXE_DIR/QUAJ_MSGLOG.BAT            # ログ出力モジュール
+set    KINOU         = '家族マスタデータファイル作成処理'  # 機能
+set    MODULE        = 'SHELL'
+
+set    QT_DATA_DIR   = /d380/UFS/data/qt/host              # 作業用ディレクトリ
+set    QT_WORK_DIR   = /d380/UFS/data/qt/svr               # 登録用ディレクトり
+
+#########################################
+# ファイル作成                          #
+#########################################
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"             # 開始メッセージの出力
+setenv INFILE $QT_DATA_DIR/qtaf_kazoku9.hft
+setenv OTFILE $QT_WORK_DIR/qtab_s000500.dat
+# 00001 mod imz.Yoshida start
+#$EXE_DIR/qtab_s000500_iko.exe > $USER_LOG_DIR/$INFILE.log
+$EXE_DIR/qtab_s000500_iko.exe > $USER_LOG_DIR/qtaf_kazoku9.hft.log
+# 00001 mod imz.Yoshida end
+set rc = $status
+if ( $rc != 0 ) then
+   $LOGWRITE  "COBOL"  E  "失敗:$KINOU RC=[$rc]" $USERKEY
+   exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"             # 終了メッセージの出力
+
+exit 0

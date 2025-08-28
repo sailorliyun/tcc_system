@@ -1,0 +1,242 @@
+#!/bin/csh
+#　スクリプト名  ： QMTJ43UX
+#　 プロセス     ： オールリボエントリ状況Ｔ作成
+#　 機  能       ： オールリボ会員情報取込処理
+#　 作成者       ： FIP
+#　 更新者       ：
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                                           修正者         修正日
+# 000001 0807073     非互換対応              　                       NBC.SHIBUICHI  2009/03/29
+# 000001 0807073     STRAGE句のINITIAL値・NEXT値の変更    NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応                                       NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     STRAGE句のINITIAL値・NEXT値の変更    NBC.SHIBUICHI  2009/03/29
+
+##########################################
+#         共通環境設定                   #
+##########################################
+set    SHELL_NAME = $0                                      # シェル名
+setenv JOB_ID       $SHELL_NAME:t                           # ジョブ名
+setenv JOBNET_ID    'QMT402UX'                              # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log             # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT                # ログ出力モジュール
+setenv USERKEY      'QMTJ43UX'                              # ユーザキー
+set    KINOU      = 'ポイント付与・オールリボ会員情報取込'
+
+##########################################
+#         固有環境設定                   #
+##########################################
+set    DATDIR     = /d321/UFS/data/qma
+setenv INFILE1       $DATDIR/OFQWB0.dat
+
+##########################################
+#         処理開始メッセージ             #
+##########################################
+set MODULE        = 'SHELL'                                 # モジュール
+$LOGWRITE "$MODULE" I "開始：$KINOU" "$USERKEY"             # 開始メッセージの出力
+
+#########################################
+# STEP-1 インデックスの削除             #
+#########################################
+STEP_1:
+
+set    MODULE     = 'SQL*PLUS'
+set    STEPKINOU  = 'QMA5 ポイント付与・インデックス削除'
+$LOGWRITE "$MODULE" I "開始：$STEPKINOU" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+drop index XIE1QMA5_ALLRIBOT;
+
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+     set MSG = "失敗: $STEPKINOU RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了：$STEPKINOU" $USERKEY
+
+##########################################
+# STEP-2 主キー制約削除                  #
+##########################################
+STEP_2:
+set    MODULE     = 'SQL*PLUS'
+set    STEPKINOU  = 'QMA5 ポイント付与・主キー制約削除'
+$LOGWRITE "$MODULE" I "開始：$STEPKINOU" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+ALTER TABLE QMA5_ALLRIBOT   drop primary key;
+QUIT SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+     set MSG = "失敗: $STEPKINOU RC=[$rc]"
+     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+     exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了：$STEPKINOU" $USERKEY
+
+##################################
+# STEP-3 データロード            #
+##################################
+STEP_3:
+set STEPKINOU    = 'ポイント付与・オールリボ会員情報ＬＯＡＤ'
+set TABLE_NAME   = QMA5_ALLRIBOT                            #対象テーブル名
+set MODULE       = 'SQL*LOADER'
+    $LOGWRITE  "$MODULE" I "開始：$STEPKINOU  " "$USERKEY"
+
+setenv NLS_LANG  Japanese_Japan.JA16SJIS
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                  \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID       \
+   control=$LDR_CTRL_DIR/QMA5_ALLRIBOT.ctl      \
+   data=$INFILE1                                \
+   log=$LDR_LOG_DIR/QMA5_ALLRIBOT.log           \
+   rows=1000                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+setenv NLS_LANG  Japanese_Japan.JA16EUC
+if ($rc != 0) then
+   set MSG = "失敗：$STEPKINOU  RC=[$rc]"
+    $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+   exit(1)                                                  #異常終了
+endif
+
+  $LOGWRITE "$MODULE" I "終了：$STEPKINOU " "$USERKEY"
+
+#########################################
+# STEP-4 インデックスの付与             #
+#########################################
+STEP_4:
+
+set MODULE     = 'SQL*PLUS'
+set STEPKINOU  = 'QMA5 ポイント付与・インデックス付与'
+
+$LOGWRITE  "$MODULE" I "開始：$STEPKINOU  " "$USERKEY"
+
+setenv NLS_LANG  Japanese_Japan.JA16SJIS                    #文字コード体系をSJISにする
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+CREATE INDEX XIE1QMA5_ALLRIBOT
+     ON QMA5_ALLRIBOT
+          (
+          QMA5_PRMSEIKYUTSUKI
+          )
+          TABLESPACE  POINTHUY
+               STORAGE (
+                    INITIAL      11071K
+                    NEXT         1108K
+                    MINEXTENTS   1
+                    MAXEXTENTS   100
+                    PCTINCREASE  5
+                    );
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗：$STEPKINOU  RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了：$STEPKINOU " "$USERKEY"
+
+##########################################
+# STEP-5 主キー制約付与                  #
+##########################################
+STEP_5:
+set MODULE     = 'SQL*PLUS'
+set STEPKINOU  = 'QMA5 ポイント付与・主キー付与'
+$LOGWRITE  "$MODULE" I "開始：$STEPKINOU  " "$USERKEY"
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > $LOGFILE
+#ALTER TABLE QMA5_ALLRIBOT ADD
+#     PRIMARY KEY
+#          (QMA5_PRMKIGYOUCD,
+#           QMA5_PRMSUBRANGEKEY,
+#           QMA5_PRMNAIBUKAIINNO,
+#           QMA5_PRMSEIKYUTSUKI)
+#          USING INDEX NOLOGGING
+#          TABLESPACE POINTHUY
+#          STORAGE (
+#               INITIAL     20476K
+#               NEXT        2048K
+#               MINEXTENTS  1
+#               MAXEXTENTS  100
+#               PCTINCREASE 5
+#               );
+#quit SQL.SQLCODE
+#EOF
+
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > $LOGFILE
+ALTER TABLE QMA5_ALLRIBOT ADD
+     PRIMARY KEY
+          (QMA5_PRMKIGYOUCD,
+           QMA5_PRMSUBRANGEKEY,
+           QMA5_PRMNAIBUKAIINNO,
+           QMA5_PRMSEIKYUTSUKI)
+          USING INDEX NOLOGGING
+          TABLESPACE POINTHUY
+          STORAGE (
+               INITIAL     12M
+               NEXT        2M
+               MINEXTENTS  1
+               MAXEXTENTS  100
+               PCTINCREASE 5
+               );
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗：$STEPKINOU  RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了：$STEPKINOU " "$USERKEY"
+
+##########################################
+# STEP-6 中間ファイル削除                #
+##########################################
+STEP_6:
+rm $INFILE1
+
+##################################
+# STEP-99  終了メッセージ出力    #
+##################################
+STEP_99:
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了：$KINOU" "$USERKEY"             # 終了メッセージの出力
+
+exit(0)

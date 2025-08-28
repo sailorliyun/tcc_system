@@ -1,0 +1,133 @@
+#!/bin/csh
+# 　スクリプト名 ： QSTJ3EUX
+#　 機  能       ： 利用明細歩引ファイル最古データ抽出 &
+#                   利用明細歩引ファイル当月以降データ抽出
+#　 作成者       ： FIP
+#　 改造         ： ①2000/12/20 ﾊﾞｯｸｱｯﾌﾟﾌｧｲﾙのcompress追加
+#
+#   修正履歴
+#   項番     修正日      修正者         修正内容
+#   00001    2005/11/19  imz.Yoshida    ディスク容量不足による障害対応
+#                                       作業ディレクトリの変更
+#   00002    2006/04/19  imz.Yoshida    シフト処理時間短縮対応
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QST163UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QSTJ3EUX'                         # ユーザキー
+set    KINOU      = '利用明細歩引ファイル吸い上げ'
+
+set    STEP_F     = $DATA4_DIR/${JOB_ID}_step.tmp
+
+# 00002 del imz.Yoshida 2006/04/19 start
+## 00001 add by imz.Yoshida 2005/11/19 ==>
+## 作業ディレクトリは、環境変数で作成しているので、新規にディレクトリに変更する
+#set WK_DATA4_DIR  = '/d370/UFS/data/qt/shift'
+## 00001 add by imz.Yoshida 2005/11/19 <==
+# 00002 del imz.Yoshida 2006/04/19 end
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+set sime  = 15                # 締日
+set year  = `date +%Y`        # 処理年 (システム日付より)
+set month = `date +%m`        # 処理月 (システム日付より)
+set day   = `date +%d`        # 処理日 (システム日付より)
+
+# 処理月Leading Zero Suppress 
+@ month ++
+@ month --
+
+if ( $month < 10 ) then
+	set month = 0$month
+endif
+
+# 処理日Leading Zero Suppress 
+@ day ++
+@ day --
+
+if ( $day < 10 ) then
+	set day = 0$day
+endif
+
+set wk_sime = $sime
+@ wk_sime ++    # 締の翌日
+
+if ( $wk_sime < 10 ) then
+	set wk_sime = 0$wk_sime
+endif
+
+# 00002 del imz.Yoshida 2006/04/19 start
+##############################################
+## STEP-1 利用明細歩引ファイル最古データ抽出 #
+##############################################
+#STEP_OLDEST_PROC:
+#
+## 00001 mod by imz.Yoshida 2005/11/19 ==>
+##rm -f $DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day.Z
+##setenv OTFILE $DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day
+#rm -f $WK_DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day.Z
+#setenv OTFILE $WK_DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day
+## 00001 mod by imz.Yoshida 2005/11/19 <==
+#
+#setenv SIMEYOKU $wk_sime
+#set PROGRAM = $EXE_DIR/qtab_s001540.exe        
+#if ( -x $PROGRAM ) then        
+#	setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+#	$PROGRAM | sjtoeuc >& $LOGFILE             # プログラム起動
+#	set rc = $status                           # リターンステータス待避
+#	setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+#else
+#	$LOGWRITE  $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'  
+#	exit 1                                     # 異常終了
+#endif
+#
+#if ( $rc != 0 ) then                           # リターンステータス判定
+#	set MSG = "失敗:$KINOU（最古） RC=[$rc]"
+#	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+#	exit  1                                    # 異常終了
+#endif
+#
+## 00001 mod by imz.Yoshida 2005/11/19 ==>
+##compress $DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day
+#compress $WK_DATA4_DIR/qtaf_bubiki.dat.cidatacenter.$year$month$day
+## 00001 mod by imz.Yoshida 2005/11/19 <==
+# 00002 del imz.Yoshida 2006/04/19 end
+
+#################################################
+# STEP-2 利用明細歩引ファイル当月以降データ抽出 #
+#################################################
+STEP_TOUGETU_PROC:
+
+setenv OTFILE $DATA4_DIR/qtaf_bubiki.dat.shiftbackup
+setenv SIMEYOKU $wk_sime
+set PROGRAM = $EXE_DIR/qtab_s001550.exe        
+if ( -x $PROGRAM ) then        
+	setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+	$PROGRAM | sjtoeuc >>& $LOGFILE            # プログラム起動
+	set rc = $status                           # リターンステータス待避
+	setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+	$LOGWRITE $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'  
+	exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                           # リターンステータス判定
+	set MSG = "失敗:$KINOU（当月以降） RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                    # 異常終了
+endif
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

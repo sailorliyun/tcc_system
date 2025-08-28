@@ -1,0 +1,118 @@
+#!/bin/csh
+# 　スクリプト名 ： QLHJS1UX
+#　 機  能       ： カード種類別取扱高データのＬＯＡＤを行う
+#　 作成者       ： FIP
+#  修正番号 修正者   修正日時   修正内容
+#  000001   hayashi  2007/07/13 ﾛｰﾀﾞｰ後ｲﾝﾃﾞｯｸｽﾁｪｯｸ追加
+#
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0807073     非互換対応              NBC.SHIBUICHI  2009/03/29
+# 000001 0808052     非互換対応              NBC.SHIBUICHI  2009/03/29
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID        $SHELL_NAME:t                 # ジョブ名
+setenv JOBNET_ID     'QLHL01UX'                    # ジョブネット名
+set    LOGFILE       = $USER_LOG_DIR/${JOB_ID}.log # ログファイル名
+#set    LOGFILE       = /home/batch/qh/log/new/${JOB_ID}.log # ログファイル名
+#000001 hayashi MOD START 20070719
+#set    LOGWRITE   = /s040/fip/EXE/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+#000001 hayashi MOD END 20070719
+setenv USERKEY       'QLHJS1UX'                    # ユーザキー
+set    KINOU         = '期次カード種類別取扱高データのＬＯＡＤ'
+##################################
+set TABLE_NAME    = QVX1_CARDSYUT                   # 対象テーブル名
+setenv GKKBN          2               #外部パラメータ・概況決算区分(1:通常,2:期末)
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+
+##################################
+# STEP-1 データコピー            #
+##################################
+STEP_2:
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:期次カード種類別取扱高データコピー" $USERKEY
+
+  cp /d051/UFS/data/qv/data/qvxf_card.hulft  $QV_DATA_DIR/qv/data/qvxf_cardsyu1.hulft
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:期次カード種類別取扱高データコピー RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+
+$LOGWRITE "$MODULE" I "終了:期次カード種類別取扱高データコピー" $USERKEY
+##################################
+# STEP-2 データロード            #
+##################################
+STEP_2:
+set MODULE = 'SQL*LOADER'
+$LOGWRITE "$MODULE" I "開始:期次カード種類別取扱高データロード" $USERKEY
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlldr $DB_USERID/$DB_PASSWORD                    \
+sqlldr $DB_USERID/$DB_PASSWORD@$ORACLE_SID         \
+   control=$LDR_CTRL_DIR/qvxd_cardsyu.sql       \
+   data=$QV_DATA_DIR/qv/data/qvxf_cardsyu1.hulft    \
+   log=$LDR_LOG_DIR/qvxd_cardsyu.log          \
+   direct=true                                    \
+               > $LOGFILE
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+	set MSG = "失敗:カード種類別取扱高データロード RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1
+endif
+# 000001 hayashi add 2007/07/13 start
+#----------------------------------------------------------#
+#   インデックスエラーのチェック
+#----------------------------------------------------------#
+rm -f ${LOGFILE}2 ${LOGFILE}3
+
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi start
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi start
+#sqlplus -S $DB_USERID/$DB_PASSWORD << EOF > ${LOGFILE}2
+sqlplus -S $DB_USERID/$DB_PASSWORD@$ORACLE_SID << EOF > ${LOGFILE}2
+set lin 200
+select index_name,status from user_indexes
+       where table_name = '$TABLE_NAME'  and
+             status     = 'UNUSABLE';
+quit SQL.SQLCODE
+EOF
+#MOD 0807073 クレジット支援システムの再構築 20090329 shibuichi end
+#MOD 0808052 ＴＣＣ支援システムの再構築     20090329 shibuichi end
+
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:データロード(sqlplus) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+grep "UNUSABLE" `find ${USER_LOG_DIR} -name "${JOB_ID}.log2" -print` > ${LOGFILE}3
+if !(-z ${LOGFILE}3 ) then
+    set MSG = "失敗:データロード(grep) RC=[$rc]"
+    $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+    exit  1
+endif
+# 000001 hayashi add 2007/07/13 end
+$LOGWRITE "$MODULE" I "終了:カード種類別取扱高データロード" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+
+exit 0
+
+

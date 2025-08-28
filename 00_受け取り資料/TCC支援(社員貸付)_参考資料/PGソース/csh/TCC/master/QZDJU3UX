@@ -1,0 +1,54 @@
+#!/bin/csh
+#　スクリプト名  ： QZDJU3UX
+#　 機  能       ： チケットPOSSTSﾌｧｲﾙ受信後処理
+#　 作成者       ： FIP
+#　 作成日       ： 2009.07.23
+#　 概要         ：ホストより受信したPOSデータを
+#                  QZT9_MEMBER_STATUSに登録する
+#                      1.受信DIRの受信ファイルをクリア
+#　 修正履歴     ： YYYY.MM.DD 　修　　　正　　　内　　　容　　修正者
+#                   2009.07.23   旧JOB［QZDJU1UX］よりSTEP移動・新規作成     FIP.Eriguchi
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QZDU03UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QZDJU3UX'                         # ユーザキー
+set    KINOU      = 'チケットPOSSTSﾌｧｲﾙ受信後処理'
+
+set    TICKET_HOME = /d361/UFS/data/qzt                 # チケットシステム　データホームディレクトリ
+set    DATA_DIR  = $TICKET_HOME/tmp                     #TMP DIR
+set    HUL_DIR   = $TICKET_HOME/fromhost                #受信DIR
+set    HUL_FILE_NAME = O.F.QA46.hft                     #受信ファイル名
+set    LOAD_DATA_FILE = qzt9_member_status_data.dat     #処理用ファイル名
+set    SAVE_DATA_FILE = save_qzt9.dat                   #saveファイル名
+
+##########################################
+# STEP-1      受信ファイルクリア         #
+##########################################
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"       # 処理開始メッセージの出力
+
+set MODULE = 'SHELL'
+
+#受信ファイルのクリア
+set STEPKINOU = '受信ファイルのクリア'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY          # STEP開始メッセージの出力
+
+ cp  /dev/null $HUL_DIR/$HUL_FILE_NAME
+
+set rc = $status
+if ( $rc != 0 ) then
+    set MSG = "失敗:$STEPKINOU RC=[$rc]"
+     $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY             # STEP異常終了メッセージの出力
+    exit 1
+endif
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY       # STEP終了メッセージの出力
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 処理終了メッセージの出力
+
+exit 0

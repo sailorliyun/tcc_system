@@ -1,0 +1,84 @@
+#!/bin/csh
+#
+#  随時オンライン終了時ＢＣＶリカバリー５ (QUEJRJUX)
+#
+#     機  能：1.ＢＣＶからデータベースを復元する。
+#             2.REDOログファイル、REDOアーカイブログファイルを復元する。
+#     引  数：
+#
+#     EXIT値：0 --- 正常
+#             1 --- エラー発生
+#
+set  SHELL_NAME = $0                                    # シェル名
+set  MODULE   =  $SHELL_NAME:t                          # モジュール名
+set  LOGFILE  =  $USER_LOG_DIR/db_ope.log               # ログファイル名
+set  LOGWRITE = "$EXE_DIR/QUAJ_BATCHLOG.BAT ($MODULE)"  # ログ出力用共通シェル
+set  SYMCLI_DIR = /usr/symcli/bin
+##set  DEVICE_FILE = /usr/symmapps/tcc4.bcv                # ﾃﾞﾊﾞｲｽファイル名
+set  DG_FILE = tcc4_dg
+
+$LOGWRITE  "随時オンライン終了時ＢＣＶリカバリー５開始" >> $LOGFILE
+
+###############################
+# 1. データベース復元         #
+###############################
+$LOGWRITE  "BCVからﾎﾞﾘｭｰﾑ復元開始" >> $LOGFILE
+
+### Standard Volume UNMOUNT ###
+$EXE_DIR/QUAJ_VOLOPE4.BAT u
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "STD VOL アンマウント失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+
+### RESTORE ###
+$SYMCLI_DIR/symmir -g $DG_FILE restore -i 60 -c 10 -noprompt  # BCVからﾎﾞﾘｭｰﾑ復元
+#sleep 120                   # 2000/04/18 追加
+#bcv restore -i -f $DEVICE_FILE  >> $LOGFILE  # BCVからﾎﾞﾘｭｰﾑ復元
+#bcv restore -f $DEVICE_FILE  >> $LOGFILE  # BCVからﾎﾞﾘｭｰﾑ復元
+set RC = $status                          # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+
+if ( $RC != 0 ) then
+        $LOGWRITE "RESTORE失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+
+### ｺﾋﾟｰ完了監視 ###
+while(1)
+        $SYMCLI_DIR/symmir -g $DG_FILE verify > /dev/null     # BCVからﾎﾞﾘｭｰﾑ復元の確認
+#       bcv verify -f $DEVICE_FILE > /dev/null  # BCVからﾎﾞﾘｭｰﾑ復元の確認
+        set RC = $status                        # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+        if ( $RC == 0 ) then
+                break
+        else if ( $RC != 4 && $RC != 5 ) then
+                $LOGWRITE "VERIFY失敗 \[RC=$RC\]"   >> $LOGFILE
+                exit 1
+        endif
+        sleep 60                          # １分間待機
+end
+
+
+### SPLIT ###
+$SYMCLI_DIR/symmir -g $DG_FILE split -noprompt # Standard VolumeをBCVからの切り離す
+#bcv split -f $DEVICE_FILE         # Standard VolumeをBCVからの切り離す
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "SPLIT失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+
+### standard Volume MOUNT ###
+$EXE_DIR/QUAJ_VOLOPE4.BAT m
+set RC = $status                  # ﾘﾀｰﾝｽﾃｰﾀｽ待避
+if ( $RC != 0 ) then
+        $LOGWRITE "STD VOL マウント失敗 \[RC=$RC\]"   >> $LOGFILE
+        exit 1
+endif
+
+$LOGWRITE  "BCVからﾎﾞﾘｭｰﾑ復元正常終了" >> $LOGFILE
+
+$LOGWRITE  "随時オンライン終了時ＢＣＶリカバリー５ 終了" >> $LOGFILE
+
+exit 0
+

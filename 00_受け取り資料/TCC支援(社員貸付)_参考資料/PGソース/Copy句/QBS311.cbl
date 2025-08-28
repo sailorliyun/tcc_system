@@ -1,0 +1,39 @@
+      *****************************************************************
+      * 信用類似情報Ｔ (QBS311)    レコード長：155Byte
+      *****************************************************************
+            03  QBS311-SNRUIJIT.
+              05  QBS311-TABANO                   PIC  X(006).
+              05  QBS311-UKETSUKENO               PIC  X(008).
+              05  QBS311-INQKBN                   PIC  X(001).
+              05  QBS311-KAZOKURENBAN             PIC  X(001).
+              05  QBS311-SAIIRAIKBN               PIC  X(001).
+              05  QBS311-SAIIRAICNT               PIC  X(003).
+              05  QBS311-CICINQREQ                PIC  X(001).
+              05  QBS311-CICINQRESULT             PIC  X(001).
+              05  QBS311-JISHAINQREQ              PIC  X(001).
+              05  QBS311-JISHAINQRESULT           PIC  X(001).
+              05  QBS311-BLACKINQREQ              PIC  X(001).
+              05  QBS311-BLACKINQRESULT           PIC  X(001).
+              05  QBS311-NGRIYU                   PIC  X(004).
+              05  QBS311-RECORDKBN                PIC  X(001).
+              05  QBS311-RECORDSKB1               PIC  X(001).
+              05  QBS311-RENBAN1                  PIC  X(002).
+              05  QBS311-RECORDSKB2               PIC  X(001).
+              05  QBS311-RENBAN2                  PIC  X(002).
+              05  QBS311-TYPE                     PIC  X(002).
+              05  QBS311-SYMD                     PIC  X(007).
+              05  QBS311-YUBIN                    PIC  X(005).
+              05  QBS311-CHIBAN                   PIC  X(003).
+              05  QBS311-TELKBN                   PIC  X(001).
+              05  QBS311-SEX                      PIC  X(001).
+              05  QBS311-HOJIN                    PIC  X(001).
+              05  QBS311-JYUKYO                   PIC  X(001).
+              05  QBS311-HAIGU                    PIC  X(001).
+              05  QBS311-JYMD                     PIC  X(007).
+              05  QBS311-JYOSYU                   PIC  X(002).
+              05  QBS311-RIYU                     PIC  X(002).
+              05  QBS311-STRDATE                  PIC  X(019).
+              05  QBS311-UPDDATE                  PIC  X(019).
+              05  QBS311-DELDATE                  PIC  X(019).
+              05  QBS311-OPID                     PIC  X(008).
+              05  QBS311-WSID                     PIC  X(020).

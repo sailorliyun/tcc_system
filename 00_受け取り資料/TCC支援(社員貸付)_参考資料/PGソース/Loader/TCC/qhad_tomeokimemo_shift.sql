@@ -1,0 +1,40 @@
+UNRECOVERABLE
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QHA2_TOMEOKIMEMOT
+( QHA2_KeyKigyoCd        POSITION( 01: 04) CHAR,
+  QHA2_KeySubRng         POSITION( 05: 08) CHAR,
+  QHA2_KeyNaibuKaiin     POSITION( 09: 16) CHAR,
+  QHA2_KeyUkeYmd         POSITION( 17: 24) CHAR,
+  QHA2_KeyUkeTime        POSITION( 25: 30) CHAR,
+  QHA2_KeyMemoTsuban     POSITION( 31: 32) CHAR,
+  QHA2_KaiinNo           POSITION( 33: 48) CHAR,
+  QHA2_KanriTen          POSITION( 49: 50) CHAR,
+  QHA2_TouzaiKbn         POSITION( 51: 51) CHAR,
+  QHA2_SagyoKbn          POSITION( 52: 52) CHAR,
+  QHA2_IraiYmd           POSITION( 53: 60) CHAR NULLIF QHA2_IraiYmd=BLANKS,
+  QHA2_Iraisya           POSITION( 61: 61) CHAR,
+  QHA2_UkeTanto          POSITION( 62: 73) CHAR NULLIF QHA2_UkeTanto=BLANKS,
+  QHA2_TodokeCd          POSITION( 74: 74) CHAR,
+  QHA2_GaisyoTanto       POSITION( 75: 94) CHAR NULLIF QHA2_GaisyoTanto=BLANKS,
+  QHA2_Memo              POSITION( 95)     CHAR TERMINATED BY '|', --301 byte
+  QHA2_TomeCd1           POSITION(396:397) CHAR,
+  QHA2_TomeCd2           POSITION(398:399) CHAR,
+  QHA2_TomeCd3           POSITION(400:401) CHAR,
+  QHA2_TomeCd4           POSITION(402:403) CHAR,
+  QHA2_TomeCd5           POSITION(404:405) CHAR,
+  QHA2_TomeKaishiYM      POSITION(406:411) CHAR,
+  QHA2_TomeKikan         POSITION(412:412) CHAR,
+  QHA2_JifuriKbn         POSITION(413:413) CHAR,
+  QHA2_KaiinMemoFlg      POSITION(414:414) CHAR,
+  QHA2_KoushinTantoCd    POSITION(415:422) CHAR,
+  QHA2_KoushinTantoMei   POSITION(423:434) CHAR NULLIF QHA2_KoushinTantoMei=BLANKS,
+  QHA2_KoushinYmd        POSITION(435:442) CHAR NULLIF QHA2_KoushinYmd=BLANKS,
+  QHA2_KoushinTime       POSITION(443:448) CHAR,
+  QHA2_TourokuTantoCd    POSITION(449:456) CHAR,
+  QHA2_TourokuTantoMei   POSITION(457:468) CHAR,
+  QHA2_TourokuBusyoCd    POSITION(469:472) CHAR,
+  QHA2_TourokuYmd        POSITION(473:480) CHAR,
+  QHA2_TourokuTime       POSITION(481:484) CHAR)

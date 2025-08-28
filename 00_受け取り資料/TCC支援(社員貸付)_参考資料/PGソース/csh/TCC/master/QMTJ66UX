@@ -1,0 +1,143 @@
+#!/bin/csh
+#　スクリプト名  ： QMTJ66UX
+#　 プロセス     ： ポイント付与候補者抽出
+#　 機  能       ： （ホスト用）キャンペーンマスタ送信
+#　 作成者       ： FIP
+#　 更新者       ： 
+##########################################
+#         共通環境設定                   #
+##########################################
+set    SHELL_NAME = $0                                      # シェル名
+setenv JOB_ID       $SHELL_NAME:t                           # ジョブ名
+setenv JOBNET_ID    'QMT407UX'                              # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log             # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT                # ログ出力モジュール
+setenv USERKEY      'QMTJ66UX'                              # ユーザキー
+set    KINOU      = 'ポイント付与・ホスト送信'
+
+##########################################
+#         固有環境設定                   #
+##########################################
+set    DATDIR     = /d321/UFS/data/qma
+setenv INFILE11     $DATDIR/qmab_s000400_OT2.dat
+setenv BKFILE11     $DATDIR/qmab_s000400_OT2.bak
+setenv INFILE21     $DATDIR/qmab_s000900_OT1_1.dat
+setenv INFILE22     $DATDIR/qmab_s000900_OT1_2.dat
+setenv INFILE23     $DATDIR/qmab_s000900_OT1_3.dat
+setenv MGFILE2      $DATDIR/qmab_s000900_OTMG.dat
+set    HULDIR     = /d321/UFS/fromhost/qma/snd
+setenv HULFILE1     $HULDIR/OFQWB1.hft
+setenv HULFILE2     $HULDIR/OFQWB2.hft
+
+##########################################
+#         処理開始メッセージ             #
+##########################################
+set MODULE        = 'SHELL'                                 # モジュール
+$LOGWRITE "$MODULE" I "開始：$KINOU" "$USERKEY"             # 開始メッセージの出力
+
+##########################################
+# STEP-1  データ移動                     #
+##########################################
+STEP_1:
+set    MODULE     = cp                                      # モジュール名
+set STEPKINOU     = '（ホスト用）キャンペーンマスタコピー'
+
+ cp -p  $INFILE11  $HULFILE1
+
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗：$KINOU  RC=[$rc]"  "$USERKEY"
+    exit(1)
+endif
+
+##########################################
+# STEP-2  データマージ                   #
+##########################################
+STEP_2:
+set    MODULE     = cat                                     # モジュール名
+set STEPKINOU     = 'ポイント付与会員Ｆマージ'
+
+ cat  $INFILE21 $INFILE22 $INFILE23 > $MGFILE2
+
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗：$KINOU  RC=[$rc]"  "$USERKEY"
+    exit(1)
+endif
+
+##########################################
+# STEP-3  配信前処理（改行削除）         #
+##########################################
+STEP_3:
+set    MODULE     = utllf                                   # モジュール名
+set STEPKINOU     = 'ポイント付与会員マージＦ改行削除'
+
+ utllf -r -d   -i $MGFILE2  -o $HULFILE2
+
+set rc = $status
+if ( $rc != 0 ) then
+    $LOGWRITE  "$MODULE"  E  "失敗：$KINOU  RC=[$rc]"  "$USERKEY"
+    exit(1)
+endif
+
+###############################################
+# STEP-4 キャンペーンマスタＨＵＬＦＴ送信     #
+###############################################
+STEP_4:
+set MODULE        = 'utlsend'
+set STEPKINOU     = '（ホスト用）キャンペーンマスタ ＨＵＬＦＴ送信'
+ $LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+
+### 送信の実行 ###
+utlsend  -f OFQWB1 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+    set MSG       = "失敗：$STEPKINOU RC=[$rc]"
+
+     $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+  $LOGWRITE  "$MODULE" I "終了：$STEPKINOU" "$USERKEY"      #終了メッセージの出力
+
+###############################################
+# STEP-5 ポイント付与会員ＦＨＵＬＦＴ送信     #
+###############################################
+STEP_5:
+set MODULE        = 'utlsend'
+set STEPKINOU     = 'ポイント付与会員Ｆ ＨＵＬＦＴ送信'
+ $LOGWRITE "$MODULE" I "開始：$STEPKINOU" "$USERKEY"        #開始メッセージの出力
+
+### 送信の実行 ###
+utlsend  -f OFQWB2 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+    set MSG       = "失敗：$STEPKINOU RC=[$rc]"
+
+     $LOGWRITE "$MODULE" E "$MSG" "$USERKEY"
+    exit(1)                                                 #異常終了
+endif
+  $LOGWRITE  "$MODULE" I "終了：$STEPKINOU" "$USERKEY"      #終了メッセージの出力
+
+##########################################
+# STEP-6 中間ファイル削除                #
+##########################################
+STEP_6:
+cp -p $INFILE11  $BKFILE11
+rm $INFILE11
+rm $INFILE21
+rm $INFILE22
+rm $INFILE23
+rm $MGFILE2
+rm $HULFILE1
+rm $HULFILE2
+
+##########################################
+# STEP-99  終了メッセージ出力            #
+##########################################
+STEP_99:
+set MODULE        = 'SHELL'
+$LOGWRITE "$MODULE" I "終了：$KINOU" "$USERKEY"             # 終了メッセージの出力
+
+exit(0)

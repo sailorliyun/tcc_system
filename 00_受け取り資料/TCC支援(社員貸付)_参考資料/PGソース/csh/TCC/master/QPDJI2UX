@@ -1,0 +1,45 @@
+#!/bin/csh
+#　スクリプト名  ： QPDJI2UX
+#　機  能        ： 残高更新データ送信(日次)（人事システム向け）
+#　作成者        ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME   = $0                           # シェル名
+setenv JOB_ID         $SHELL_NAME:t                # ジョブ名
+setenv JOBNET_ID      'QPDI00UX'                   # ジョブネット名
+set    LOGFILE      = $USER_LOG_DIR/${JOB_ID}.log  # ログファイル名
+set    LOGWRITE     = $EXE_DIR/QUAJ_MSGLOG.BAT     # ログ出力モジュール
+setenv USERKEY        'QPDJI2UX'                   # ユーザキー
+set    KINOU        = '残高更新データ送信(日次)（人事システム向け）'
+set    QP_DATA_DIR  = /d051/UFS/data/qp            # TMP FILE DIR
+set    QP_HUL_DIR   = /s020/UFS/fromhost/qp/rcv    # TMP FILE DIR
+set    MODULE       = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+###############################################
+# STEP-1 小口入金転送データ送信               #
+###############################################
+
+set MODULE = 'utlsend'
+$LOGWRITE "$MODULE" I "開始:残高更新データ送信(日次)" "$USERKEY"     # 開始メッセージの出力
+
+### 送信の実行 ###
+utlsend  -f OFQY60 -sync
+set rc = $status
+
+if ( $rc != 0 ) then
+	$LOGWRITE  "$MODULE"  E  "異常終了:$KINOU  RC=[$rc]"  "$USERKEY"
+	exit  1                                        # 異常終了
+endif
+$LOGWRITE "$MODULE" I "終了:残高更新データ送信(日次)" "$USERKEY"     # 終了メッセージの出力
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"     # 終了メッセージの出力
+exit 0                                             # 正常終了
+

@@ -1,0 +1,46 @@
+#!/bin/csh
+#　スクリプト名  ： QTEJU2UX
+#　 機  能       ： 統合メモコード（ＴＣＣ→ＦＤＳ）リカバリ処理
+#　 作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QSER01UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY     'QTEJU2UX'                          # ユーザキー
+set    KINOU      = '統合メモコード（ＴＣＣ→ＦＤＳ）リカバリ処理'
+set    QT_HUL_DIR   = /s020/UFS/fromhost/qt/rcv        #TMP FILE DIR
+set    QT_DATA_DIR  = /d051/UFS/data/qt                #TMP FILE DIR
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"     # 開始メッセージの出力
+#####################################################
+# STEP-1 統合メモコード（ＴＣＣ→ＦＤＳ）リカバリ   #
+#####################################################
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:統合メモコード（ＴＣＣ→ＦＤＳ）リカバリ" "$USERKEY"     # 開始メッセージの出力
+
+#  統合メモコード（ＴＣＣ→ＦＤＳ）ファイルを繰越ファイルに退避する
+  cp $QT_DATA_DIR/togomemo/qtaf_cdTCCtoFDS.dat $QT_DATA_DIR/togomemo/qtaf_cdTCCtoFDS.kur
+
+#if ( $rc != 0 ) then                              # リターンステータス判定
+#    exit  1                                      # 異常終了
+#endif
+
+$LOGWRITE "$MODULE" I "終了:統合メモコード（ＴＣＣ→ＦＤＳ）リカバリ" "$USERKEY"     # 終了メッセージの出力
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+
+set MODULE = 'SHELL'
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
+

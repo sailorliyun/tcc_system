@@ -1,0 +1,60 @@
+#!/bin/csh
+#   スクリプト名 ： QCTJ4AUX
+#   機  能       ： CS利用明細行ファイル当月以降データ抽出
+#   作成者       ： FIP
+#
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 # シェル名
+setenv JOB_ID       $SHELL_NAME:t                      # ジョブ名
+setenv JOBNET_ID   'QCT261UX'                          # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           # ログ出力モジュール
+setenv USERKEY      'QCTJ4AUX'                         # r%qzrtrkqz
+set    KINOU      = 'CS利用明細行ファイル吸い上げ'
+
+set    STEP_F     = $DATA4_DIR/${JOB_ID}_step.tmp
+set    BKUP_DIR   = $QC_DATA_DIR/qcs/data/shift_work
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+set wk_sime = 01   # 月初
+
+###############################################
+# STEP-1 CS利用明細行ファイル当月以降データ抽出 #
+###############################################
+STEP_TOUGETU_PROC:
+
+setenv OTFILE  $BKUP_DIR/qcsf_riyougyou.dat.shiftbackup.1
+setenv OTFILE2 $BKUP_DIR/qcsf_riyougyou.dat.shiftbackup.2
+setenv OTFILE3 $BKUP_DIR/qcsf_riyougyou.dat.shiftbackup.3
+setenv OTFILE4 $BKUP_DIR/qcsf_riyougyou.dat.shiftbackup.4
+setenv SIMEYOKU $wk_sime
+set PROGRAM = $EXE_DIR/qcsb_s000460.exe        
+if ( -x $PROGRAM ) then        
+        setenv NLS_LANG Japanese_Japan.JA16SJIS    # 文字コード体系をSJISにする
+        $PROGRAM | sjtoeuc >>& $LOGFILE            # プログラム起動
+        set rc = $status                           # リターンステータス待避
+        setenv NLS_LANG Japanese_Japan.JA16EUC     # 文字コード体系をEUCに戻す
+else
+        $LOGWRITE $PROGRAM:t  E  '実行プログラム[$PROGRAM]が存在しない。'  
+        exit 1                                     # 異常終了
+endif
+
+if ( $rc != 0 ) then                               # リターンステータス判定
+        set MSG = "失敗:$KINOU（当月以降） RC=[$rc]"
+        $LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+        exit  1                                    # 異常終了
+endif
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_END_PROC:
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0

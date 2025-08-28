@@ -1,0 +1,48 @@
+UNRECOVERABLE
+LOAD DATA
+CHARACTERSET JA16SJIS
+APPEND
+PRESERVE BLANKS
+INTO TABLE QHA1_SAGYOMEMOT
+( QHA1_KeyKigyoCd        POSITION( 01: 04) CHAR,
+  QHA1_KeySubRng         POSITION( 05: 08) CHAR,
+  QHA1_KeyNaibuKaiin     POSITION( 09: 16) CHAR,
+  QHA1_KeyUkeYmd         POSITION( 17: 24) CHAR,
+  QHA1_KeyUkeTime        POSITION( 25: 30) CHAR,
+  QHA1_KeyMemoTsuban     POSITION( 31: 32) CHAR,
+  QHA1_KaiinNo           POSITION( 33: 48) CHAR,
+  QHA1_KanriTen          POSITION( 49: 50) CHAR,
+  QHA1_TouzaiKbn         POSITION( 51: 51) CHAR,
+  QHA1_SagyoKbn          POSITION( 52: 52) CHAR,
+  QHA1_IraiYmd           POSITION( 53: 60) CHAR NULLIF QHA1_IraiYmd=BLANKS,
+  QHA1_Iraisya           POSITION( 61: 61) CHAR,
+  QHA1_UkeTanto          POSITION( 62: 73) CHAR NULLIF QHA1_UkeTanto=BLANKS,
+  QHA1_TodokeCd          POSITION( 74: 74) CHAR,
+  QHA1_GaisyoTanto       POSITION( 75: 94) CHAR NULLIF QHA1_GaisyoTanto=BLANKS,
+  QHA1_Memo              POSITION( 95)     CHAR TERMINATED BY '|', --301 byte
+  QHA1_TomeCd1           POSITION(396:397) CHAR,
+  QHA1_TomeCd2           POSITION(398:399) CHAR,
+  QHA1_TomeCd3           POSITION(400:401) CHAR,
+  QHA1_TomeCd4           POSITION(402:403) CHAR,
+  QHA1_TomeCd5           POSITION(404:405) CHAR,
+  QHA1_SeikyuYm          POSITION(406:411) CHAR,
+  QHA1_SeiSeqNo          POSITION(412:418) CHAR,
+  QHA1_SeiBunkatsuNo     POSITION(419:420) CHAR,
+  QHA1_SeiVersionNo      POSITION(421:422) CHAR,
+  QHA1_JifuriKbn         POSITION(423:423) CHAR,
+  QHA1_KaiinMemoFlg      POSITION(424:424) CHAR,
+  QHA1_SyoriFlg          POSITION(425:425) CHAR,
+  QHA1_SakujoFlg         POSITION(426:426) CHAR,
+  QHA1_SeikyuTantoCd     POSITION(427:434) CHAR,
+  QHA1_SeikyuTantoMei    POSITION(435:446) CHAR NULLIF QHA1_SeikyuTantoMei=BLANKS,
+  QHA1_SeikyuYmd         POSITION(447:454) CHAR NULLIF QHA1_SeikyuYmd=BLANKS,
+  QHA1_SeikyuTime        POSITION(455:460) CHAR,
+  QHA1_KoushinTantoCd    POSITION(461:468) CHAR,
+  QHA1_KoushinTantoMei   POSITION(469:480) CHAR NULLIF QHA1_KoushinTantoMei=BLANKS,
+  QHA1_KoushinYmd        POSITION(481:488) CHAR NULLIF QHA1_KoushinYmd=BLANKS,
+  QHA1_KoushinTime       POSITION(489:494) CHAR,
+  QHA1_TourokuTantoCd    POSITION(495:502) CHAR,
+  QHA1_TourokuTantoMei   POSITION(503:514) CHAR,
+  QHA1_TourokuBusyoCd    POSITION(515:518) CHAR,
+  QHA1_TourokuYmd        POSITION(519:526) CHAR,
+  QHA1_TourokuTime       POSITION(527:532) CHAR)

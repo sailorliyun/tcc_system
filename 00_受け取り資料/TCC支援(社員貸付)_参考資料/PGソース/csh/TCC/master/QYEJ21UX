@@ -1,0 +1,51 @@
+#!/bin/csh
+#　スクリプト名  ： QYEJ21UX
+#　 機  能       ： 発券Ｇオーソリ繰越ファイル退避
+#　 作成者       ： FIP
+#
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                             # シェル名
+setenv JOB_ID       $SHELL_NAME:t                  # ジョブ名
+setenv JOBNET_ID   'QLER02UX'                      # ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log    # ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT       # ログ出力モジュール
+setenv USERKEY      'QYEJ21UX'                     # ユーザキー
+set    KINOU      = '発券Ｇオーソリ繰越ファイル退避'
+
+set MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"      # 開始メッセージの出力
+
+#######################################################
+# STEP-1 発券Ｇオーソリ繰越ファイル退避               #
+#######################################################
+STEP_01:
+
+set MODULE = 'command:cp'
+set STEPKINOU = '発券Ｇ対応オーソリ繰越ファイル退避'
+$LOGWRITE "$MODULE" I "開始:$STEPKINOU" $USERKEY
+
+cp $QY_DATA_DIR/hakken_daily/qyaf_authorilog01.load  \
+   $QY_DATA_DIR/hakken_daily/qyaf_authorilog01.store
+set rc = $status
+
+if ( $rc != 0 ) then
+	set MSG = "失敗:$STEPKINOU RC=[$rc]"
+	$LOGWRITE  "$MODULE"  E  "$MSG" $USERKEY
+	exit  1                                      # 異常終了
+endif
+
+$LOGWRITE "$MODULE" I "終了:$STEPKINOU" $USERKEY
+
+##########################################
+# STEP-99      後始末                    #
+##########################################
+STEP_99:
+
+set MODULE = 'SHELL'
+
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+
+exit 0
+

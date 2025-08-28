@@ -1,0 +1,130 @@
+#!/bin/csh
+# 　スクリプト名 ： QLDJW2UX
+#　 機  能       ： 信用情報報告結果反映・FTP監視
+#　 作成者       ： FIP
+#　 修正履歴
+# 項番   管理番号    修正内容                修正者         修正日
+# 000001 0906007     Sコマンド環境設定ミス   FIP.Eriguchi  2009/12/17
+# 000002 TR1005-004  ①監視間隔の延長        FIP.Eriguchi  2010/05/29
+#                    ②デバック行の追記（本番リリース時コメントアウト）
+
+##################################
+#           環境設定             #
+##################################
+set    SHELL_NAME = $0                                 	# シェル名
+setenv JOB_ID       $SHELL_NAME:t                      	# ジョブ名
+setenv JOBNET_ID   'QLDJW2UX'                      	# ジョブネット名
+set    LOGFILE    = $USER_LOG_DIR/${JOB_ID}.log        	# ログファイル名
+set    LOGWRITE   = $EXE_DIR/QUAJ_MSGLOG.BAT           	# ログ出力モジュール
+set    USERKEY    = 'QLDJW2UX'                   	# ユーザキー
+set    KINOU      = '信用情報報告結果反映・FTP監視' 		# 機能
+
+set    NET_NAME_LEN	= 8					# 配信起動ネット名長
+# Mod 000002 FIP.Eriguchi Start
+#set    LOOP_WAIT  = 5						# 監視間隔(秒）
+set    LOOP_WAIT  = 30						# 監視間隔(秒）
+# Mod 000002 FIP.Eriguchi End
+
+set    FTP_FILE_FOLDER		= "/d041/UFS/data/qv/FTP/snd"	# FTP格納フォルダー
+set    FTP_START_FILE_PTN	= 'ftpstart_*'			# FTP開始ファイルパターン(ワイルドカード)
+set    FTP_END_FILE_NAME	= 'ftpend_'			# FTP完了ファイル名
+
+set    FTP_WATCH_FILE_DIR	= "/d041/UFS/data/qv/FTP"	# FTP監視制御ファイル格納フォルダー
+set    FTP_WATCH_FILE_NAME	= "ftpWatch"			# FTP監視制御ファイル名
+
+set    SEND_START_FILE_DIR	= "/d041/UFS/data/qv/FTP"		# 配信起動判定ファイル格納フォルダー
+set    SEND_START_FILE_NAME	= "sendStartFile"		# 配信起動判定ファイル名
+
+set    SEND_START_FILE	= $SEND_START_FILE_DIR/$SEND_START_FILE_NAME	# 配信起動判定ファイル
+set    FTP_WATCH_FILE	= $FTP_WATCH_FILE_DIR/$FTP_WATCH_FILE_NAME	# FTP監視制御ファイル
+
+# ADD 000001 FIP.Eriguchi start
+#-------A-AUTO環境変数設定------
+source /usr/local/auto/autoenv.csh
+source /usr/local/auto/aplenv.csh
+source /usr/local/auto/asvenv.csh
+#-------------------------------
+# ADD 000001 FIP.Eriguchi end
+
+set    MODULE = 'SHELL'
+$LOGWRITE "$MODULE" I "開始:$KINOU" "$USERKEY"   # 開始メッセージの出力
+
+LOOP_START:
+
+        #########################################################
+        # STEP-1  FTP監視制御ファイルが存在しなければ終了へ移行 #
+        #########################################################
+	if (! -e $FTP_WATCH_FILE) then
+		goto END_LOOP
+	endif
+
+        #########################################################
+        # STEP-2  配信起動判定ファイルが存在しない              #
+        #         かつ　FTP完了ファイルが存在するか             #
+        #########################################################
+	if ((! -e $SEND_START_FILE) && ( -e $FTP_FILE_FOLDER/$FTP_END_FILE_NAME ) )then
+
+                ########################################################
+                # STEP-3  FTP開始ファイル取得                          #
+                ########################################################
+		if ( -d $FTP_FILE_FOLDER ) then
+			set FTP_START_FILE_NAME = `ls -t $FTP_FILE_FOLDER/$FTP_START_FILE_PTN`
+		else
+			$LOGWRITE  "$MODULE"  E  "失敗:$KINOU FTP格納フォルダーが存在しない"  "$USERKEY"
+	        	exit  1                                     # 異常終了
+		endif
+
+		if( $#FTP_START_FILE_NAME < 1) then
+			$LOGWRITE  "$MODULE"  E  "失敗:$KINOU FTP開始ファイルが存在しない"  "$USERKEY"
+	        	exit  1                                     # 異常終了
+		endif
+
+                ########################################################
+                # STEP-4  配信起動NET名を求める                        #
+                ########################################################
+		@ TAIL_POINT = $NET_NAME_LEN + 1
+		set NET_NAME = `echo $FTP_START_FILE_NAME[1] | tail -${TAIL_POINT}c `
+
+                ########################################################
+                # STEP-5  配信起動判定ファイル作成                     #
+                ########################################################
+		touch $SEND_START_FILE
+		set rc = $status
+		if ( $rc != 0 ) then
+        		$LOGWRITE  "$MODULE"  E  "失敗:$KINOU 配信起動判定ファイル作成"  "$USERKEY"
+			exit  1                               	# 異常終了
+		endif
+		
+                ########################################################
+                # STEP-6  HULFT配信をA-AUTOコマンド管理下で実行        #
+                ########################################################
+
+		# echo "A-AUTO管理下でHULFT配信を呼び出す NET NAME IS [$NET_NAME]"
+		# サーバー内テスト用（本番リリース時はコメントアウト）
+		#/opt/auto/master/QLDJY1UX &    # ADD 000001 FIP.Eriguchi
+
+		# MOD 000001 FIP.Eriguchi start
+		#cip s$NET_NAME，sdate=`date +%y%m%d`
+		/usr/local/auto/bin/cip s$NET_NAME,sdate=`date +%y%m%d`   >& ${LOGFILE}
+		# MOD 000001 FIP.Eriguchi end
+		set rc = $status
+		if ( $rc != 0 ) then
+			$LOGWRITE  "$MODULE"  E  "失敗:$KINOU HULFT配信呼び出し"  "$USERKEY"
+			exit  1                                     # 異常終了
+		endif
+	endif
+	
+        ########################################################
+        # STEP-7  指定秒数SLEEP                                #
+        ########################################################
+	sleep $LOOP_WAIT
+
+	goto LOOP_START
+
+END_LOOP:
+
+#########################################
+# STEP-99  終了処理                     #
+#########################################
+$LOGWRITE "$MODULE" I "終了:$KINOU" "$USERKEY"   # 終了メッセージの出力
+exit 0                                           # 正常終了
